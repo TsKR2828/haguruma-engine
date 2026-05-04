@@ -30,6 +30,7 @@ React + 資料驅動架構。
 
 ```
 haguruma-engine/
+├── prototype.html          可遊玩原型（第一章完整版）
 ├── ENGINE_SPEC.md          引擎技術規格書
 ├── SCENES_FORMAT.md        場景資料寫作指南
 ├── CHAPTER_GUIDE.md        各章劇本設計筆記
@@ -38,29 +39,62 @@ haguruma-engine/
 │   ├── last-letter-game.html   CoC 引擎 v27（最後一封信）
 │   ├── coc-game-spec.md        CoC 文字冒險設計規格
 │   └── GAME_DEV_PLAN.md        脈輪覺醒開發計畫（封存）
-└── src/                    （實作中）
-    ├── engine/                 引擎核心
-    ├── components/             React 元件
-    └── data/chapters/          各章場景資料
+└── src/components/         備用 React 元件
+    ├── Particles.jsx           浮動粒子（神經連動變色）
+    ├── StatRadar.jsx           三軸雷達圖
+    ├── NerveBar.jsx            神經衰減進度條
+    └── ImpactToast.jsx         浮動增減通知
 ```
+
+## 啟動方式
+
+```bash
+npx serve -l 3456 -s .
+```
+
+瀏覽器開啟 `http://localhost:3456/prototype.html` 即可遊玩。
+
+> 無需 `npm install`。prototype.html 為純前端單檔，僅依賴 Google Fonts CDN。
 
 ## 技術棧
 
-- React（資料驅動場景渲染）
-- Vanilla CSS（視覺崩壞效果層）
-- SVG Filter（feTurbulence 雜訊）
+- Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
+- Vanilla CSS（視覺崩壞效果層、摺書動畫）
+- SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）
 - Google Fonts（Noto Serif TC / JP）
+- React 元件（src/components/ — 備用，尚未整合至原型）
 
 ## 開發狀態
 
 - [x] 引擎架構設計（ENGINE_SPEC.md）
 - [x] 場景格式定義（SCENES_FORMAT.md）
 - [x] 第一章場景分割設計（CHAPTER_GUIDE.md）
-- [ ] 引擎核心實作（v0.1）
-- [ ] 第一章場景遷移
-- [ ] 視覺崩壞系統
+- [x] 引擎核心實作（prototype.html — 資料驅動 scene runner）
+- [x] 第一章全 33 場景遷移（含 11 選擇點）
+- [x] 視覺崩壞系統（暗角、雜訊、文字 corrupt）
+- [x] 三欄佈局（章節目錄 / 遊戲本體 / 地圖＋手帖＋連結卡）
+- [x] SVG 東京路線地圖（5 地點 + 神經扭曲）
+- [x] 連結卡系統（5 條規則全部驗證通過）
 - [ ] 存檔系統
 - [ ] 第二至十一章
+
+## 第一章驗收結果
+
+以「全選第一選項」路線自動測試通過（2026-05-05）：
+
+| 項目 | 結果 |
+|------|------|
+| 場景總數 | 33（prologue → auto_ending） |
+| 最終神經 | 6/10 |
+| 最終洞察 | 11 |
+| 最終執筆 | 2 |
+| 手帖 | 7 筆（raincoat ×4, gear, worm, wing） |
+| 連結 | 5/5 全部形成 |
+| 路線 | kasugai → station → t_san → street → hotel |
+| 章結算畫面 | 顯示正確統計 |
+| 關閉按鈕 | 存在 |
+| 選擇分歧 | 11 個選擇點全部正常觸發 |
+| 條件文本 | choicesMade 旗標正確切換 |
 
 ## 原著
 
