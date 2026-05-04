@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>歯車 — 原型</title>
+<title>歯車 — 原型 v2</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;500&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
 
   body {
     font-family: 'Noto Serif TC', 'Noto Serif JP', Georgia, serif;
@@ -31,9 +32,220 @@
     transition: opacity 1s;
   }
 
+  /* ── 3-column layout ── */
+  .layout {
+    display: flex;
+    align-items: flex-start;
+    min-height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .layout-left, .layout-right {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 16px;
+    flex: 0 0 auto;
+    z-index: 5;
+  }
+  .layout-left  { flex-basis: 200px; border-right: 1px solid rgba(30,30,36,0.6); }
+  .layout-right { flex-basis: 280px; border-left: 1px solid rgba(30,30,36,0.6); }
+  .layout-center {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+  }
+  @media (max-width: 1100px) {
+    .layout-left, .layout-right { display: none; }
+  }
+
   #game {
-    max-width: 640px; margin: 0 auto; padding: 20px;
+    width: 100%;
+    max-width: 640px; margin: 0; padding: 20px;
     min-height: 100vh; position: relative;
+  }
+
+  /* ── Left: chapter panel ── */
+  .ch-header {
+    cursor: pointer;
+    color: #6b6860;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    padding: 6px 0;
+    border-bottom: 1px solid #1e1e24;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: color 0.2s;
+  }
+  .ch-header:hover { color: #8b7355; }
+  .ch-header .ch-arrow {
+    font-size: 9px;
+    transition: transform 0.3s;
+    color: #3a3530;
+  }
+  .ch-header.expanded .ch-arrow { transform: rotate(180deg); color: #8b7355; }
+
+  .ch-warning {
+    color: #3a3530;
+    font-size: 10px;
+    line-height: 1.85;
+    font-style: italic;
+    padding: 6px 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .ch-list { display: none; }
+  .ch-list.expanded { display: block; }
+
+  .ch-item {
+    padding: 10px 10px 10px 14px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #4a4540;
+    border-left: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .ch-item.unlocked { color: #6b6860; border-left-color: #2a2a30; }
+  .ch-item.current {
+    color: #c8c4b8;
+    border-left-color: #8b7355;
+    background: rgba(139,115,85,0.04);
+  }
+  .ch-item-num {
+    color: #5a4a38;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .ch-item.current .ch-item-num { color: #8b7355; }
+
+  /* ── Right: side sections ── */
+  .right-section {
+    margin-bottom: 28px;
+  }
+  .right-section-header {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: #5a4a38;
+    border-bottom: 1px solid #1e1e24;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+
+  /* Mini-map (clickable preview) */
+  #mini-map-container {
+    cursor: pointer;
+    position: relative;
+    transition: filter 0.2s;
+  }
+  #mini-map-container:hover { filter: brightness(1.25); }
+  #mini-map-container::after {
+    content: '展開';
+    position: absolute;
+    top: 6px; right: 6px;
+    font-size: 9px;
+    color: #5a4a38;
+    letter-spacing: 0.15em;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #mini-map-container:hover::after { opacity: 1; }
+
+  /* Mini-notebook entries */
+  .mini-nb-entry {
+    padding: 7px 10px;
+    font-size: 11px;
+    color: #c8c4b8;
+    border-left: 2px solid #5a4a38;
+    margin-bottom: 4px;
+    background: rgba(20,18,15,0.5);
+    line-height: 1.55;
+    transition: all 0.4s;
+    position: relative;
+  }
+  .mini-nb-entry .nb-icon {
+    margin-right: 6px;
+    color: #8b7355;
+  }
+  .mini-nb-entry.connection-source {
+    border-left-color: #c9a86a;
+    background: rgba(60,45,20,0.6);
+    box-shadow: 0 0 8px rgba(201,168,106,0.3);
+  }
+  .mini-nb-empty {
+    color: #3a3530;
+    font-size: 10px;
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* Connection cards */
+  .connection-card {
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(60,45,20,0.4), rgba(30,22,10,0.4));
+    border: 1px solid #5a4a38;
+    position: relative;
+    margin-bottom: 8px;
+    animation: connectionAppear 0.8s ease-out;
+  }
+  .connection-card-icon {
+    color: #c9a86a;
+    font-size: 14px;
+    margin-bottom: 4px;
+    letter-spacing: 0.1em;
+  }
+  .connection-card-title {
+    color: #e8d5a8;
+    font-size: 12px;
+    margin-bottom: 3px;
+    letter-spacing: 0.04em;
+    font-family: 'Noto Serif TC', 'Noto Serif JP', serif;
+  }
+  .connection-card-subtitle {
+    color: #8b7355;
+    font-size: 10px;
+    font-style: italic;
+    letter-spacing: 0.05em;
+  }
+  @keyframes connectionAppear {
+    0% { opacity: 0; transform: translateY(12px) scale(0.94); }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .connection-toast {
+    position: fixed;
+    top: 80px;
+    right: 30px;
+    padding: 6px 14px;
+    background: rgba(40,30,15,0.95);
+    border: 1px solid #c9a86a;
+    color: #e8d5a8;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    pointer-events: none;
+    z-index: 150;
+    animation: connToast 3s ease-out forwards;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  @keyframes connToast {
+    0% { opacity: 0; transform: translateX(20px); }
+    15% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-8px); }
+  }
+
+  .conn-empty {
+    color: #3a3530;
+    font-size: 10px;
+    font-style: italic;
+    padding: 4px 0;
+    line-height: 1.6;
   }
 
   /* ── Status bar ── */
@@ -55,14 +267,12 @@
   }
   #notebook-btn:hover { border-color: #8b7355; }
 
-  /* ── Text ── */
+  /* ── Text types ── */
   .narration { color: #c8c4b8; line-height: 1.9; font-size: 15px; margin-bottom: 12px; letter-spacing: 0.03em; }
   .inner { color: #7070a0; line-height: 1.9; font-size: 15px; font-style: italic; margin-bottom: 12px; }
   .dialogue { color: #a08060; line-height: 1.9; font-size: 15px; margin-bottom: 12px; white-space: pre-wrap; }
   .speaker { color: #6b6860; font-size: 12px; display: block; margin-bottom: 2px; letter-spacing: 0.08em; }
   .system-msg { color: #7aaa8a; font-size: 13px; padding: 6px 12px; border-left: 2px solid #4a6858; margin: 8px 0; }
-  .history-text { opacity: 0.4; }
-  .history-text.system-msg { opacity: 0.7; }
   .choice-made { color: #5a4a38; font-size: 13px; font-style: italic; margin-bottom: 10px; }
 
   .typing-cursor::after {
@@ -70,6 +280,98 @@
   }
   @keyframes blink { 0%,50%{opacity:0.5} 51%,100%{opacity:0} }
   @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Scene fold system ── */
+  .scene-block {
+    position: relative;
+  }
+
+  .fold-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+      to top,
+      rgba(10,10,12,0.95) 0%,
+      rgba(10,10,12,0.7) 30%,
+      rgba(10,10,12,0.15) 65%,
+      transparent 100%
+    );
+    opacity: 0;
+    animation: foldFadeIn 0.3s ease forwards;
+  }
+  .fold-overlay::before,
+  .fold-overlay::after {
+    content: '';
+    position: absolute;
+    left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(200,196,184,0.06), transparent);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .fold-overlay::before { top: 33%; }
+  .fold-overlay::after { top: 66%; }
+
+  @keyframes foldFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .fold-summary {
+    padding: 7px 16px;
+    color: #5a4a38;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    position: relative;
+    background: #0e0e11;
+    border: 1px solid rgba(30,30,36,0.8);
+    margin-bottom: 16px;
+    transition: all 0.25s;
+    box-shadow:
+      inset 0 1px 0 rgba(200,196,184,0.03),
+      0 1px 0 0 #141417,
+      0 2px 0 0 #111114,
+      0 3px 0 0 #0e0e11,
+      0 4px 8px rgba(0,0,0,0.3);
+  }
+  .fold-summary:hover {
+    color: #8b7355;
+    border-color: rgba(139,115,85,0.2);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(200,196,184,0.03),
+      0 2px 0 0 #141417,
+      0 3px 0 0 #111114,
+      0 4px 0 0 #0e0e11,
+      0 5px 10px rgba(0,0,0,0.35);
+  }
+  .fold-summary .fold-arrow {
+    position: absolute;
+    right: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #3a3a42;
+    transition: transform 0.3s;
+  }
+  .fold-summary.expanded .fold-arrow {
+    transform: translateY(-50%) rotate(180deg);
+  }
+  .scene-block.fold-expanded {
+    opacity: 0.45;
+    border-left: 1px solid #1e1e24;
+    padding-left: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* ── Click to advance ── */
+  .click-continue {
+    text-align: center;
+    color: #3a3a42;
+    font-size: 10px;
+    padding: 12px 0 4px;
+    animation: clickPulse 2.5s ease infinite;
+    user-select: none;
+  }
+  @keyframes clickPulse { 0%,100%{opacity:0.25} 50%{opacity:0.6} }
 
   /* ── Choices ── */
   .choices { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; animation: fadeIn 0.5s; }
@@ -92,18 +394,14 @@
 
   /* ── Forced steps ── */
   .forced-wrapper { position: relative; display: inline-block; margin: 6px 0; }
-
   .forced-btn {
     background: #12121a; border: 1px solid #2a2a35; color: #c8c4b8;
     padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: inherit;
-    position: relative; z-index: 2; transition: all 0.2s;
-    letter-spacing: 0.03em;
+    position: relative; z-index: 2; transition: all 0.2s; letter-spacing: 0.03em;
   }
   .forced-btn:hover { background: #1a1a24; border-color: #6b6860; }
   .forced-btn.eroded { clip-path: polygon(0% 5%,2% 0%,5% 6%,8% 0%,11% 5%,14% 0%,17% 4%,20% 0%,23% 5%,26% 0%,29% 6%,32% 0%,35% 5%,38% 0%,41% 4%,44% 0%,47% 5%,50% 0%,53% 6%,56% 0%,59% 5%,62% 0%,65% 4%,68% 0%,71% 5%,74% 0%,77% 6%,80% 0%,83% 5%,86% 0%,89% 4%,92% 0%,95% 5%,98% 0%,100% 5%,100% 95%,98% 100%,95% 94%,92% 100%,89% 96%,86% 100%,83% 95%,80% 100%,77% 94%,74% 100%,71% 95%,68% 100%,65% 96%,62% 100%,59% 95%,56% 100%,53% 94%,50% 100%,47% 95%,44% 100%,41% 96%,38% 100%,35% 95%,32% 100%,29% 94%,26% 100%,23% 95%,20% 100%,17% 96%,14% 100%,11% 95%,8% 100%,5% 94%,2% 100%,0% 95%); }
   .forced-btn.eroded-deep { clip-path: polygon(0% 8%,3% 0%,7% 10%,11% 0%,15% 8%,19% 0%,23% 10%,27% 0%,31% 8%,35% 0%,39% 10%,43% 0%,47% 8%,50% 0%,53% 8%,57% 0%,61% 10%,65% 0%,69% 8%,73% 0%,77% 10%,81% 0%,85% 8%,89% 0%,93% 10%,97% 0%,100% 8%,100% 92%,97% 100%,93% 90%,89% 100%,85% 92%,81% 100%,77% 90%,73% 100%,69% 92%,65% 100%,61% 90%,57% 100%,53% 92%,50% 100%,47% 92%,43% 100%,39% 90%,35% 100%,31% 92%,27% 100%,23% 90%,19% 100%,15% 92%,11% 100%,7% 90%,3% 100%,0% 92%); }
-
-  /* Gear pattern overlay */
   .gear-pattern {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     z-index: 1; pointer-events: none; overflow: hidden; border-radius: 2px;
@@ -137,6 +435,75 @@
   .nb-entry { color: #c8c4b8; font-size: 13px; line-height: 1.6; padding-left: 14px; border-left: 1px solid #5a4a38; margin-bottom: 4px; }
   .nb-close { background: none; border: 1px solid #1e1e24; color: #6b6860; padding: 5px 14px; font-size: 12px; cursor: pointer; margin-top: 14px; font-family: inherit; }
 
+  /* ── Map overlay ── */
+  #map-btn {
+    background: none; border: 1px solid #1e1e24; color: #6b6860;
+    padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
+    letter-spacing: 0.08em; margin-right: 8px;
+  }
+  #map-btn:hover { border-color: #8b7355; color: #8b7355; }
+
+  #map-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5,5,8,0.94); z-index: 200;
+    display: none; justify-content: center; align-items: center;
+    animation: fadeIn 0.4s;
+  }
+  #map-overlay.open { display: flex; }
+  #map-panel {
+    background: #0e0c08;
+    border: 1px solid #2a241e;
+    padding: 24px;
+    max-width: 380px; width: 92%;
+    max-height: 88vh; overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  }
+  .map-title {
+    color: #8b7355;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-align: center;
+    margin-bottom: 6px;
+    font-family: 'Noto Serif TC', 'Noto Serif JP', serif;
+  }
+  .map-subtitle {
+    color: #5a4a38;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-align: center;
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+  .map-svg { width: 100%; height: auto; display: block; }
+
+  @keyframes mapPulse {
+    0%, 100% { r: 6; opacity: 0.5; }
+    50%      { r: 16; opacity: 0; }
+  }
+
+  .map-loc-current circle.pulse {
+    animation: mapPulse 2.4s ease-out infinite;
+  }
+
+  /* ── End overlay ── */
+  #end-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10,10,12,0.96); z-index: 50;
+    display: none; justify-content: center; align-items: center;
+    flex-direction: column;
+  }
+  #end-overlay.open { display: flex; opacity: 1; animation: fadeIn 2s; }
+  .end-close {
+    position: absolute; top: 20px; right: 24px;
+    background: none; border: none; color: #6b6860;
+    font-size: 18px; cursor: pointer; font-family: inherit; padding: 8px;
+    letter-spacing: 0.1em; transition: color 0.2s;
+  }
+  .end-close:hover { color: #c8c4b8; }
+  .end-label { color: #c8c4b8; font-size: 18px; letter-spacing: 0.3em; margin-bottom: 24px; }
+  .end-stats { color: #6b6860; font-size: 13px; line-height: 2.2; margin-bottom: 32px; text-align: center; }
+
   /* ── Title ── */
   .title-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90vh; cursor:pointer; }
   .title-sub { color:#6b6860; font-size:12px; letter-spacing:0.3em; animation: fadeIn 1s; }
@@ -144,27 +511,54 @@
   .title-cn { color:#6b6860; font-size:14px; letter-spacing:0.15em; animation: fadeIn 2s; margin-bottom: 50px; }
   .title-start { color:#8b7355; font-size:12px; letter-spacing:0.2em; animation: pulse 3s ease infinite; }
   @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
-
-  /* ── End screen ── */
-  .end-screen {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #0a0a0c; z-index: 50; animation: fadeIn 2s;
-  }
-  .end-label { color: #c8c4b8; font-size: 18px; letter-spacing: 0.3em; margin-bottom: 24px; }
-  .end-stats { color: #6b6860; font-size: 13px; line-height: 2.2; margin-bottom: 32px; }
 </style>
 </head>
 <body>
 <div id="distortion"></div>
 <div id="noise"></div>
-<div id="game"></div>
 
-<div id="notebook-overlay" onclick="this.classList.remove('open')">
+<div class="layout">
+  <aside class="layout-left" id="chapter-panel"></aside>
+  <main class="layout-center"><div id="game"></div></main>
+  <aside class="layout-right">
+    <section class="right-section">
+      <div class="right-section-header">行路</div>
+      <div id="mini-map-container" onclick="openMap()"></div>
+    </section>
+    <section class="right-section">
+      <div class="right-section-header">手帖</div>
+      <div id="mini-notebook"></div>
+    </section>
+    <section class="right-section">
+      <div class="right-section-header">連結</div>
+      <div id="connection-cards"></div>
+    </section>
+  </aside>
+</div>
+
+<div id="notebook-overlay">
   <div id="notebook-panel" onclick="event.stopPropagation()">
     <div class="nb-title">手帖</div>
     <div id="nb-content"></div>
-    <button class="nb-close" onclick="document.getElementById('notebook-overlay').classList.remove('open')">關閉</button>
+    <button class="nb-close" onclick="closeNotebook()">關閉</button>
+  </div>
+</div>
+
+<div id="end-overlay">
+  <div onclick="event.stopPropagation()">
+    <button class="end-close" onclick="closeEndOverlay()">✕ 關閉</button>
+    <div class="end-label" id="end-label"></div>
+    <div class="end-stats" id="end-stats"></div>
+    <button class="action-btn" onclick="openNotebook()" style="display:block;margin:0 auto">查看手帖</button>
+  </div>
+</div>
+
+<div id="map-overlay">
+  <div id="map-panel" onclick="event.stopPropagation()">
+    <button class="end-close" onclick="closeMap()">✕ 關閉</button>
+    <div class="map-title">東京近郊 行路圖</div>
+    <div class="map-subtitle">昭和二年・冬</div>
+    <div id="map-svg-container"></div>
   </div>
 </div>
 
@@ -179,7 +573,7 @@
 </svg>
 
 <script>
-// ═══��══════════════ STATE ══════════════════
+// ══════════════════ STATE ══════════════════
 const state = {
   scene: 'title',
   nerve: 10,
@@ -188,6 +582,89 @@ const state = {
   notebook: [],
   history: [],
   choicesMade: {},
+  journey: {
+    current: 'kasugai',
+    visited: [],
+    symbols: {},
+  },
+  connections: [],
+  chaptersExpanded: false,
+  currentChapter: 1,
+};
+
+// ── Chapter list (歯車 has 6 named sections) ──
+const CHAPTERS = [
+  { num: 1, title: 'レエン・コオト', cn: '雨衣' },
+  { num: 2, title: '???', cn: '???' },
+  { num: 3, title: '???', cn: '???' },
+  { num: 4, title: '???', cn: '???' },
+  { num: 5, title: '???', cn: '???' },
+  { num: 6, title: '???', cn: '???' },
+];
+const CH_NUM_KANJI = ['一','二','三','四','五','六'];
+
+// ── Connection rules (auto-form when conditions met) ──
+const CONNECTIONS = [
+  {
+    id: 'raincoat_double',
+    requires: ['raincoat_station', 'raincoat_train'],
+    title: '兩件雨衣',
+    subtitle: '迴路初現',
+    icon: '◇',
+    insightGain: 1,
+  },
+  {
+    id: 'raincoat_triple',
+    requires: ['raincoat_station', 'raincoat_train', 'raincoat_hotel'],
+    title: '三件雨衣',
+    subtitle: '形未明，迴路已成',
+    icon: '◈',
+    insightGain: 1,
+  },
+  {
+    id: 'raincoat_omen',
+    requires: ['raincoat_station', 'raincoat_death'],
+    title: '季節外れの雨衣',
+    subtitle: '死の予兆',
+    icon: '✦',
+    insightGain: 2,
+  },
+  {
+    id: 'allright_meaning',
+    check: (s) => s.choicesMade.pondered_allright && s.notebook.some(n => n.key === 'raincoat_death'),
+    title: 'All right',
+    subtitle: 'すべて整ふ',
+    icon: '✶',
+    insightGain: 1,
+  },
+  {
+    id: 'worm_chain',
+    requires: ['book_worm', 'wing_corridor'],
+    title: '麒麟・鳳凰・蛆',
+    subtitle: '言葉の滑り',
+    icon: '◉',
+    insightGain: 1,
+  },
+];
+
+// ── Tokyo journey map data (Chapter 1 locations) ──
+// 鎌倉避暑地 → 東海道線停車場 → 三等車廂 → 省線電車（T 君） → 街道 → 東京旅館
+const LOCATIONS = [
+  { id: 'kasugai', label: '避暑地', sub: '鎌倉',     x: 50,  y: 60,  shape: 'mountain' },
+  { id: 'station', label: '停車場', sub: '東海道',   x: 110, y: 142, shape: 'rect',   symbolKey: 'raincoat_station' },
+  { id: 't_san',   label: '省線',   sub: 'T 君と',   x: 170, y: 220, shape: 'circle', symbolKey: 'raincoat_train' },
+  { id: 'street',  label: '街道',   sub: '齒輪',     x: 210, y: 280, shape: 'circle', symbolKey: 'gear_first' },
+  { id: 'hotel',   label: '旅館',   sub: '東京',     x: 254, y: 348, shape: 'rect',   symbolKey: 'wing_corridor' },
+];
+
+const SYMBOL_GLYPHS = {
+  raincoat_station: { glyph: '🧥', label: '雨衣・停車場' },
+  raincoat_train:   { glyph: '🧥', label: '雨衣・省線' },
+  raincoat_hotel:   { glyph: '🧥', label: '雨衣・走廊' },
+  raincoat_death:   { glyph: '🧥', label: '雨衣・姊夫' },
+  gear_first:       { glyph: '⚙',  label: '齒輪' },
+  book_worm:        { glyph: '📖', label: 'Worm' },
+  wing_corridor:    { glyph: '🪽', label: '翼聲' },
 };
 
 const SYMBOLS = {
@@ -219,31 +696,207 @@ function updateDistortion() {
   $('#noise').style.opacity = r < 0.4 ? (0.4 - r) * 0.6 : 0;
 }
 
+function scrollToBottom() {
+  const target = currentSceneEl?.lastElementChild;
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function addToHistory(text, cls = 'narration', type = 'text') {
+  state.history.push({ text, cls, type });
+}
+
+// ══════════════════ SCENE MANAGEMENT ══════════════════
+let currentSceneEl = null;
+
+function newScene() {
+  currentSceneEl = document.createElement('div');
+  currentSceneEl.className = 'scene-block';
+  $('#content').appendChild(currentSceneEl);
+  return currentSceneEl;
+}
+
+function appendBlock(cls) {
+  const el = document.createElement('div');
+  el.className = cls;
+  currentSceneEl.appendChild(el);
+  return el;
+}
+
+function appendSpeaker(name) {
+  const el = document.createElement('div');
+  el.className = 'speaker';
+  el.textContent = `── ${name}`;
+  currentSceneEl.appendChild(el);
+}
+
+// ── Fold current scene into a pamphlet-style summary bar ──
+async function foldCurrentScene(summary) {
+  if (!currentSceneEl) return;
+  const sceneEl = currentSceneEl;
+  currentSceneEl = null;
+
+  const height = sceneEl.offsetHeight;
+  sceneEl.style.maxHeight = height + 'px';
+  sceneEl.style.overflow = 'hidden';
+  sceneEl.style.position = 'relative';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'fold-overlay';
+  sceneEl.appendChild(overlay);
+
+  void sceneEl.offsetHeight;
+
+  sceneEl.style.transition = 'max-height 0.7s ease, opacity 0.5s ease';
+  sceneEl.style.maxHeight = '0px';
+  sceneEl.style.opacity = '0';
+
+  await sleep(750);
+
+  sceneEl.style.display = 'none';
+  sceneEl.style.transition = '';
+  sceneEl.style.maxHeight = '';
+  sceneEl.style.opacity = '';
+  sceneEl.style.overflow = '';
+  overlay.remove();
+
+  const foldEl = document.createElement('div');
+  foldEl.className = 'fold-summary';
+  foldEl.innerHTML = `<span>${summary}</span><span class="fold-arrow">∨</span>`;
+  foldEl.addEventListener('click', () => toggleFold(foldEl, sceneEl));
+  sceneEl.before(foldEl);
+}
+
+function toggleFold(foldEl, sceneEl) {
+  const isHidden = sceneEl.style.display === 'none';
+
+  if (isHidden) {
+    sceneEl.style.display = '';
+    sceneEl.style.opacity = '0';
+    sceneEl.style.overflow = 'hidden';
+    sceneEl.style.maxHeight = '0px';
+    sceneEl.classList.add('fold-expanded');
+
+    void sceneEl.offsetHeight;
+    sceneEl.style.transition = 'max-height 0.6s ease, opacity 0.4s ease';
+    sceneEl.style.maxHeight = sceneEl.scrollHeight + 'px';
+    sceneEl.style.opacity = '0.45';
+
+    foldEl.classList.add('expanded');
+
+    setTimeout(() => {
+      sceneEl.style.maxHeight = 'none';
+      sceneEl.style.transition = '';
+      sceneEl.style.overflow = '';
+    }, 620);
+  } else {
+    const h = sceneEl.offsetHeight;
+    sceneEl.style.maxHeight = h + 'px';
+    sceneEl.style.overflow = 'hidden';
+
+    void sceneEl.offsetHeight;
+    sceneEl.style.transition = 'max-height 0.6s ease, opacity 0.3s ease';
+    sceneEl.style.maxHeight = '0px';
+    sceneEl.style.opacity = '0';
+
+    foldEl.classList.remove('expanded');
+
+    setTimeout(() => {
+      sceneEl.style.display = 'none';
+      sceneEl.classList.remove('fold-expanded');
+      sceneEl.style.transition = '';
+      sceneEl.style.maxHeight = '';
+      sceneEl.style.opacity = '';
+      sceneEl.style.overflow = '';
+    }, 620);
+  }
+}
+
+// ══════════════════ CLICK-TO-ADVANCE ══════════════════
+const INTERACTIVE_SELECTOR = 'button, .choices, .action-btn, .forced-btn, .forced-wrapper, #status, #notebook-overlay, #end-overlay, #map-overlay, .fold-summary, .layout-left, .layout-right, .ch-header, .ch-item, #mini-map-container, .mini-nb-entry, .connection-card';
+
 async function typeText(el, text, speed = 18) {
   el.textContent = '';
   el.classList.add('typing-cursor');
+
+  let skipped = false;
+  function skipHandler(e) {
+    if (e.target.closest(INTERACTIVE_SELECTOR)) return;
+    skipped = true;
+  }
+  document.addEventListener('click', skipHandler);
+
   for (let i = 0; i < text.length; i++) {
+    if (skipped) { el.textContent = text; break; }
     el.textContent += text[i];
     await sleep(speed);
   }
+
+  document.removeEventListener('click', skipHandler);
   el.classList.remove('typing-cursor');
+  scrollToBottom();
 }
+
+async function waitForClick() {
+  return new Promise(resolve => {
+    const indicator = document.createElement('div');
+    indicator.className = 'click-continue';
+    indicator.textContent = '▼';
+    currentSceneEl.appendChild(indicator);
+    scrollToBottom();
+
+    function handler(e) {
+      if (e.target.closest(INTERACTIVE_SELECTOR)) return;
+      cleanup();
+      resolve();
+    }
+    function keyHandler(e) {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        cleanup();
+        resolve();
+      }
+    }
+    function cleanup() {
+      indicator.remove();
+      document.removeEventListener('click', handler);
+      document.removeEventListener('keydown', keyHandler);
+    }
+    document.addEventListener('click', handler);
+    document.addEventListener('keydown', keyHandler);
+  });
+}
+
+async function typeAndWait(el, text, speed = 18) {
+  await typeText(el, text, speed);
+  await sleep(120);
+  await waitForClick();
+}
+
+// ══════════════════ STATUS / NOTEBOOK / IMPACT ══════════════════
 
 function updateStatus() {
   const nerveClass = state.nerve <= 3 ? 'danger' : '';
-  $('#status').innerHTML = `
+  const statusEl = $('#status');
+  if (!statusEl) return;
+  statusEl.innerHTML = `
     <div class="stat-group">
       <span>神經 <span class="stat-val ${nerveClass}">${state.nerve}/10</span></span>
       <span>洞察 <span class="stat-val">${state.insight}</span></span>
       <span>執筆 <span class="stat-val">${state.writing}</span></span>
     </div>
-    <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
+    <div>
+      <button id="map-btn" onclick="openMap()">地圖</button>
+      <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
+    </div>
   `;
 }
 
 function addNotebook(key, symbol, desc) {
   if (state.notebook.find(n => n.key === key)) return;
   state.notebook.push({ key, symbol, desc });
+  renderMiniNotebook();
+  // Schedule connection check after the entry settles
+  setTimeout(() => checkConnections(), 600);
 }
 
 function openNotebook() {
@@ -264,12 +917,384 @@ function openNotebook() {
   $('#notebook-overlay').classList.add('open');
 }
 
-// ══════════════════ IMPACT ══════════════════
+function closeNotebook() {
+  $('#notebook-overlay').classList.remove('open');
+}
+
+$('#notebook-overlay').addEventListener('click', (e) => {
+  if (e.target === $('#notebook-overlay')) closeNotebook();
+});
+
+// ══════════════════ SIDE PANELS ══════════════════
+
+function renderChapterPanel() {
+  const expanded = state.chaptersExpanded;
+  const cur = state.currentChapter;
+  const html = `
+    <div class="ch-header${expanded ? ' expanded' : ''}" onclick="toggleChapters()">
+      <span>章節目錄</span>
+      <span class="ch-arrow">∨</span>
+    </div>
+    ${!expanded ? `
+      <div class="ch-warning">
+        此人生之書能預知命運。<br>
+        然而事先得知章節數量，<br>
+        可能會降低未知的樂趣。
+      </div>
+    ` : `
+      <div class="ch-list expanded">
+        ${CHAPTERS.map(c => {
+          let cls = '';
+          if (c.num === cur) cls = 'current';
+          else if (c.num < cur) cls = 'unlocked';
+          const labelTitle = (c.num <= cur) ? c.title : '???';
+          const labelCN = (c.num <= cur) ? c.cn : '???';
+          return `<div class="ch-item ${cls}">
+            <span class="ch-item-num">第 ${CH_NUM_KANJI[c.num-1]} 章</span>
+            ${labelTitle}<br>
+            <span style="font-size:10px;color:#5a4a38">${labelCN}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `}
+  `;
+  $('#chapter-panel').innerHTML = html;
+}
+
+function toggleChapters() {
+  state.chaptersExpanded = !state.chaptersExpanded;
+  renderChapterPanel();
+}
+
+function renderMiniMap() {
+  const W = 240, H = 280;
+  const locs = LOCATIONS.map(l => ({ ...l, x: l.x * 0.78, y: (l.y - 40) * 0.7 + 20 }));
+  const path = buildJourneyPath(locs);
+
+  let locsHTML = '';
+  locs.forEach(loc => {
+    const status = locStatus(loc);
+    const isCurrent = status === 'current';
+    const isVisited = status === 'visited';
+    const fillColor = isCurrent ? '#a08060' : isVisited ? '#6b6860' : '#2a241e';
+    const strokeColor = isCurrent ? '#c8c4b8' : '#3a3530';
+    const labelColor = isCurrent ? '#c8c4b8' : isVisited ? '#8b7355' : '#3a3530';
+    const labelText = (status === 'unseen') ? '?' : loc.label;
+
+    let shape;
+    if (loc.shape === 'rect') {
+      shape = `<rect x="${loc.x - 4}" y="${loc.y - 4}" width="8" height="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.2 : 0.8}"/>`;
+    } else if (loc.shape === 'mountain') {
+      shape = `<path d="M ${loc.x - 5} ${loc.y + 4} L ${loc.x} ${loc.y - 5} L ${loc.x + 5} ${loc.y + 4} Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.2 : 0.8}"/>`;
+    } else {
+      shape = `<circle cx="${loc.x}" cy="${loc.y}" r="3.5" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.2 : 0.8}"/>`;
+    }
+
+    const pulse = isCurrent
+      ? `<circle cx="${loc.x}" cy="${loc.y}" r="5" fill="none" stroke="#a08060" opacity="0.5">
+           <animate attributeName="r" values="5;14;5" dur="2.4s" repeatCount="indefinite"/>
+           <animate attributeName="opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite"/>
+         </circle>` : '';
+
+    locsHTML += `<g>${pulse}${shape}<text x="${loc.x + 9}" y="${loc.y + 3}" fill="${labelColor}" font-size="9" font-family="'Noto Serif TC', serif">${labelText}</text></g>`;
+  });
+
+  const svg = `
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+      <rect width="${W}" height="${H}" fill="#0e0c08"/>
+      <rect width="${W}" height="${H}" opacity="0.3">
+        <animate attributeName="opacity" values="0.3;0.4;0.3" dur="8s" repeatCount="indefinite"/>
+      </rect>
+      <path d="${path}" stroke="#5a4a38" stroke-width="1" fill="none" stroke-dasharray="2,3" opacity="0.6"/>
+      ${locsHTML}
+    </svg>
+  `;
+  $('#mini-map-container').innerHTML = svg;
+}
+
+function renderMiniNotebook() {
+  const c = $('#mini-notebook');
+  if (!c) return;
+  if (state.notebook.length === 0) {
+    c.innerHTML = '<div class="mini-nb-empty">尚無記錄。</div>';
+    return;
+  }
+  c.innerHTML = state.notebook.map(entry => {
+    const sym = SYMBOLS[entry.symbol];
+    return `<div class="mini-nb-entry" data-key="${entry.key}">
+      <span class="nb-icon">${sym?.icon || '・'}</span>${entry.desc}
+    </div>`;
+  }).join('');
+}
+
+function renderConnections() {
+  const c = $('#connection-cards');
+  if (!c) return;
+  if (state.connections.length === 0) {
+    c.innerHTML = '<div class="conn-empty">尚未浮現。<br>連結將在意象交會時自然顯現。</div>';
+    return;
+  }
+  c.innerHTML = state.connections.map(connId => {
+    const conn = CONNECTIONS.find(x => x.id === connId);
+    if (!conn) return '';
+    return `<div class="connection-card" data-id="${conn.id}">
+      <div class="connection-card-icon">${conn.icon}</div>
+      <div class="connection-card-title">${conn.title}</div>
+      <div class="connection-card-subtitle">── ${conn.subtitle} ──</div>
+    </div>`;
+  }).join('');
+}
+
+function refreshSidePanels() {
+  renderChapterPanel();
+  renderMiniMap();
+  renderMiniNotebook();
+  renderConnections();
+}
+
+// ══════════════════ CONNECTION SYSTEM ══════════════════
+
+async function checkConnections() {
+  for (const conn of CONNECTIONS) {
+    if (state.connections.includes(conn.id)) continue;
+    let met = false;
+    if (typeof conn.check === 'function') {
+      met = conn.check(state);
+    } else if (conn.requires) {
+      met = conn.requires.every(req =>
+        state.notebook.some(n => n.key === req)
+      );
+    }
+    if (met) {
+      await formConnection(conn);
+    }
+  }
+}
+
+async function formConnection(conn) {
+  // 1. Highlight source cards (pulse) — requires may be absent for check-based connections
+  (conn.requires || []).forEach(reqKey => {
+    const card = document.querySelector(`.mini-nb-entry[data-key="${reqKey}"]`);
+    if (card) {
+      card.classList.add('connection-source');
+      setTimeout(() => card.classList.remove('connection-source'), 2800);
+    }
+  });
+
+  // 2. Toast: ✦ 連結
+  const toast = document.createElement('div');
+  toast.className = 'connection-toast';
+  toast.textContent = '✦  連結';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3100);
+
+  await sleep(1200);
+
+  // 3. Add new card to state + render
+  state.connections.push(conn.id);
+  renderConnections();
+
+  // 4. Stat gain (insight)
+  if (conn.insightGain) {
+    state.insight += conn.insightGain;
+    updateStatus();
+    showImpact(
+      `<span class="impact-label">洞察</span>　+${conn.insightGain}　${conn.title}`,
+      'gain'
+    );
+  }
+}
+
+// ══════════════════ MAP / JOURNEY ══════════════════
+
+function visitLocation(id) {
+  const cur = state.journey.current;
+  if (cur && cur !== id && !state.journey.visited.includes(cur)) {
+    state.journey.visited.push(cur);
+  }
+  state.journey.current = id;
+  renderMiniMap();
+  if ($('#map-overlay').classList.contains('open')) renderMap();
+}
+
+function unlockSymbol(key) {
+  state.journey.symbols[key] = true;
+  renderMiniMap();
+  if ($('#map-overlay').classList.contains('open')) renderMap();
+}
+
+function locStatus(loc) {
+  if (state.journey.current === loc.id) return 'current';
+  if (state.journey.visited.includes(loc.id)) return 'visited';
+  return 'unseen';
+}
+
+function buildJourneyPath(locs) {
+  let p = `M ${locs[0].x} ${locs[0].y}`;
+  for (let i = 1; i < locs.length; i++) {
+    const prev = locs[i-1];
+    const cur = locs[i];
+    const mx = (prev.x + cur.x) / 2;
+    const my = (prev.y + cur.y) / 2;
+    const offset = (i % 2 === 0) ? -12 : 14;
+    p += ` Q ${mx + offset} ${my + 6} ${cur.x} ${cur.y}`;
+  }
+  return p;
+}
+
+function renderMap() {
+  const W = 320, H = 420;
+  const path = buildJourneyPath(LOCATIONS);
+
+  // Find how far along the journey we are (for path coloring)
+  const reachedIndex = LOCATIONS.findIndex(l => l.id === state.journey.current);
+
+  let locsHTML = '';
+  LOCATIONS.forEach((loc, i) => {
+    const status = locStatus(loc);
+    const isCurrent = status === 'current';
+    const isVisited = status === 'visited';
+    const isUnseen = status === 'unseen';
+
+    const fillColor = isCurrent ? '#a08060' : isVisited ? '#6b6860' : '#2a241e';
+    const strokeColor = isCurrent ? '#c8c4b8' : isVisited ? '#5a4a38' : '#1e1e24';
+    const labelColor = isCurrent ? '#c8c4b8' : isVisited ? '#8b7355' : '#3a3530';
+    const subColor   = isCurrent ? '#8b7355' : isVisited ? '#5a4a38' : '#2a241e';
+    const labelText = isUnseen ? '? ? ?' : loc.label;
+    const subText = isUnseen ? '' : loc.sub;
+
+    let shape;
+    if (loc.shape === 'rect') {
+      shape = `<rect x="${loc.x - 5}" y="${loc.y - 5}" width="10" height="10" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.5 : 1}"/>`;
+    } else if (loc.shape === 'mountain') {
+      shape = `<path d="M ${loc.x - 6} ${loc.y + 5} L ${loc.x} ${loc.y - 6} L ${loc.x + 6} ${loc.y + 5} Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.5 : 1}"/>`;
+    } else {
+      shape = `<circle cx="${loc.x}" cy="${loc.y}" r="4" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isCurrent ? 1.5 : 1}"/>`;
+    }
+
+    // Symbol marker (only if collected)
+    let symbolMarker = '';
+    if (loc.symbolKey && state.journey.symbols[loc.symbolKey]) {
+      const sym = SYMBOL_GLYPHS[loc.symbolKey];
+      symbolMarker = `<text x="${loc.x + 14}" y="${loc.y + 18}" fill="#a08060" font-size="11" font-family="serif">${sym.glyph}</text>`;
+    }
+
+    // Pulse for current
+    const pulseHTML = isCurrent
+      ? `<circle class="pulse" cx="${loc.x}" cy="${loc.y}" r="6" fill="none" stroke="#a08060" stroke-width="1" opacity="0.5"/>`
+      : '';
+
+    locsHTML += `<g class="map-loc map-loc-${status}${isCurrent ? ' map-loc-current' : ''}">
+      ${pulseHTML}
+      ${shape}
+      <text x="${loc.x + 12}" y="${loc.y - 2}" fill="${labelColor}" font-size="11" font-family="'Noto Serif TC', serif" letter-spacing="0.05em">${labelText}</text>
+      ${subText ? `<text x="${loc.x + 12}" y="${loc.y + 9}" fill="${subColor}" font-size="8" font-family="serif" font-style="italic">${subText}</text>` : ''}
+      ${symbolMarker}
+    </g>`;
+  });
+
+  // Travel mode labels along the path (between consecutive locations)
+  const travelModes = ['汽車', '東海道線', '省線電車', '徒步'];
+  const travelLabels = [];
+  for (let i = 1; i < LOCATIONS.length; i++) {
+    const prev = LOCATIONS[i-1];
+    const cur = LOCATIONS[i];
+    const mx = (prev.x + cur.x) / 2 + ((i % 2 === 0) ? -8 : 14);
+    const my = (prev.y + cur.y) / 2 + 6;
+    travelLabels.push({ x: mx, y: my, text: travelModes[i-1] || '路', show: reachedIndex >= i });
+  }
+  let travelHTML = '';
+  travelLabels.forEach(t => {
+    if (t.show) {
+      travelHTML += `<text x="${t.x}" y="${t.y}" fill="#5a4a38" font-size="9" font-style="italic" text-anchor="middle">${t.text}</text>`;
+    }
+  });
+
+  // Distortion based on nerve
+  const nerveRatio = state.nerve / 10;
+  const distortIntensity = nerveRatio < 0.5 ? (0.5 - nerveRatio) * 3 : 0;
+
+  const svg = `
+    <svg class="map-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="agedPaper">
+          <feTurbulence baseFrequency="0.85" numOctaves="2" seed="7"/>
+          <feColorMatrix values="0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.22 0 0 0 0.06 0"/>
+        </filter>
+        <filter id="mapDistort">
+          <feTurbulence baseFrequency="0.02" numOctaves="2" seed="3"/>
+          <feDisplacementMap in="SourceGraphic" scale="${distortIntensity}"/>
+        </filter>
+      </defs>
+
+      <!-- Background -->
+      <rect width="${W}" height="${H}" fill="#0e0c08"/>
+      <rect width="${W}" height="${H}" filter="url(#agedPaper)" opacity="0.5"/>
+
+      <g filter="${distortIntensity > 0 ? 'url(#mapDistort)' : ''}">
+        <!-- Decorative coastline (top-left, suggesting 鎌倉湾) -->
+        <path d="M 10 105 Q 30 95 50 110 Q 70 125 40 145 Q 20 155 8 140"
+              stroke="#3a3530" stroke-width="0.5" fill="none" opacity="0.5"/>
+        <text x="14" y="100" fill="#3a3530" font-size="8" font-style="italic">鎌倉湾</text>
+
+        <!-- Tokyo area boundary (lower-right) -->
+        <path d="M 150 250 Q 145 260 160 290 Q 180 320 200 330 Q 240 345 290 340 Q 305 335 308 310 Q 305 280 290 260 Q 270 248 220 245 Q 180 245 150 250 Z"
+              stroke="#3a3530" stroke-width="0.5" fill="rgba(139,115,85,0.025)"
+              stroke-dasharray="3,3" opacity="0.6"/>
+        <text x="294" y="262" fill="#5a4a38" font-size="10" font-style="italic" text-anchor="end" letter-spacing="0.1em">東京</text>
+
+        <!-- Journey path -->
+        <path d="${path}"
+              stroke="#5a4a38" stroke-width="1.2" fill="none"
+              stroke-dasharray="3,4" opacity="0.7"/>
+
+        <!-- Travel mode labels -->
+        ${travelHTML}
+
+        <!-- Locations -->
+        ${locsHTML}
+      </g>
+
+      <!-- Compass rose (top-right, outside distort) -->
+      <g transform="translate(285, 38)" opacity="0.7">
+        <circle r="11" fill="none" stroke="#5a4a38" stroke-width="0.5"/>
+        <path d="M 0 -7 L 1.5 0 L 0 7 L -1.5 0 Z" fill="#8b7355" opacity="0.7"/>
+        <text x="0" y="-13" text-anchor="middle" fill="#6b6860" font-size="7" font-family="serif">北</text>
+      </g>
+
+      <!-- Scale -->
+      <g transform="translate(20, 400)" opacity="0.6">
+        <line x1="0" y1="0" x2="36" y2="0" stroke="#5a4a38" stroke-width="0.5"/>
+        <line x1="0" y1="-2" x2="0" y2="2" stroke="#5a4a38" stroke-width="0.5"/>
+        <line x1="36" y1="-2" x2="36" y2="2" stroke="#5a4a38" stroke-width="0.5"/>
+        <text x="0" y="11" fill="#5a4a38" font-size="7" font-family="serif">およそ五十町</text>
+      </g>
+    </svg>
+  `;
+
+  $('#map-svg-container').innerHTML = svg;
+}
+
+function openMap() {
+  renderMap();
+  $('#map-overlay').classList.add('open');
+}
+
+function closeMap() {
+  $('#map-overlay').classList.remove('open');
+}
+
+$('#map-overlay').addEventListener('click', (e) => {
+  if (e.target === $('#map-overlay')) closeMap();
+});
+
 function showImpact(text, type = 'loss') {
   const div = document.createElement('div');
   div.className = `impact ${type}`;
   div.innerHTML = text;
-  $('#content').appendChild(div);
+  const target = currentSceneEl || $('#content');
+  target.appendChild(div);
+  scrollToBottom();
 }
 
 async function loseNerve(amount, reason) {
@@ -329,21 +1354,74 @@ function renderForcedBtn(text, onclick) {
   </div>`;
 }
 
-// ══════════════════ RENDERING ══════════════════
-function renderHistory() {
-  return state.history.map(h => {
-    if (h.type === 'choice') return `<div class="choice-made">▸ ${h.text}</div>`;
-    if (h.type === 'system') return `<div class="system-msg history-text">${h.text}</div>`;
-    const cls = h.cls || 'narration';
-    return `<div class="${cls} history-text">${h.text}</div>`;
-  }).join('');
+function showForcedStep(container, steps, index) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '4px';
+    div.innerHTML = renderForcedBtn(steps[index], `completeStep(this, ${index})`);
+    container.appendChild(div);
+    scrollToBottom();
+    div.querySelector('.forced-btn')._resolve = resolve;
+  });
 }
 
-function addToHistory(text, cls = 'narration', type = 'text') {
-  state.history.push({ text, cls, type });
+function completeStep(btn) {
+  const text = btn.textContent;
+  const wrapper = btn.closest('.forced-wrapper');
+  const container = wrapper.parentElement;
+  container.innerHTML = `<div style="color:#5a4a38; font-size:13px; font-style:italic; margin-bottom:4px;">✓ ${text}</div>`;
+  if (btn._resolve) btn._resolve();
 }
 
-// ══════════════════ SCENES ══════════════════
+// ══════════════════ CHOICES HELPER ══════════════════
+function showChoices(items) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'choices';
+
+  const label = document.createElement('div');
+  label.className = 'choices-label';
+  label.textContent = '── 行動選擇 ──';
+  wrapper.appendChild(label);
+
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = item.text;
+    btn.addEventListener('click', item.handler);
+    wrapper.appendChild(btn);
+  });
+
+  currentSceneEl.appendChild(wrapper);
+  scrollToBottom();
+}
+
+// ══════════════════ END OVERLAY ══════════════════
+function showEndOverlay() {
+  $('#end-label').textContent = '第一章 終';
+  $('#end-stats').innerHTML = `
+    手帖：${state.notebook.length} 筆<br>
+    神經：${state.nerve}/10　洞察：${state.insight}　執筆：${state.writing}
+  `;
+  $('#end-overlay').classList.add('open');
+}
+
+function closeEndOverlay() {
+  $('#end-overlay').classList.remove('open');
+}
+
+$('#end-overlay').addEventListener('click', (e) => {
+  if (e.target === $('#end-overlay')) closeEndOverlay();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($('#notebook-overlay.open')) closeNotebook();
+    if ($('#end-overlay.open')) closeEndOverlay();
+    if ($('#map-overlay.open')) closeMap();
+  }
+});
+
+// ══════════════════ TITLE ════════��═════════
 
 function renderTitle() {
   $('#game').innerHTML = `
@@ -354,7 +1432,10 @@ function renderTitle() {
       <div class="title-start">點擊任意處開始</div>
     </div>
   `;
+  refreshSidePanels();
 }
+
+// ══════════════════ GAME START ══════════════════
 
 async function startGame() {
   state.scene = 'prologue';
@@ -363,414 +1444,603 @@ async function startGame() {
     <div id="content"></div>
   `;
   updateStatus();
-  await renderPrologue();
+  refreshSidePanels();
+  newScene();
+  await playScene('prologue');
 }
 
-async function renderPrologue() {
-  const c = $('#content');
-  c.innerHTML = renderHistory();
+// ══════════════════ SCENE RUNNER ══════════════════
 
-  const sys1 = document.createElement('div');
-  sys1.className = 'system-msg';
-  sys1.textContent = '第一章　レエン・コオト';
-  c.appendChild(sys1);
-
-  const sys2 = document.createElement('div');
-  sys2.className = 'system-msg';
-  sys2.style.marginBottom = '16px';
-  sys2.textContent = '——雨衣——';
-  c.appendChild(sys2);
-
-  await sleep(600);
-
-  const p1 = document.createElement('div');
-  p1.className = 'narration';
-  c.appendChild(p1);
-  await typeText(p1, '冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。');
-
-  const p2 = document.createElement('div');
-  p2.className = 'narration';
-  c.appendChild(p2);
-  await typeText(p2, '車上除了你以外，還坐著一位理髮店的老闆。他是個棗子般圓滾滾的男人。你一邊在意著時間，一邊偶爾跟他聊上幾句。');
-
-  await sleep(300);
-
-  const sp = document.createElement('div');
-  sp.className = 'speaker';
-  sp.textContent = '── 理髮店主人';
-  c.appendChild(sp);
-  const d1 = document.createElement('div');
-  d1.className = 'dialogue';
-  c.appendChild(d1);
-  await typeText(d1, '「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」\n「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」');
-
-  await sleep(200);
-
-  addToHistory('第一章　レエン・コオト', 'system-msg', 'system');
-  addToHistory('——雨衣——', 'system-msg', 'system');
-  addToHistory('冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。');
-  addToHistory('車上除了你以外，還坐著一位理髮店的老闆。他是個棗子般圓滾滾的男人。你一邊在意著時間，一邊偶爾跟他聊上幾句。');
-  addToHistory('「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」', 'dialogue');
-
-  c.innerHTML += `
-    <div class="choices">
-      <div class="choices-label">── 行動選擇 ──</div>
-      <button class="choice-btn" onclick="choiceJoke()">「下雨天出來——是來淋雨的吧？」</button>
-      <button class="choice-btn" onclick="choiceSilent()">沉默地望向窗外的松林。</button>
-    </div>
-  `;
+async function applyEffects(eff) {
+  if (!eff) return;
+  if (eff.nerveLoss) {
+    await loseNerve(eff.nerveLoss.amount, eff.nerveLoss.reason || '');
+  }
+  if (eff.insightGain) {
+    gainStat('insight', eff.insightGain.amount, eff.insightGain.reason || '');
+  }
+  if (eff.writingGain) {
+    gainStat('writing', eff.writingGain.amount, eff.writingGain.reason || '');
+  }
 }
 
-async function choiceJoke() {
-  state.choicesMade.joke = true;
-  state.writing += 1;
-  addToHistory('「下雨天出來——是來淋雨的吧？」', 'choice-made', 'choice');
-  updateStatus();
-  await renderBarber2();
+async function renderBlock(block, isLastBeforeContinuation) {
+  switch (block.type) {
+    case 'break': {
+      const div = document.createElement('div');
+      div.style.height = '20px';
+      currentSceneEl.appendChild(div);
+      return;
+    }
+    case 'pause': {
+      await sleep(block.duration || 1000);
+      return;
+    }
+    case 'system': {
+      const div = appendBlock('system-msg');
+      div.textContent = block.content;
+      addToHistory(block.content, 'system-msg', 'system');
+      await sleep(450);
+      return;
+    }
+    case 'dialogue': {
+      if (block.speaker) appendSpeaker(block.speaker);
+      const div = appendBlock('dialogue');
+      const text = block.jp ? `${block.jp}\n${block.cn}` : (block.cn || '');
+      addToHistory(block.cn || block.jp || '', 'dialogue');
+      if (isLastBeforeContinuation) await typeText(div, text, 20);
+      else await typeAndWait(div, text, 20);
+      return;
+    }
+    case 'inner':
+    case 'narration':
+    default: {
+      const cls = block.type === 'inner' ? 'inner' : 'narration';
+      const speed = block.type === 'inner' ? 25 : 18;
+      const div = appendBlock(cls);
+      const content = state.nerve <= 5 ? corrupt(block.content) : block.content;
+      addToHistory(block.content, cls);
+      if (isLastBeforeContinuation) await typeText(div, content, speed);
+      else await typeAndWait(div, content, speed);
+      return;
+    }
+  }
 }
 
-async function choiceSilent() {
-  state.choicesMade.silent = true;
-  addToHistory('沉默地望向窗外的松林。', 'choice-made', 'choice');
-  await renderBarber2();
+async function handleChoice(choice) {
+  // Disable all choice buttons in the active scene to prevent double-clicks
+  if (currentSceneEl) {
+    currentSceneEl.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'default';
+      btn.onclick = null;
+    });
+  }
+  addToHistory(choice.text, 'choice-made', 'choice');
+  if (choice.flag) state.choicesMade[choice.flag] = true;
+  if (choice.notebook) {
+    addNotebook(choice.notebook.key, choice.notebook.symbol, choice.notebook.desc);
+  }
+  if (choice.unlock) {
+    if (Array.isArray(choice.unlock)) choice.unlock.forEach(unlockSymbol);
+    else unlockSymbol(choice.unlock);
+  }
+  await applyEffects(choice);
+  if (choice.next) await playScene(choice.next);
 }
 
-async function renderBarber2() {
-  const c = $('#content');
-  c.innerHTML = renderHistory();
+async function playScene(sceneId) {
+  const scene = SCENES[sceneId];
+  if (!scene) {
+    console.warn('Scene not found:', sceneId);
+    return;
+  }
+  state.scene = sceneId;
 
-  if (state.choicesMade.joke) {
-    if (state.writing > 0) showImpact('<span class="impact-label">執筆</span>　+1', 'gain');
-    const sp = document.createElement('div'); sp.className = 'speaker'; sp.textContent = '── 理髮店主人'; c.appendChild(sp);
-    const d = document.createElement('div'); d.className = 'dialogue'; c.appendChild(d);
-    await typeText(d, '「御常談で。……しかしレエン・コオトを着た��霊だって云うんです。」\n「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」');
-    addToHistory('「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」', 'dialogue');
-  } else {
-    const n = document.createElement('div'); n.className = 'narration'; c.appendChild(n);
-    await typeText(n, '理髮店主人見你沉默，又自顧自地說了下去——穿著雨衣的幽靈。');
-    addToHistory('理髮店主人見你沉默，又自顧自地說了下去——穿著雨衣的幽靈。');
+  // Fold previous scene if specified
+  if (scene.fold) {
+    await foldCurrentScene(scene.fold);
+    newScene();
   }
 
-  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
-  await typeText(p, '汽車鳴著喇叭，橫靠在了某個停車場旁。果然——上行列車在兩三分鐘前剛剛開走了。');
-  addToHistory('汽車鳴著喇叭，橫靠在了某個停車場旁。果然——上行列車在兩三分鐘前剛剛開走了。');
+  // Visit location
+  if (scene.visit) visitLocation(scene.visit);
 
-  await sleep(300);
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, '候車室的長��上，一個穿著雨衣的男人獨自茫然地望著窗外。');
-  addToHistory('候車室的長椅上，一個穿著雨衣的男人獨自茫然地望著窗外。');
+  // Get text blocks (array or function of state)
+  const text = typeof scene.text === 'function' ? scene.text(state) : (scene.text || []);
 
-  c.innerHTML += `
-    <div class="choices">
-      <div class="choices-label">── 行動選擇 ──</div>
-      <button class="choice-btn" onclick="observeRaincoat()">仔細觀察那個穿雨衣的男人。</button>
-      <button class="choice-btn" onclick="skipToCafe()">沒有多想，直接走向咖��廳。</button>
-    </div>
-  `;
-}
-
-async function observeRaincoat() {
-  addToHistory('仔細觀察那個穿雨衣的男人。', 'choice-made', 'choice');
-  addNotebook('raincoat_station', 'raincoat', '停車場候車室——穿雨衣的男人，茫然望向窗外');
-  state.choicesMade.observed_raincoat = true;
-  const c = $('#content');
-  c.innerHTML = renderHistory();
-
-  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
-  await typeText(p, corrupt('他就那樣坐著。雨衣的顏色在冬天的光線下顯得不合時令。他的臉模糊不清——或者說，你沒有記住它。'), 22);
-  addToHistory('他就那樣坐著。雨衣的顏色在冬天的光線下顯得不合時令。');
-  showImpact('🧥 手帖新增：停車場的雨衣男人', 'gain');
-  updateStatus();
-  await sleep(400);
-  await skipToCafe();
-}
-
-async function skipToCafe() {
-  if (!state.choicesMade.observed_raincoat) {
-    addToHistory('沒有多想，直接走向咖啡廳。', 'choice-made', 'choice');
-  }
-  await renderGears();
-}
-
-// ══════════════════ GEARS SCENE ══════════════════
-
-async function renderGears() {
-  const c = $('#content');
-  c.innerHTML = renderHistory();
-
-  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
-  await typeText(p1, '你提著皮箱，從省線電車的某個停車場步行前往旅館。道路兩側大多是高大的大樓。');
-
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, '走著走著，你忽然想起了松林。');
-
-  await sleep(1500);
-
-  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
-  await typeText(p3, corrupt('然後——你的視野中出現了奇怪的東西。'), 28);
-
-  await sleep(1000);
-
-  const p4 = document.createElement('div'); p4.className = 'narration'; c.appendChild(p4);
-  await typeText(p4, corrupt('半透明的齒輪。不停旋轉的齒��。'), 30);
-
-  const p5 = document.createElement('div'); p5.className = 'inner'; c.appendChild(p5);
-  await typeText(p5, corrupt('你以前也有過幾次這樣的經驗。齒輪會逐漸增多，遮住你半邊視野，但不會持續太久——消失之後，隨之而來的是頭痛。'), 25);
-
-  addToHistory('半透明的齒輪。不停旋轉的齒輪。');
-
-  c.innerHTML += `
-    <div class="choices">
-      <div class="choices-label">── 行動選擇 ──</div>
-      <button class="choice-btn" onclick="testEyes()">用手遮住右眼，測試左眼的視力。</button>
-      <button class="choice-btn" onclick="endureGears()">又來了。低頭繼續走。</button>
-    </div>
-  `;
-}
-
-async function testEyes() {
-  addToHistory('用手遮住右眼，測試左眼的視力。', 'choice-made', 'choice');
-  addNotebook('gear_first', 'gear', '往旅館途中——半透明的齒輪初次出現在右眼瞼內側');
-  state.choicesMade.tested_eyes = true;
-
-  const c = $('#content');
-  c.innerHTML = renderHistory();
-
-  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
-  await typeText(p1, '左眼沒事。');
-
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, corrupt('但右眼瞼的內側——齒輪仍在旋轉。不止一個。它們的數量正在增加。'), 25);
-
-  addToHistory('右眼瞼的內側——齒輪仍在旋轉。不止一個。');
-  showImpact('⚙️ 手帖新增：齒輪（初次出現）', 'gain');
-  await loseNerve(1, '齒輪出現');
-  updateStatus();
-  await sleep(500);
-  await renderHotelCoat();
-}
-
-async function endureGears() {
-  addToHistory('又來了。低頭繼續走。', 'choice-made', 'choice');
-  addNotebook('gear_first', 'gear', '往旅館途中——半透明的齒輪初次出現');
-
-  const c = $('#content');
-  c.innerHTML = renderHistory();
-
-  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
-  await typeText(p, corrupt('你低著頭快步走著。視野右側的大樓逐漸被吞沒。你知道這會過去的。齒輪總是會消失。代價是頭痛。'), 22);
-
-  addToHistory('你低著頭快步走著。視野右側的大樓逐漸被吞沒。');
-  showImpact('⚙️ 手帖新增：齒輪（初次出現）', 'gain');
-  await loseNerve(1, '齒輪出現');
-  await sleep(500);
-  await renderHotelCoat();
-}
-
-// ══════════════════ HOTEL COAT — ACTION DEMO ══════════════════
-
-async function renderHotelCoat() {
-  const c = $('#content');
-  c.innerHTML = renderHistory();
-
-  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
-  await typeText(p1, corrupt('走進旅館玄關時，齒輪已經消失了。但頭痛還在。'));
-  addToHistory('走進旅館玄關時，齒輪已經消失了。但頭痛還在。');
-
-  await sleep(400);
-
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, corrupt('房間裡，皮箱、帽子和外套都已經送來了。'));
-
-  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
-  await typeText(p3, corrupt('——掛在牆上的外套讓你感覺到了你自己站立的身影。'), 28);
-
-  addToHistory('掛在牆上的外套讓你感覺到了你自己站立的身影。');
-
-  // Micro-action
-  const actionDiv = document.createElement('div');
-  actionDiv.innerHTML = `<button class="action-btn" onclick="actionHideCoat(this)">把外套塞進衣櫃裡。</button>`;
-  c.appendChild(actionDiv);
-}
-
-async function actionHideCoat(btn) {
-  btn.disabled = true;
-  btn.style.opacity = '0.3';
-  btn.style.cursor = 'default';
-
-  const response = document.createElement('div');
-  response.className = 'narration';
-  btn.parentElement.after(response);
-  await typeText(response, corrupt('衣櫃門關上了。但你知道它還在裡面。'));
-
-  addToHistory('把外套塞進衣櫃裡。', 'choice-made', 'choice');
-  addToHistory('衣櫃門關上了。但你知道它還在裡面。');
-  state.choicesMade.coat_hidden = true;
-
-  await sleep(600);
-  await renderNerveDrop();
-}
-
-// ══════════════════ NERVE DROP — DEMONSTRATE FORCED STEPS ══════════════════
-
-async function renderNerveDrop() {
-  // Drop nerve to demonstrate effects
-  await loseNerve(3, '持續的頭痛與不安');
-  await sleep(400);
-
-  const c = $('#content');
-
-  const p1 = document.createElement('div'); p1.className = 'inner'; c.appendChild(p1);
-  await typeText(p1, corrupt('你坐在書桌前。蜥蜴皮般的青色摩洛哥皮安樂椅。你打開皮箱，取出原稿用紙。但蘸了墨水的筆怎麼也動不了。'), 25);
-
-  await sleep(800);
-
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, corrupt('——突然，床邊的電話響了。'), 28);
-
-  addToHistory('電話響了。');
-
-  await sleep(600);
-
-  // Now show forced steps based on current nerve
-  const p3 = document.createElement('div'); p3.className = 'inner'; c.appendChild(p3);
-  await typeText(p3, corrupt('你必須接電話。'), 30);
-
-  await sleep(400);
-
-  await renderForcedSequence();
-}
-
-async function renderForcedSequence() {
-  const c = $('#content');
-
-  const steps = getPhoneSteps();
-  const stepsDiv = document.createElement('div');
-  stepsDiv.id = 'forced-steps';
-  stepsDiv.style.margin = '12px 0';
-  c.appendChild(stepsDiv);
-
-  for (let i = 0; i < steps.length; i++) {
-    await showForcedStep(stepsDiv, steps, i);
+  // Render each block
+  for (let i = 0; i < text.length; i++) {
+    const block = text[i];
+    const isLast = i === text.length - 1;
+    const hasContinuation = !!(scene.choices || scene.next || scene.showEnd);
+    const isLastBeforeContinuation = isLast && hasContinuation && (
+      block.type === 'narration' || block.type === 'inner' || block.type === 'dialogue'
+    ) ? false : (isLast && hasContinuation);
+    await renderBlock(block, isLastBeforeContinuation);
   }
 
-  // After all steps complete
-  await sleep(400);
-  await renderPhoneCall();
+  // Notebook (after text rendering)
+  if (scene.notebook) {
+    addNotebook(scene.notebook.key, scene.notebook.symbol, scene.notebook.desc);
+  }
+  if (scene.unlock) {
+    if (Array.isArray(scene.unlock)) scene.unlock.forEach(unlockSymbol);
+    else unlockSymbol(scene.unlock);
+  }
+  // Static effects
+  await applyEffects(scene);
+  // Dynamic effects
+  if (scene.effectFn) {
+    await applyEffects(scene.effectFn(state));
+  }
+
+  // Continue
+  if (scene.choices) {
+    await sleep(120);
+    showChoices(scene.choices.map(c => ({
+      text: c.text,
+      handler: () => handleChoice(c)
+    })));
+  } else if (scene.next) {
+    await sleep(180);
+    await playScene(scene.next);
+  } else if (scene.showEnd) {
+    await sleep(400);
+    await waitForClick();
+    showEndOverlay();
+  }
 }
 
-function getPhoneSteps() {
-  const n = state.nerve;
-  if (n >= 8) return ['接起電話。'];
-  if (n >= 5) return ['站起來。', '走到電話旁。', '拿起聽筒。'];
-  if (n >= 3) return ['站起來。', '左腳。', '右腳。', '伸手。', '握住聽筒。', '貼到耳邊。'];
-  return [
-    '你必須：從椅子上站起來。',
-    '你必須：感覺你的腿。',
-    '你必須：往電話的方向走。',
-    '你必須：伸出手。',
-    '你必須：握住聽筒。',
-    '你必須：把它舉到耳邊。',
-    '你必須：說話。',
-  ];
-}
+// ══════════════════ SCENES (Chapter 1: レエン・コオト) ══════════════════
+// Source: 芥川龍之介《歯車》— 第一章「雨衣」
+// 改編自青空文庫 https://www.aozora.gr.jp/cards/000879/files/42377_15163.html
+// 日中對照 + 互動選擇 + 連結觸發
 
-function showForcedStep(container, steps, index) {
-  return new Promise(resolve => {
-    const div = document.createElement('div');
-    div.style.marginBottom = '4px';
-    div.innerHTML = renderForcedBtn(steps[index], `completeStep(this, ${index})`);
-    container.appendChild(div);
+const SCENES = {
+  prologue: {
+    visit: 'kasugai',
+    text: [
+      { type: 'system', content: '第一章　レエン・コオト' },
+      { type: 'system', content: '——雨衣——' },
+      { type: 'break' },
+      { type: 'narration', content: '冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。' },
+      { type: 'narration', content: '道路兩旁大多只長著松樹。能不能趕上上行列車，相當令人懷疑。' },
+      { type: 'narration', content: '車上除了你以外，還坐著一位理髮店的老闆。他是個棗子般圓滾滾的男人，留著短短的下巴鬍。你一邊在意著時間，一邊偶爾跟他聊上幾句。' },
+    ],
+    next: 'auto_barber',
+  },
 
-    // Store resolve so button click can trigger it
-    div.querySelector('.forced-btn')._resolve = resolve;
-    div.querySelector('.forced-btn')._index = index;
-  });
-}
+  auto_barber: {
+    text: [
+      { type: 'dialogue', speaker: '理髮店主人', jp: '「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」', cn: '「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」' },
+      { type: 'narration', content: '你看著對面冬日西曬的松山，隨口附和著。' },
+      { type: 'dialogue', speaker: '理髮店主人', jp: '「尤も天気の善い日には出ないそうです。一番多いのは雨の降る日だって云うんですが。」', cn: '「不過天氣好的時候不會出現。最常出沒的是下雨天。」' },
+    ],
+    choices: [
+      { text: '「下雨天出來——是來淋雨的吧？」', next: 'auto_barber_2', flag: 'joke_response', writingGain: { amount: 1, reason: '俏皮話的試刀' } },
+      { text: '沉默地望向窗外的松林。', next: 'auto_barber_2', flag: 'silent_response', writingGain: { amount: 1, reason: '寡言的觀察' } },
+    ],
+  },
 
-function completeStep(btn, index) {
-  const text = btn.textContent;
-  const wrapper = btn.closest('.forced-wrapper');
-  const container = wrapper.parentElement;
+  auto_barber_2: {
+    text: (s) => {
+      const base = [];
+      if (s.choicesMade.joke_response) {
+        base.push({ type: 'dialogue', speaker: '理髮店主人', jp: '「御常談で。……しかしレエン・コオトを着た幽霊だって云うんです。」', cn: '「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」' });
+      } else {
+        base.push({ type: 'narration', content: '理髮店主人見你沉默，又自顧自地說了下去。' });
+        base.push({ type: 'dialogue', speaker: '理髮店主人', jp: '「しかしレエン・コオトを着た幽霊だって云うんです。」', cn: '「不過聽說是穿著雨衣的幽靈呢。」' });
+      }
+      base.push({ type: 'narration', content: '汽車鳴著喇叭，橫靠在了某個停車場旁。你與理髮店主人告別，走進了停車場。' });
+      base.push({ type: 'narration', content: '果然——上行列車在兩三分鐘前剛剛開走了。' });
+      return base;
+    },
+    next: 'auto_station',
+  },
 
-  // Replace button with completed text
-  container.innerHTML = `<div style="color:#5a4a38; font-size:13px; font-style:italic; margin-bottom:4px;">✓ ${text}</div>`;
+  auto_station: {
+    fold: '── 車中 · 怪談 ──',
+    visit: 'station',
+    text: [
+      { type: 'narration', content: '候車室的長椅上，一個穿著雨衣的男人獨自茫然地望著窗外。' },
+      { type: 'inner', content: '你想起了剛才聽到的幽靈故事。不過只是苦笑了一下，決定到停車場前的咖啡廳去等下一班列車。' },
+    ],
+    choices: [
+      {
+        text: '仔細觀察那個穿雨衣的男人。',
+        next: 'station_observe',
+        flag: 'observed_raincoat_1',
+        notebook: { key: 'raincoat_station', symbol: 'raincoat', desc: '停車場候車室——穿雨衣的男人，茫然望向窗外' },
+        unlock: 'raincoat_station',
+        insightGain: { amount: 1, reason: '注意到不該注意的' },
+      },
+      { text: '沒有多想，直接走向咖啡廳。', next: 'auto_cafe', flag: 'skipped_raincoat_1' },
+    ],
+  },
 
-  // Resolve the promise
-  if (btn._resolve) btn._resolve();
-}
+  station_observe: {
+    text: [
+      { type: 'narration', content: '他就那樣坐著。雨衣的顏色在冬天的光線下顯得不合時令。他的臉模糊不清——或者說，你沒有記住它。' },
+      { type: 'narration', content: '你轉身走向咖啡廳。' },
+    ],
+    next: 'auto_cafe',
+  },
 
-// ══════════════════ PHONE CALL — REVEAL ══════════════════
+  auto_cafe: {
+    text: [
+      { type: 'narration', content: '說是咖啡廳，其實叫它咖啡廳都嫌勉強。你坐在角落的桌子前，點了一杯可可。' },
+      { type: 'narration', content: '桌上鋪的油布是白底藍格的粗格紋，角落已經磨出了底下的帆布。膠水味的可可。牆上貼著好幾張紙牌——「親子丼」「炸豬排」。' },
+      { type: 'narration', content: '還有一張：「地玉子、オムレツ」。' },
+    ],
+    choices: [
+      { text: '細看那些紙牌。', next: 'cafe_signs', flag: 'read_signs', writingGain: { amount: 1, reason: '田舍的氣息' } },
+      { text: '喝完可可，等列車。', next: 'auto_train_3rd', flag: 'skip_signs' },
+    ],
+  },
 
-async function renderPhoneCall() {
-  const c = $('#content');
+  cafe_signs: {
+    text: [
+      { type: 'narration', content: '「地玉子」——本地雞蛋。這三個字讓你感覺到了東海道沿線的鄉下。那是麥田和甘藍田之間通著電氣機關車的田舍。' },
+      { type: 'inner', content: '電氣機關車通過麥田的田舍——這幾個字在你腦裡留下了什麼。' },
+    ],
+    next: 'auto_train_3rd',
+  },
 
-  const sp = document.createElement('div'); sp.className = 'speaker'; sp.textContent = '── 姪女'; c.appendChild(sp);
-  const d1 = document.createElement('div'); d1.className = 'dialogue'; c.appendChild(d1);
-  await typeText(d1, '「あたしです。あたし……」\n「是我。是我……」', 20);
+  auto_train_3rd: {
+    fold: '── 停車場 · 雨衣與紙牌 ──',
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '等到搭上下一班上行列車時，天色已經接近黃昏。你平常坐二等車廂，但因為某種緣故，這次坐了三等。' },
+      { type: 'narration', content: '車廂裡相當擁擠。你的前後全是去大磯之類地方遠足歸來的小學女學生。她們個個活潑，幾乎沒停過嘴。' },
+      { type: 'dialogue', speaker: '女學生', jp: '「写真屋さん、ラヴ・シインって何？」', cn: '「照相館叔叔，Love scene 是什麼？」' },
+      { type: 'narration', content: '隨隊的「照相館叔叔」含混地搪塞過去了。但那個十四五歲的女學生還在追問。你注意到她鼻子有蓄膿症，忍不住微笑了一下。' },
+      { type: 'narration', content: '你旁邊坐著的十二三歲女學生則坐在年輕女老師的膝上，一手摟著她的脖子，一手撫著她的臉頰。' },
+      { type: 'dialogue', speaker: '女學生', jp: '「可愛いわね、先生は。可愛い目をしていらっしゃるわね。」', cn: '「好可愛呢，老師。老師的眼睛真可愛。」' },
+    ],
+    choices: [
+      { text: '觀察那個年紀稍長、踩了別人腳道歉的女學生。', next: 'train_mature_girl', flag: 'observed_mature_girl', insightGain: { amount: 1, reason: '矛盾的早熟' } },
+      { text: '抽著卷菸，不太在意她們。', next: 'auto_train_to_t', flag: 'ignored_girls' },
+    ],
+  },
 
-  const d2 = document.createElement('div'); d2.className = 'dialogue'; c.appendChild(d2);
-  await typeText(d2, '「ええ、あの大へんなことが起ったんです。」\n「是的，出大事了。」', 20);
+  train_mature_girl: {
+    text: [
+      { type: 'narration', content: '年紀較大的那個女學生路過你身邊時似乎踩了誰的腳——' },
+      { type: 'dialogue', speaker: '年長的女學生', jp: '「御免なさいまし」', cn: '「非常抱歉」' },
+      { type: 'inner', content: '她比其他人更早熟——但正因如此，反而是她最像「女學生」。你嘴裡含著卷菸，對自己感受到的這個矛盾冷笑了一聲。' },
+    ],
+    next: 'auto_train_to_t',
+  },
 
-  await sleep(800);
+  auto_train_to_t: {
+    fold: '── 三等車廂 · 女學生 ──',
+    visit: 't_san',
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '不知何時車廂亮了燈。列車終於停靠在某個郊外的停車場。你在寒風凜冽的月台上下車，越過天橋，等候省線電車。' },
+      { type: 'narration', content: '在那裡，你偶然遇到了在某公司任職的 T 君。' },
+      { type: 'narration', content: '你們在等電車的間隙聊了些不景氣之類的話題。T 君的粗壯手指上嵌著一枚與不景氣毫無關係的土耳其石戒指。' },
+      { type: 'dialogue', speaker: 'T 君', jp: '「これか？ これはハルピンへ商売に行っていた友だちの指環を買わされたんだよ。」', cn: '「這個？這是被一個去哈爾濱做生意的朋友硬塞的。那傢伙現在也走投無路了。」' },
+      { type: 'narration', content: '省線電車幸好不像火車那麼擠。你們並肩坐下，聊起了巴黎的事。T 君今年春天才從巴黎的分公司回到東京。卡約夫人的事、螃蟹料理的事、某位殿下出訪的事。' },
+    ],
+    next: 'auto_train_t_raincoat',
+  },
 
-  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
-  await typeText(p, corrupt('電話就此斷了。'), 30);
+  auto_train_t_raincoat: {
+    text: [
+      { type: 'narration', content: '這時——一個穿雨衣的男人走過來，在你們對面坐下了。' },
+      { type: 'inner', content: '你感到一瞬間的不安。想把之前聽到的幽靈故事告訴 T 君。' },
+      { type: 'narration', content: '但 T 君搶先把手杖的握柄朝左轉了一下，臉仍朝前，壓低聲音跟你說——' },
+      { type: 'dialogue', speaker: 'T 君', jp: '「あすこに女が一人いるだろう？ 鼠色の毛糸のショールをした、……」', cn: '「那邊有個女人看到了嗎？灰色毛線披肩的……」' },
+      { type: 'dialogue', speaker: 'T 君', jp: '「あいつはこの夏は軽井沢にいたよ。ちょっと洒落た洋装などをしてね。」', cn: '「她這個夏天在輕井澤。穿得挺時髦的。」' },
+      { type: 'narration', content: '但眼前的她明顯衣著寒酸。你一邊跟 T 君說話，一邊偷偷打量她。她的眉間帶著某種瘋狂的氣息。包袱裡還露出了一塊像豹紋的海綿。' },
+    ],
+    choices: [
+      {
+        text: '注意那個穿雨衣的男人——他還在嗎？',
+        next: 'raincoat_gone',
+        flag: 'checked_raincoat_2',
+        notebook: { key: 'raincoat_train', symbol: 'raincoat', desc: '省線電車——穿雨衣的男人坐在對面，後來不知何時消失了' },
+        unlock: 'raincoat_train',
+      },
+      { text: '繼續跟 T 君聊那個女人。', next: 'raincoat_gone_passive', flag: 'ignored_raincoat_2' },
+    ],
+  },
 
-  await sleep(1000);
+  raincoat_gone: {
+    text: [
+      { type: 'narration', content: '你與 T 君告別時回頭望——穿雨衣的男人不知何時已經不在了。' },
+    ],
+    next: 'auto_walk_gears',
+  },
 
-  const inner = document.createElement('div'); inner.className = 'inner'; c.appendChild(inner);
-  await typeText(inner, corrupt('你姊姊的丈夫在當天下午，在離東京不遠的某個鄉下被火車輾死了。'), 28);
+  raincoat_gone_passive: {
+    text: [
+      { type: 'narration', content: 'T 君還在說那女人的事——「跟年輕的美國人跳舞什麼的，Modern……叫什麼來著。」——等你與 T 君告別時，穿雨衣的男人不知何時已經不在了。' },
+    ],
+    next: 'auto_walk_gears',
+  },
 
-  await sleep(600);
+  auto_walk_gears: {
+    fold: '── 省線電車 · T 君 ──',
+    visit: 'street',
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '你提著皮箱，從省線電車的某個停車場步行前往旅館。道路兩側大多是高大的大樓。' },
+      { type: 'narration', content: '走著走著，你忽然想起了松林。' },
+      { type: 'narration', content: '然後——你的視野中出現了奇怪的東西。' },
+      { type: 'pause', duration: 1500 },
+      { type: 'narration', content: '半透明的齒輪。不停旋轉的齒輪。' },
+      { type: 'inner', content: '你以前也有過幾次這樣的經驗。齒輪會逐漸增多，遮住你半邊視野，但不會持續太久——消失之後，隨之而來的是頭痛。每次都是如此。' },
+    ],
+    choices: [
+      {
+        text: '用手遮住右眼，測試左眼的視力。',
+        next: 'gears_test',
+        flag: 'tested_eyes',
+        notebook: { key: 'gear_first', symbol: 'gear', desc: '往旅館途中——半透明的齒輪初次出現在右眼瞼內側' },
+        unlock: 'gear_first',
+        nerveLoss: { amount: 1, reason: '齒輪出現' },
+        insightGain: { amount: 1, reason: '確認了異象的位置' },
+      },
+      {
+        text: '又來了。低頭繼續走。',
+        next: 'gears_endure',
+        flag: 'endured_gears',
+        notebook: { key: 'gear_first', symbol: 'gear', desc: '往旅館途中——半透明的齒輪初次出現' },
+        unlock: 'gear_first',
+        nerveLoss: { amount: 1, reason: '齒輪出現' },
+      },
+    ],
+  },
 
-  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
-  await typeText(p2, corrupt('而且穿著一件與季節毫不相稱的雨衣。'), 30);
+  gears_test: {
+    text: [
+      { type: 'narration', content: '左眼沒事。' },
+      { type: 'narration', content: '但右眼瞼的內側——齒輪仍在旋轉。不止一個。它們的數量正在增加。' },
+      { type: 'narration', content: '你看著右邊的大樓一棟棟消失在齒輪後面，加快腳步朝旅館走去。' },
+    ],
+    next: 'auto_hotel_arrive',
+  },
 
-  addNotebook('raincoat_death', 'raincoat', '姊夫轢死——穿著與季節不符的雨衣');
-  showImpact('🧥 手帖新增：姊夫的雨衣——季節外れのレエン・コオト', 'gain');
-  updateStatus();
+  gears_endure: {
+    text: [
+      { type: 'narration', content: '你低著頭快步走著。視野右側的大樓逐漸被吞沒。你知道這會過去的。齒輪總是會消失。代價是頭痛。' },
+    ],
+    next: 'auto_hotel_arrive',
+  },
 
-  await sleep(1500);
+  auto_hotel_arrive: {
+    fold: '── 步行 · 齒輪 ──',
+    visit: 'hotel',
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '走進旅館玄關時，齒輪已經消失了。但頭痛還在。你寄存了外套和帽子，順便要了一間房。又打電話給某雜誌社商量了錢的事。' },
+      { type: 'narration', content: '結婚披露宴的晚餐早就開始了。' },
+    ],
+    next: 'auto_banquet',
+  },
 
-  await loseNerve(2, '死亡與雨衣的連結');
+  auto_banquet: {
+    text: [
+      { type: 'narration', content: '你坐在長桌的角落，開始動起刀叉。正面的新郎新婦，白色凹字形桌邊入座的五十餘人——所有人都很快活。' },
+      { type: 'inner', content: '但你的心情在明亮的電燈光下越來越陰鬱。' },
+      { type: 'narration', content: '為了逃避這種感覺，你跟隔壁的客人搭了話。他是個獅子般白色頰髯的老人——某位著名的漢學家，你也知道他的名字。話題自然地轉到了古典。' },
+      { type: 'dialogue', speaker: '你', jp: '「麒麟はつまり一角獣ですね。それから鳳凰もフェニックスと云う鳥の、……」', cn: '「麒麟其實就是一角獸。然後鳳凰也是 Phoenix 這種鳥的——」' },
+      { type: 'narration', content: '漢學家似乎對你的話很有興趣。' },
+      { type: 'inner', content: '你在機械性地說話的同時，漸漸感到了一種病態的破壞慾。' },
+    ],
+    choices: [
+      {
+        text: '順從破壞慾——主張堯舜是架空人物，《春秋》的作者其實是漢代的人。',
+        next: 'banquet_destroy',
+        flag: 'destroyed_classics',
+        nerveLoss: { amount: 1, reason: '破壞慾' },
+        insightGain: { amount: 1, reason: '感受到內在的瓦解' },
+      },
+      { text: '壓下衝動，繼續平穩地聊下去。', next: 'banquet_calm', flag: 'stayed_calm' },
+    ],
+  },
 
-  await sleep(800);
+  banquet_destroy: {
+    text: [
+      { type: 'narration', content: '漢學家露骨地露出了不快的表情。他不再看你的臉，像老虎低吼般截斷了你的話——' },
+      { type: 'dialogue', speaker: '漢學家', jp: '「もし堯舜もいなかったとすれば、孔子は嘘をつかれたことになる。聖人の嘘をつかれる筈はない。」', cn: '「如果連堯舜都不存在，那孔子豈不是說了謊。聖人不可能說謊。」' },
+      { type: 'narration', content: '你當然沉默了。' },
+    ],
+    next: 'auto_banquet_worm',
+  },
 
-  // Ending
-  const br = document.createElement('div'); br.style.height = '20px'; c.appendChild(br);
-  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
-  await typeText(p3, corrupt('深夜的走廊沒有人經過。'), 22);
-  const p4 = document.createElement('div'); p4.className = 'narration'; c.appendChild(p4);
-  await typeText(p4, corrupt('但偶爾——門外會傳來翅膀的聲音。'), 28);
+  banquet_calm: {
+    text: [
+      { type: 'narration', content: '你壓下了那股衝動。對話平穩地結束了。漢學家似乎對你的博學留有好印象。' },
+      { type: 'inner', content: '但你感覺到那股衝動並沒有消失。' },
+    ],
+    next: 'auto_banquet_worm',
+  },
 
-  addNotebook('wing_corridor', 'wing', '旅館深夜——門外傳來翅膀的聲音');
-  showImpact('🪽 手帖新增：翼聲', 'gain');
-  updateStatus();
+  auto_banquet_worm: {
+    text: [
+      { type: 'narration', content: '你重新拿起刀叉，準備切盤中的肉。這時——' },
+      { type: 'narration', content: '一隻小蛆蟲在肉的邊緣靜靜地蠕動著。' },
+      { type: 'inner', content: '蛆——Worm。這個英語單字突然冒了出來。Worm 同時也是某種傳說動物的意思，就像麒麟和鳳凰一樣。' },
+      { type: 'narration', content: '你放下了刀叉。看著有人往你的酒杯裡倒入香檳。' },
+    ],
+    choices: [
+      {
+        text: '在腦中追蹤 Worm 這個詞的意義。',
+        next: 'worm_trace',
+        flag: 'traced_worm',
+        notebook: { key: 'book_worm', symbol: 'book', desc: '蛆→Worm→傳說動物——語言在你腦中自行滑移' },
+        unlock: 'book_worm',
+        insightGain: { amount: 1, reason: '語言的滑移' },
+      },
+      { text: '不去想它。喝掉香檳。', next: 'auto_hotel_night', flag: 'drank_champagne' },
+    ],
+  },
 
-  await sleep(1200);
+  worm_trace: {
+    text: [
+      { type: 'inner', content: '蛆蟲、Worm、龍——worm 的古義。麒麟是一角獸，鳳凰是 Phoenix，那麼蛆蟲是……它也活在某個傳說裡嗎？' },
+    ],
+    next: 'auto_hotel_night',
+  },
 
-  const end = document.createElement('div');
-  end.className = 'system-msg';
-  end.style.marginTop = '24px';
-  end.textContent = '第一章「レエン・コオト」 終';
-  c.appendChild(end);
+  auto_hotel_night: {
+    fold: '── 婚宴 · 蛆蟲與 Worm ──',
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '晚餐終於結束。你沿著無人的走廊，走向之前訂好的房間。走廊給你的感覺與其說是旅館，不如說更像監獄。不過頭痛倒是不知不覺減輕了。' },
+      { type: 'narration', content: '房間裡，皮箱、帽子和外套都已經送來了。' },
+      { type: 'narration', content: '——掛在牆上的外套讓你感覺到了你自己站立的身影。' },
+    ],
+    choices: [
+      { text: '急忙把外套塞進房間角落的衣櫃裡。', next: 'auto_hotel_mirror', flag: 'hid_coat' },
+      { text: '盯著那件外套看了一會兒。', next: 'hotel_coat_stare', flag: 'stared_coat', nerveLoss: { amount: 1, reason: '無頭的你' } },
+    ],
+  },
 
-  await sleep(1000);
+  hotel_coat_stare: {
+    text: [
+      { type: 'narration', content: '它就掛在那裡。袖子微微垂著。像一個沒有頭的你。' },
+      { type: 'narration', content: '……你終於走上前去，把它塞進了衣櫃。' },
+    ],
+    next: 'auto_hotel_mirror',
+  },
 
-  const endDiv = document.createElement('div');
-  endDiv.innerHTML = `
-    <div class="end-screen">
-      <div class="end-label">第一章 終</div>
-      <div class="end-stats">
-        手帖：${state.notebook.length} 筆<br>
-        神經：${state.nerve}/10　洞察：${state.insight}　執筆：${state.writing}
-      </div>
-      <button class="action-btn" onclick="openNotebook()">查看手帖</button>
-    </div>
-  `;
-  c.appendChild(endDiv);
-}
+  auto_hotel_mirror: {
+    text: [
+      { type: 'narration', content: '你走到梳妝台前，盯著鏡中的自己。' },
+      { type: 'narration', content: '鏡中映出的你的臉——皮膚底下的骨骼結構清晰可見。' },
+      { type: 'inner', content: '蛆蟲的記憶又鮮明地浮了上來。' },
+      { type: 'narration', content: '你打開門走進走廊，漫無目的地走著。然後在通向大廳的轉角，你看到了一盞綠色燈罩的落地燈，映在玻璃門上，鮮明而安靜。' },
+      { type: 'inner', content: '這盞燈讓你感到了某種平和。' },
+      { type: 'narration', content: '你在燈前的椅子上坐了下來。想著各種事情。但連五分鐘都坐不住——' },
+    ],
+    next: 'auto_raincoat_3',
+  },
+
+  auto_raincoat_3: {
+    text: [
+      { type: 'narration', content: '因為你身旁的長椅靠背上，一件雨衣正懶洋洋地搭著。' },
+      { type: 'inner', content: '而且現在是嚴冬。' },
+    ],
+    notebook: { key: 'raincoat_hotel', symbol: 'raincoat', desc: '旅館走廊——嚴冬中，一件雨衣搭在長椅靠背上' },
+    unlock: 'raincoat_hotel',
+    choices: [
+      { text: '嘗試連結：到目前為止你已經三次遇見雨衣了。這意味著什麼？', next: 'raincoat_link', flag: 'attempted_link' },
+      { text: '不去想它。回房間。', next: 'auto_allright_corridor', flag: 'ignored_link' },
+    ],
+  },
+
+  raincoat_link: {
+    text: (s) => {
+      const count = s.notebook.filter(n => n.symbol === 'raincoat').length;
+      if (count >= 2) {
+        return [
+          { type: 'inner', content: '停車場。省線電車。旅館走廊。三次——不，算上理髮店主人的故事，是四次。穿雨衣的幽靈。在冬天。在不該穿雨衣的季節。' },
+          { type: 'narration', content: '你的背脊一陣發涼。但你抓不住這個念頭要指向哪裡。' },
+        ];
+      }
+      return [
+        { type: 'inner', content: '雨衣。你想到了理髮店主人的故事。但具體的記憶太少，連結還建立不起來。' },
+        { type: 'narration', content: '你站起身，朝走廊深處走去。' },
+      ];
+    },
+    effectFn: (s) => {
+      const count = s.notebook.filter(n => n.symbol === 'raincoat').length;
+      return count >= 2 ? { insightGain: { amount: 1, reason: '迴路已形成，方向未明' } } : null;
+    },
+    next: 'auto_allright_corridor',
+  },
+
+  auto_allright_corridor: {
+    text: [
+      { type: 'narration', content: '你沿著走廊往回走。走廊盡頭的服務生休息處一個人影也沒有。但他們的說話聲掠過你的耳邊。' },
+      { type: 'narration', content: '那是在回應什麼人的話——一句英語。' },
+      { type: 'pause', duration: 1500 },
+      { type: 'dialogue', speaker: '???', jp: '', cn: '"All right."' },
+      { type: 'pause', duration: 1000 },
+      { type: 'inner', content: '「All right」？你不知不覺地開始追問這句對話的準確含義。「All right」？「All right」？到底什麼是「All right」？' },
+    ],
+    choices: [
+      { text: '嘗試解讀 All right 的意義——「一切都對了」？「一切就緒了」？', next: 'allright_puzzle', flag: 'pondered_allright' },
+      { text: '只是普通的應答吧。回房間寫稿。', next: 'auto_room_writing', flag: 'dismissed_allright' },
+    ],
+  },
+
+  allright_puzzle: {
+    text: [
+      { type: 'inner', content: 'All right——一切都到位了。一切都被安排好了。但被安排好的是什麼？被誰安排的？' },
+      { type: 'narration', content: '這個念頭像齒輪一樣開始空轉。你回到房間。' },
+    ],
+    next: 'auto_room_writing',
+  },
+
+  auto_room_writing: {
+    fold: '── 走廊 · All right ──',
+    text: [
+      { type: 'narration', content: '房間很安靜。但打開門走進去的這個動作，莫名地讓你覺得不安。你猶豫了一下，還是走進去了。避開鏡子，坐進書桌前的椅子。蜥蜴皮般的青色摩洛哥皮安樂椅。' },
+      { type: 'narration', content: '你打開皮箱，取出原稿用紙，想要繼續那篇短篇小說。但蘸了墨水的筆怎麼也動不了。' },
+      { type: 'narration', content: '好不容易動了——卻只是反覆寫著同一組字。' },
+      { type: 'pause', duration: 1500 },
+      { type: 'inner', content: 'All right…… All right…… All right, sir…… All right……' },
+    ],
+    next: 'auto_phone',
+  },
+
+  auto_phone: {
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '——突然，床邊的電話響了。' },
+      { type: 'narration', content: '你驚得站起來，把聽筒貼到耳邊。' },
+      { type: 'dialogue', speaker: '你', jp: '「どなた？」', cn: '「哪位？」' },
+      { type: 'dialogue', speaker: '姪女', jp: '「あたしです。あたし……」', cn: '「是我。是我……」' },
+      { type: 'narration', content: '是你姊姊的女兒。' },
+      { type: 'dialogue', speaker: '姪女', jp: '「ええ、あの大へんなことが起ったんです。ですから、……大へんなことが起ったもんですから、今叔母さんにも電話をかけたんです。」', cn: '「是的，出大事了。所以……因為出了大事，我剛剛也打了電話給阿姨。」' },
+      { type: 'dialogue', speaker: '你', jp: '「大へんなこと？」', cn: '「大事？」' },
+      { type: 'dialogue', speaker: '姪女', jp: '「ええ、ですからすぐに来て下さい。すぐにですよ。」', cn: '「是的，所以請馬上過來。馬上。」' },
+      { type: 'narration', content: '電話就此斷了。' },
+      { type: 'narration', content: '你掛上聽筒，反射性地按下了門鈴的按鈕。但你清楚地意識到自己的手在發抖。服務生遲遲不來。你感到的不是焦躁，而是痛苦。你反覆按著門鈴——' },
+    ],
+    next: 'auto_allright_resolve',
+  },
+
+  auto_allright_resolve: {
+    text: (s) => {
+      const base = [];
+      if (s.choicesMade.pondered_allright) {
+        base.push({ type: 'inner', content: '——你終於理解了命運教給你的那句「All right」的含義。' });
+      } else {
+        base.push({ type: 'inner', content: '你現在明白了。All right——命運說的，是一切都到位了。' });
+      }
+      base.push({ type: 'break' });
+      base.push({ type: 'narration', content: '你姊姊的丈夫在當天下午，在離東京不遠的某個鄉下被火車輾死了。' });
+      base.push({ type: 'narration', content: '而且穿著一件與季節毫不相稱的雨衣。' });
+      return base;
+    },
+    notebook: { key: 'raincoat_death', symbol: 'raincoat', desc: '姊夫轢死——穿著與季節不符的雨衣' },
+    unlock: 'raincoat_death',
+    nerveLoss: { amount: 2, reason: '死亡與雨衣的連結' },
+    next: 'auto_ending',
+  },
+
+  auto_ending: {
+    text: [
+      { type: 'break' },
+      { type: 'narration', content: '你仍然在這間旅館的房間裡，繼續寫著之前那篇短篇。深夜的走廊沒有人經過。' },
+      { type: 'narration', content: '但偶爾——門外會傳來翅膀的聲音。也許什麼地方養了鳥。' },
+      { type: 'break' },
+      { type: 'system', content: '第一章「レエン・コオト」 終' },
+    ],
+    notebook: { key: 'wing_corridor', symbol: 'wing', desc: '旅館深夜——門外傳來翅膀的聲音' },
+    unlock: 'wing_corridor',
+    insightGain: { amount: 1, reason: '夜半之聲' },
+    showEnd: true,
+  },
+};
 
 // ══════════════════ INIT ══════════════════
 renderTitle();
