@@ -442,6 +442,91 @@ expandAction("回到房間", state.nerve, {
 
 按下去之後——結局。
 
+### 齒輪侵蝕效果（forced 按鈕專用）
+
+強制動作按鈕會隨神經值下降，逐步被齒輪意象「侵蝕」。三層效果疊加：
+
+**Layer 1 — 齒痕邊框（nerve ≤ 4）**
+
+正常按鈕是直線邊框。nerve 下降後，邊框用 SVG `clip-path` 替換為鋸齒狀，模擬齒輪咬過的痕跡：
+
+```css
+/* nerve ≤ 4：細微鋸齒，玩家可能還沒注意到 */
+.forced-btn--eroded {
+  clip-path: url(#gear-teeth-subtle);
+  border: none;
+}
+
+/* nerve ≤ 2：鋸齒加深，邊緣明顯不規則 */
+.forced-btn--eroded-deep {
+  clip-path: url(#gear-teeth-heavy);
+}
+```
+
+**Layer 2 — 齒輪紋背景（nerve ≤ 3）**
+
+按鈕背景浮現極淡的齒輪 SVG pattern。opacity 隨 nerve 遞增：
+
+```jsx
+const gearOpacity = nerve <= 2 ? 0.15 : nerve <= 3 ? 0.06 : 0;
+
+<button style={{
+  backgroundImage: gearOpacity > 0 ? GEAR_PATTERN_SVG : 'none',
+  backgroundSize: '40px 40px',
+  backgroundRepeat: 'repeat',
+  backgroundPosition: 'center',
+  opacity: gearOpacity,  // 背景層 opacity，不影響文字
+}}>
+```
+
+玩家第一次發現按鈕裡有紋路時，應該感到不安——「這是一直都有的嗎？」
+
+**Layer 3 — 旋轉齒輪（nerve ≤ 2）**
+
+按鈕後方出現 SVG 齒輪，緩慢旋轉。按鈕本身半透明，齒輪從背後透出來：
+
+| nerve | 齒輪大小 | 轉速 | opacity | 數量 |
+|-------|---------|------|---------|------|
+| 4 | — | — | 0 | 0 |
+| 3 | 按鈕高度 ×0.8 | 60s/圈 | 0.04 | 1 |
+| 2 | 按鈕高度 ×1.5 | 20s/圈 | 0.10 | 2（互相咬合） |
+| 1 | 按鈕高度 ×2.0，溢出邊界 | 8s/圈 | 0.18 | 3+（佈滿，文字被半遮擋） |
+
+```jsx
+function ForcedButton({ text, nerve, onClick }) {
+  return (
+    <div className="forced-btn-wrapper">
+      {nerve <= 3 && (
+        <GearOverlay
+          count={nerve <= 1 ? 3 : nerve <= 2 ? 2 : 1}
+          speed={nerve <= 1 ? 8 : nerve <= 2 ? 20 : 60}
+          opacity={nerve <= 1 ? 0.18 : nerve <= 2 ? 0.10 : 0.04}
+          scale={nerve <= 1 ? 2.0 : nerve <= 2 ? 1.5 : 0.8}
+          overflow={nerve <= 1}   // 溢出按鈕邊界
+        />
+      )}
+      <button
+        className={`forced-btn ${nerve <= 2 ? 'forced-btn--eroded-deep' : nerve <= 4 ? 'forced-btn--eroded' : ''}`}
+        onClick={onClick}
+      >
+        {corrupt(text, nerve)}
+      </button>
+    </div>
+  );
+}
+```
+
+**三層效果的疊加時間線：**
+
+```
+nerve 10-8:  正常按鈕
+nerve  7-5:  正常按鈕（動作開始分解，但按鈕外觀不變）
+nerve    4:  邊框出現細微鋸齒 ← 玩家開始不安
+nerve    3:  鋸齒 + 背景浮現齒輪紋 + 背後有一個極淡齒輪在轉
+nerve    2:  深鋸齒 + 齒輪紋更清晰 + 兩個互咬齒輪 + 按鈕文字開始 corrupt
+nerve    1:  齒輪溢出按鈕、佈滿畫面、文字半被遮擋、最後那個空白冒號按鈕上只剩齒輪在轉
+```
+
 ---
 
 ## 五、視覺崩壞系統
