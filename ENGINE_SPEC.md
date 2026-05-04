@@ -1,7 +1,7 @@
 # 歯車引擎 — 技術架構規格書
 
 > 基於《歯車》第一章 React 原型 + 《最後一封信》CoC 引擎 v27 合併重構  
-> 架構：React 資料驅動  
+> 架構：React 資料驅動（vanilla HTML 原型已驗證）  
 > 維護者：月月　版本：v0.1　最後更新：2026-05-04
 
 ---
@@ -393,12 +393,13 @@ interface Item {
 }
 ```
 
-### 渲染行為
+### 渲染行為（prototype 已驗證）
 
-1. 每個 step 渲染為一個小型按鈕
-2. 按下後：按鈕變成已完成的灰色文字，下一個 step 按鈕出現
-3. 全部完成後繼續播放後續 TextBlock
-4. **不可跳過**——這是重點
+1. 每個 step 渲染為一個小型按鈕（`renderForcedBtn()`）
+2. 按下後：按鈕變成已完成的灰色斜體文字（`✓ {text}`），下一個 step 按鈕出現
+3. 使用 Promise 鏈確保嚴格順序：每個按鈕的 click 事件 resolve 對應的 Promise
+4. 全部完成後繼續播放後續 TextBlock
+5. **不可跳過**——這是重點
 
 ### 動態生成
 
@@ -547,10 +548,10 @@ nerve    1:  齒輪溢出按鈕、佈滿畫面、文字半被遮擋、最後那�
 
 ```jsx
 // 固定在畫面最上層的兩個效果層
-<div id="distortion" />   // radial-gradient 暗角
-<div id="noise" />         // feTurbulence 雜訊
+<div id="distortion" />   // radial-gradient 暗角，z-index: 100
+<div id="noise" />         // feTurbulence 雜訊，z-index: 99
 
-// 隨 nerve 值更新
+// 隨 nerve 值更新（prototype 已驗證）
 function updateDistortion(nerve) {
   const ratio = nerve / 10;
   distortion.style.opacity = ratio < 0.8 ? (0.8 - ratio) * 1.5 : 0;
@@ -558,11 +559,14 @@ function updateDistortion(nerve) {
 }
 ```
 
+雜訊層使用內聯 SVG data URI 生成 feTurbulence 紋理（`baseFrequency='0.9' numOctaves='3'`），不需要外部圖檔。
+
 ### 5.3 文字雜訊化
 
 ```javascript
-function corrupt(text, nerve) {
-  const ratio = nerve / 10;
+// prototype 實作：直接讀取全域 state.nerve，不需傳入參數
+function corrupt(text) {
+  const ratio = state.nerve / 10;
   if (ratio > 0.5) return text;
   const corruptChars = '̷̧̢̡̕͝͞҉̴̶̸͍̩̭̮̯̪̟̱̬̜̦̤̳';
   const intensity = (0.5 - ratio) * 2;
@@ -574,6 +578,8 @@ function corrupt(text, nerve) {
   }).join('');
 }
 ```
+
+React 版本改為接受 `nerve` 參數以便純函式化。Prototype 版直接讀 `state.nerve`。
 
 ### 5.4 神經損失動畫
 
@@ -609,6 +615,35 @@ function ImpactBox({ type, label, before, after, amount, reason }) {
   );
 }
 ```
+
+---
+
+## 五B、章節結算畫面
+
+每章結束後顯示全螢幕結算畫面。
+
+### 設計規格（prototype 已驗證）
+
+```css
+.end-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #0a0a0c; z-index: 50;
+  animation: fadeIn 2s;
+}
+```
+
+### 顯示內容
+
+1. 章節標題（`第X章 終`）— 主文字色 `#c8c4b8`，字距 0.3em
+2. 遊戲統計（手帖筆數、三軸數值）— 弱化色 `#6b6860`
+3. 「查看手帖」按鈕 — 可從結算畫面開啟手帖 overlay
+
+### 觸發時機
+
+- 章節最後一段文字播完 → 1s 延遲 → 結算畫面 fadeIn
+- 結算畫面覆蓋在遊戲內容之上（`position: fixed`），玩家可回顧手帖
 
 ---
 
@@ -753,6 +788,25 @@ loadScene(sceneKey)
 
 ## 九、視覺設計
 
+### 9.0 狀態列（prototype 已驗證）
+
+固定在畫面頂部的細長狀態列，顯示三軸數值和手帖按鈕。
+
+```css
+#status {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(10,10,12,0.95);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid #1e1e24;
+  font-size: 11px; color: #6b6860; letter-spacing: 0.08em;
+}
+```
+
+- 左側：`神經 X/10　洞察 X　執筆 X`
+- 右側：`手帖 (N)` 按鈕，點擊開啟 notebook overlay
+- 神經值 ≤ 4 時數字變色為 `#8b4040`（danger 紅）
+- 背景半透明 + 毛玻璃效果，不遮擋沉浸感
+
 ### 9.1 色彩系統
 
 歯車原型的色盤（保留），不用最後一封信的煤油燈色調：
@@ -794,7 +848,8 @@ font-family: 'Noto Serif TC', 'Noto Serif JP', 'Georgia', serif;
 
 - Noto Serif TC：中文主體
 - Noto Serif JP：日文原文
-- 日中雙語對話中，日文原文在上、中文在下
+- 日中雙語對話中，日文原文在上、中文在下（prototype 用 `\n` 換行連接）
+- 對話前有 speaker 標籤：`── {角色名}`，使用 `#6b6860` 弱化色
 
 ### 9.3 打字速度
 
@@ -867,6 +922,7 @@ haguruma-engine/
 ├── ENGINE_SPEC.md          ← 本文件
 ├── SCENES_FORMAT.md        ← 場景資料寫作指南
 ├── CHAPTER_GUIDE.md        ← 各章劇本設計筆記
+├── prototype.html          ← 單檔可玩原型（第一章核心機制驗證）
 │
 ├── src/
 │   ├── engine/
@@ -969,14 +1025,14 @@ ch1_s04_auto_barber_2: {
 
 ### 引擎
 
-- [ ] 所有神經扣減都用 `loseNerveAnimated()`
+- [x] 所有神經扣減都用 `loseNerve()` / `loseNerveAnimated()`（prototype 驗證）
 - [ ] 每個場景末尾檢查 `nerve <= 0`（有 choices 的場景在 effect 執行後檢查）
 - [ ] 存檔系統不依賴 `localStorage`
-- [ ] `corrupt()` 只在 `nerve <= 5` 時啟動
-- [ ] 視覺崩壞層 z-index 正確（distortion > noise > game）
-- [ ] 打字速度在 18-40ms 範圍內
+- [x] `corrupt()` 只在 `nerve <= 5` 時啟動（`ratio > 0.5` 直接 return，已驗證）
+- [x] 視覺崩壞層 z-index 正確（distortion:100 > noise:99 > game，已驗證）
+- [x] 打字速度在 18-40ms 範圍內（prototype 使用 18-30ms，已驗證）
 - [ ] 所有場景 ID 在 SCENES 物件中有定義（無死路）
-- [ ] 歷史文字正確淡化顯示
+- [x] 歷史文字正確淡化顯示（`opacity: 0.5`，已驗證）
 
 ### 場景資料
 
@@ -988,20 +1044,33 @@ ch1_s04_auto_barber_2: {
 
 ### 部署
 
-- [ ] `@import` Google Fonts 在所有 CSS 規則之前
-- [ ] 移動端 viewport meta 標籤存在
-- [ ] 單檔打包版本可獨立運行
+- [x] `@import` Google Fonts 在所有 CSS 規則之前（prototype 驗證）
+- [x] 移動端 viewport meta 標籤存在（prototype 驗證）
+- [x] 單檔打包版本可獨立運行（`prototype.html` 零依賴，驗證通過）
+- [ ] GitHub Pages / Vercel 部署
 
 ---
 
 ## 十四、開發路線
 
-### v0.1 — 引擎核心 + 第一章（當前目標）
+### v0.0 — 原型驗證 ✅
 
-- [ ] 引擎核心元件
-- [ ] 視覺崩壞系統
-- [ ] 存檔系統
-- [ ] 第一章全部場景遷移
+- [x] 單檔 HTML 原型（`prototype.html`）
+- [x] 打字機效果 + 三軸數值系統
+- [x] 選擇分歧（3 個選擇點驗證）
+- [x] 微互動行為（micro-action）
+- [x] 動作粒度遞增系統（4 級 forced steps）
+- [x] 手帖系統（符號收集 + overlay 查看）
+- [x] 視覺崩壞（distortion + noise + corrupt()）
+- [x] 齒輪侵蝕效果 CSS（clip-path + SVG pattern + rotating gears）
+- [x] 章節結算畫面
+
+### v0.1 — React 引擎核心 + 第一章（當前目標）
+
+- [ ] 將 prototype 重構為 React 元件架構
+- [ ] 資料驅動場景系統（JSON scenes）
+- [ ] 存檔系統（三層備援）
+- [ ] 第一章全部 30 場景遷移
 - [ ] 部署到 GitHub Pages 或 Vercel
 
 ### v0.2 — 第二至三章
@@ -1020,6 +1089,52 @@ ch1_s04_auto_barber_2: {
 - [ ] 全 11 章完成
 - [ ] 結局分歧系統
 - [ ] 跨遊戲存檔（預留 CoC 宇宙串接口）
+
+---
+
+## 十五、原型實作筆記
+
+### 15.1 prototype.html 架構
+
+單檔 ~790 行 vanilla HTML/CSS/JS，驗證所有核心機制。不使用 React/框架。
+
+**結構：**
+- CSS 全域樣式（含 distortion/noise 層、所有文字類型、forced button 齒輪效果）
+- SVG gear icon 定義（`<symbol id="gear-icon">`），供旋轉齒輪 overlay 使用
+- JS：state 物件 → 工具函式 → 場景渲染函式（imperative DOM 操作）
+
+**與 React 版的對應關係：**
+
+| prototype | React 版 |
+|-----------|---------|
+| `state` 全域物件 | `useState` / `useReducer` |
+| `renderPrologue()` 等命令式函式 | `Scene` 元件 + JSON data |
+| `typeText(el, text, speed)` | `<TextBlock>` 元件 |
+| `renderForcedBtn()` 返回 HTML string | `<ForcedButton>` 元件 |
+| `showImpact(html, type)` 直接 DOM | `<ImpactBox>` 元件 |
+| `updateDistortion()` 操作 style | `<DistortionLayer nerve={n}>` |
+| `$('#status').innerHTML = ...` | `<StatusBar>` 元件 |
+
+### 15.2 測試驗證的場景流
+
+```
+title → prologue → barber choice (joke/silent)
+  → station raincoat choice (observe/skip)
+  → gears scene → eye test choice (test/endure)
+  → hotel coat micro-action (hide coat)
+  → nerve drop (-3) → forced phone sequence
+  → phone call reveal → chapter end screen
+```
+
+11 個交互點（3 choices + 1 micro-action + 3-7 forced steps + notebook + end）。
+nerve 從 10 降至 4（-1 齒輪 -3 頭痛 -2 死亡連結）。
+
+### 15.3 已知限制（prototype 範圍內可接受）
+
+- 微互動按鈕完成後僅 disabled + 半透明，未從 DOM 移除
+- 齒輪侵蝕效果需 nerve ≤ 4 才觸發，prototype 流程中 nerve 最低為 4（剛好觸發邊界）
+- 無存檔功能（prototype 目的是機制驗證，不需持久化）
+- 對話格式用 `\n` 換行而非結構化 jp/cn 欄位（React 版會改用結構化格式）
 
 ---
 
