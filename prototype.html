@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歯車 — 原型</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Serif TC', 'Noto Serif JP', Georgia, serif;
+    background: #0a0a0c;
+    color: #c8c4b8;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #distortion {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 100;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(20,5,5,0.5) 100%);
+    opacity: 0; transition: opacity 1.5s;
+  }
+
+  #noise {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 99; opacity: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='3'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.4'/></svg>");
+    transition: opacity 1s;
+  }
+
+  #game {
+    max-width: 640px; margin: 0 auto; padding: 20px;
+    min-height: 100vh; position: relative;
+  }
+
+  /* ── Status bar ── */
+  #status {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,10,12,0.95); backdrop-filter: blur(4px);
+    border-bottom: 1px solid #1e1e24;
+    padding: 10px 0; margin-bottom: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: #6b6860; letter-spacing: 0.08em;
+  }
+  .stat-group { display: flex; gap: 16px; }
+  .stat-val { color: #c8c4b8; }
+  .stat-val.danger { color: #8b4040; }
+  #notebook-btn {
+    background: none; border: 1px solid #1e1e24; color: #6b6860;
+    padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
+    letter-spacing: 0.08em;
+  }
+  #notebook-btn:hover { border-color: #8b7355; }
+
+  /* ── Text ── */
+  .narration { color: #c8c4b8; line-height: 1.9; font-size: 15px; margin-bottom: 12px; letter-spacing: 0.03em; }
+  .inner { color: #7070a0; line-height: 1.9; font-size: 15px; font-style: italic; margin-bottom: 12px; }
+  .dialogue { color: #a08060; line-height: 1.9; font-size: 15px; margin-bottom: 12px; white-space: pre-wrap; }
+  .speaker { color: #6b6860; font-size: 12px; display: block; margin-bottom: 2px; letter-spacing: 0.08em; }
+  .system-msg { color: #7aaa8a; font-size: 13px; padding: 6px 12px; border-left: 2px solid #4a6858; margin: 8px 0; }
+  .history-text { opacity: 0.4; }
+  .history-text.system-msg { opacity: 0.7; }
+  .choice-made { color: #5a4a38; font-size: 13px; font-style: italic; margin-bottom: 10px; }
+
+  .typing-cursor::after {
+    content: '▍'; opacity: 0.5; animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,50%{opacity:0.5} 51%,100%{opacity:0} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Choices ── */
+  .choices { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; animation: fadeIn 0.5s; }
+  .choices-label { color: #6b6860; font-size: 11px; letter-spacing: 0.15em; margin-bottom: 4px; }
+  .choice-btn {
+    background: #1a1a20; border: 1px solid #2a2a35; color: #e8e4d8;
+    padding: 12px 16px; font-size: 14px; line-height: 1.6; text-align: left;
+    cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 0.02em;
+  }
+  .choice-btn:hover { background: #222230; border-color: #8b7355; }
+
+  /* ── Action (micro-interaction) ── */
+  .action-btn {
+    display: inline-block; background: none; border: 1px solid #4a6858;
+    color: #7aaa8a; padding: 6px 16px; font-size: 13px; cursor: pointer;
+    font-family: inherit; margin: 8px 0; transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .action-btn:hover { background: rgba(74,104,88,0.15); border-color: #7aaa8a; }
+
+  /* ── Forced steps ── */
+  .forced-wrapper { position: relative; display: inline-block; margin: 6px 0; }
+
+  .forced-btn {
+    background: #12121a; border: 1px solid #2a2a35; color: #c8c4b8;
+    padding: 10px 20px; font-size: 14px; cursor: pointer; font-family: inherit;
+    position: relative; z-index: 2; transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .forced-btn:hover { background: #1a1a24; border-color: #6b6860; }
+  .forced-btn.eroded { clip-path: polygon(0% 5%,2% 0%,5% 6%,8% 0%,11% 5%,14% 0%,17% 4%,20% 0%,23% 5%,26% 0%,29% 6%,32% 0%,35% 5%,38% 0%,41% 4%,44% 0%,47% 5%,50% 0%,53% 6%,56% 0%,59% 5%,62% 0%,65% 4%,68% 0%,71% 5%,74% 0%,77% 6%,80% 0%,83% 5%,86% 0%,89% 4%,92% 0%,95% 5%,98% 0%,100% 5%,100% 95%,98% 100%,95% 94%,92% 100%,89% 96%,86% 100%,83% 95%,80% 100%,77% 94%,74% 100%,71% 95%,68% 100%,65% 96%,62% 100%,59% 95%,56% 100%,53% 94%,50% 100%,47% 95%,44% 100%,41% 96%,38% 100%,35% 95%,32% 100%,29% 94%,26% 100%,23% 95%,20% 100%,17% 96%,14% 100%,11% 95%,8% 100%,5% 94%,2% 100%,0% 95%); }
+  .forced-btn.eroded-deep { clip-path: polygon(0% 8%,3% 0%,7% 10%,11% 0%,15% 8%,19% 0%,23% 10%,27% 0%,31% 8%,35% 0%,39% 10%,43% 0%,47% 8%,50% 0%,53% 8%,57% 0%,61% 10%,65% 0%,69% 8%,73% 0%,77% 10%,81% 0%,85% 8%,89% 0%,93% 10%,97% 0%,100% 8%,100% 92%,97% 100%,93% 90%,89% 100%,85% 92%,81% 100%,77% 90%,73% 100%,69% 92%,65% 100%,61% 90%,57% 100%,53% 92%,50% 100%,47% 92%,43% 100%,39% 90%,35% 100%,31% 92%,27% 100%,23% 90%,19% 100%,15% 92%,11% 100%,7% 90%,3% 100%,0% 92%); }
+
+  /* Gear pattern overlay */
+  .gear-pattern {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1; pointer-events: none; overflow: hidden; border-radius: 2px;
+  }
+  .gear-spin {
+    position: absolute; top: 50%; left: 50%; transform-origin: center;
+    opacity: 0; pointer-events: none;
+  }
+  @keyframes gearRotate { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
+
+  /* ── Impact ── */
+  .impact { padding: 10px 14px; margin: 10px 0; font-size: 13px; animation: fadeIn 0.4s; }
+  .impact.loss { background: rgba(40,10,10,0.4); border-left: 3px solid #8b4040; color: #d4a89a; }
+  .impact.gain { background: rgba(20,30,20,0.4); border-left: 3px solid #6b8a4a; color: #b8c89a; }
+  .impact-label { color: #6b6860; font-size: 12px; letter-spacing: 0.08em; }
+
+  /* ── Notebook overlay ── */
+  #notebook-overlay {
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(5,5,8,0.92); z-index: 200;
+    display: none; justify-content: center; align-items: center;
+    animation: fadeIn 0.3s;
+  }
+  #notebook-overlay.open { display: flex; }
+  #notebook-panel {
+    background: #111114; border: 1px solid #1e1e24; padding: 28px;
+    max-width: 460px; width: 90%; max-height: 70vh; overflow-y: auto;
+  }
+  .nb-title { color: #8b7355; font-size: 14px; letter-spacing: 0.2em; margin-bottom: 16px; border-bottom: 1px solid #1e1e24; padding-bottom: 10px; }
+  .nb-group-label { color: #6b6860; font-size: 12px; margin-bottom: 6px; letter-spacing: 0.1em; }
+  .nb-entry { color: #c8c4b8; font-size: 13px; line-height: 1.6; padding-left: 14px; border-left: 1px solid #5a4a38; margin-bottom: 4px; }
+  .nb-close { background: none; border: 1px solid #1e1e24; color: #6b6860; padding: 5px 14px; font-size: 12px; cursor: pointer; margin-top: 14px; font-family: inherit; }
+
+  /* ── Title ── */
+  .title-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90vh; cursor:pointer; }
+  .title-sub { color:#6b6860; font-size:12px; letter-spacing:0.3em; animation: fadeIn 1s; }
+  .title-main { color:#e8e4d8; font-size:44px; font-weight:300; letter-spacing:0.3em; font-family:'Noto Serif JP',serif; animation: fadeIn 1.5s; margin: 16px 0 6px; }
+  .title-cn { color:#6b6860; font-size:14px; letter-spacing:0.15em; animation: fadeIn 2s; margin-bottom: 50px; }
+  .title-start { color:#8b7355; font-size:12px; letter-spacing:0.2em; animation: pulse 3s ease infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+
+  /* ── End screen ── */
+  .end-screen {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #0a0a0c; z-index: 50; animation: fadeIn 2s;
+  }
+  .end-label { color: #c8c4b8; font-size: 18px; letter-spacing: 0.3em; margin-bottom: 24px; }
+  .end-stats { color: #6b6860; font-size: 13px; line-height: 2.2; margin-bottom: 32px; }
+</style>
+</head>
+<body>
+<div id="distortion"></div>
+<div id="noise"></div>
+<div id="game"></div>
+
+<div id="notebook-overlay" onclick="this.classList.remove('open')">
+  <div id="notebook-panel" onclick="event.stopPropagation()">
+    <div class="nb-title">手帖</div>
+    <div id="nb-content"></div>
+    <button class="nb-close" onclick="document.getElementById('notebook-overlay').classList.remove('open')">關閉</button>
+  </div>
+</div>
+
+<!-- Gear SVG definition -->
+<svg style="position:absolute;width:0;height:0">
+  <defs>
+    <g id="gear-icon">
+      <path d="M50 15 L53 28 L60 18 L58 32 L68 24 L62 36 L74 32 L64 42 L76 42 L64 48 L74 56 L62 52 L68 64 L58 56 L60 70 L53 60 L50 73 L47 60 L40 70 L42 56 L32 64 L38 52 L26 56 L36 48 L24 42 L36 42 L26 32 L38 36 L32 24 L42 32 L40 18 L47 28 Z" fill="currentColor"/>
+      <circle cx="50" cy="44" r="10" fill="#0a0a0c"/>
+    </g>
+  </defs>
+</svg>
+
+<script>
+// ═══��══════════════ STATE ══════════════════
+const state = {
+  scene: 'title',
+  nerve: 10,
+  insight: 0,
+  writing: 0,
+  notebook: [],
+  history: [],
+  choicesMade: {},
+};
+
+const SYMBOLS = {
+  raincoat: { icon: '🧥', system: 'レエン・コオト' },
+  gear:     { icon: '⚙️', system: '歯車' },
+  wing:     { icon: '🪽', system: '翼' },
+  book:     { icon: '📖', system: '本' },
+};
+
+// ══════════════════ UTILS ══════════════════
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function corrupt(text) {
+  const ratio = state.nerve / 10;
+  if (ratio > 0.5) return text;
+  const chars = '̷̧̢̡̕͝͞҉̴̶̸͍̩̭̮̯̪̟̱̬̜̦̤̳';
+  const intensity = (0.5 - ratio) * 2;
+  return text.split('').map(c => {
+    if (Math.random() < intensity * 0.15 && c.trim())
+      return c + chars[Math.floor(Math.random() * chars.length)];
+    return c;
+  }).join('');
+}
+
+function updateDistortion() {
+  const r = state.nerve / 10;
+  $('#distortion').style.opacity = r < 0.8 ? (0.8 - r) * 1.5 : 0;
+  $('#noise').style.opacity = r < 0.4 ? (0.4 - r) * 0.6 : 0;
+}
+
+async function typeText(el, text, speed = 18) {
+  el.textContent = '';
+  el.classList.add('typing-cursor');
+  for (let i = 0; i < text.length; i++) {
+    el.textContent += text[i];
+    await sleep(speed);
+  }
+  el.classList.remove('typing-cursor');
+}
+
+function updateStatus() {
+  const nerveClass = state.nerve <= 3 ? 'danger' : '';
+  $('#status').innerHTML = `
+    <div class="stat-group">
+      <span>神經 <span class="stat-val ${nerveClass}">${state.nerve}/10</span></span>
+      <span>洞察 <span class="stat-val">${state.insight}</span></span>
+      <span>執筆 <span class="stat-val">${state.writing}</span></span>
+    </div>
+    <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
+  `;
+}
+
+function addNotebook(key, symbol, desc) {
+  if (state.notebook.find(n => n.key === key)) return;
+  state.notebook.push({ key, symbol, desc });
+}
+
+function openNotebook() {
+  const grouped = {};
+  state.notebook.forEach(e => {
+    if (!grouped[e.symbol]) grouped[e.symbol] = [];
+    grouped[e.symbol].push(e);
+  });
+  let html = '';
+  for (const [sym, items] of Object.entries(grouped)) {
+    const s = SYMBOLS[sym];
+    html += `<div class="nb-group-label">${s?.icon || ''} ${s?.system || sym}</div>`;
+    items.forEach(it => { html += `<div class="nb-entry">${it.desc}</div>`; });
+    html += '<div style="height:12px"></div>';
+  }
+  if (state.notebook.length === 0) html = '<div style="color:#6b6860;font-size:13px">尚無記錄。</div>';
+  $('#nb-content').innerHTML = html;
+  $('#notebook-overlay').classList.add('open');
+}
+
+// ══════════════════ IMPACT ══════════════════
+function showImpact(text, type = 'loss') {
+  const div = document.createElement('div');
+  div.className = `impact ${type}`;
+  div.innerHTML = text;
+  $('#content').appendChild(div);
+}
+
+async function loseNerve(amount, reason) {
+  const before = state.nerve;
+  state.nerve = Math.max(0, state.nerve - amount);
+  updateDistortion();
+  updateStatus();
+  showImpact(
+    `<span class="impact-label">神經</span>　${before} → ${state.nerve}　<strong>−${amount}</strong>` +
+    (reason ? `<br><span class="impact-label">原因</span>　${reason}` : ''),
+    'loss'
+  );
+  await sleep(600);
+}
+
+function gainStat(stat, amount, reason) {
+  state[stat] += amount;
+  updateStatus();
+  showImpact(
+    `<span class="impact-label">${stat === 'insight' ? '洞察' : '執筆'}</span>　+${amount}` +
+    (reason ? `　${reason}` : ''),
+    'gain'
+  );
+}
+
+// ══════════════════ FORCED BUTTON ══════════════════
+function makeGearSVG(size, speed, opacity) {
+  return `<svg class="gear-spin" width="${size}" height="${size}" viewBox="0 0 100 88"
+    style="color:#c8c4b8; opacity:${opacity}; animation: gearRotate ${speed}s linear infinite;">
+    <use href="#gear-icon"/>
+  </svg>`;
+}
+
+function renderForcedBtn(text, onclick) {
+  const n = state.nerve;
+  const erodedClass = n <= 2 ? 'eroded-deep' : n <= 4 ? 'eroded' : '';
+  const btnText = n <= 2 ? corrupt(text) : text;
+
+  let gearsHTML = '';
+  if (n <= 3) {
+    const count = n <= 1 ? 3 : n <= 2 ? 2 : 1;
+    const speed = n <= 1 ? 8 : n <= 2 ? 20 : 60;
+    const opacity = n <= 1 ? 0.18 : n <= 2 ? 0.10 : 0.04;
+    const size = n <= 1 ? 120 : n <= 2 ? 80 : 50;
+    for (let i = 0; i < count; i++) {
+      const offsetX = (i - 1) * (size * 0.6);
+      const offsetY = i % 2 === 0 ? 0 : size * 0.3;
+      gearsHTML += `<div style="position:absolute;left:calc(50% + ${offsetX}px);top:calc(50% + ${offsetY}px);">
+        ${makeGearSVG(size, speed + i * 3, opacity)}
+      </div>`;
+    }
+  }
+
+  return `<div class="forced-wrapper">
+    ${gearsHTML ? `<div class="gear-pattern">${gearsHTML}</div>` : ''}
+    <button class="forced-btn ${erodedClass}" onclick="${onclick}">${btnText}</button>
+  </div>`;
+}
+
+// ══════════════════ RENDERING ══════════════════
+function renderHistory() {
+  return state.history.map(h => {
+    if (h.type === 'choice') return `<div class="choice-made">▸ ${h.text}</div>`;
+    if (h.type === 'system') return `<div class="system-msg history-text">${h.text}</div>`;
+    const cls = h.cls || 'narration';
+    return `<div class="${cls} history-text">${h.text}</div>`;
+  }).join('');
+}
+
+function addToHistory(text, cls = 'narration', type = 'text') {
+  state.history.push({ text, cls, type });
+}
+
+// ══════════════════ SCENES ══════════════════
+
+function renderTitle() {
+  $('#game').innerHTML = `
+    <div class="title-screen" onclick="startGame()">
+      <div class="title-sub">芥川龍之介 遺稿</div>
+      <div class="title-main">歯車</div>
+      <div class="title-cn">齒輪</div>
+      <div class="title-start">點擊任意處開始</div>
+    </div>
+  `;
+}
+
+async function startGame() {
+  state.scene = 'prologue';
+  $('#game').innerHTML = `
+    <div id="status"></div>
+    <div id="content"></div>
+  `;
+  updateStatus();
+  await renderPrologue();
+}
+
+async function renderPrologue() {
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const sys1 = document.createElement('div');
+  sys1.className = 'system-msg';
+  sys1.textContent = '第一章　レエン・コオト';
+  c.appendChild(sys1);
+
+  const sys2 = document.createElement('div');
+  sys2.className = 'system-msg';
+  sys2.style.marginBottom = '16px';
+  sys2.textContent = '——雨衣——';
+  c.appendChild(sys2);
+
+  await sleep(600);
+
+  const p1 = document.createElement('div');
+  p1.className = 'narration';
+  c.appendChild(p1);
+  await typeText(p1, '冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。');
+
+  const p2 = document.createElement('div');
+  p2.className = 'narration';
+  c.appendChild(p2);
+  await typeText(p2, '車上除了你以外，還坐著一位理髮店的老闆。他是個棗子般圓滾滾的男人。你一邊在意著時間，一邊偶爾跟他聊上幾句。');
+
+  await sleep(300);
+
+  const sp = document.createElement('div');
+  sp.className = 'speaker';
+  sp.textContent = '── 理髮店主人';
+  c.appendChild(sp);
+  const d1 = document.createElement('div');
+  d1.className = 'dialogue';
+  c.appendChild(d1);
+  await typeText(d1, '「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」\n「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」');
+
+  await sleep(200);
+
+  addToHistory('第一章　レエン・コオト', 'system-msg', 'system');
+  addToHistory('——雨衣——', 'system-msg', 'system');
+  addToHistory('冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。');
+  addToHistory('車上除了你以外，還坐著一位理髮店的老闆。他是個棗子般圓滾滾的男人。你一邊在意著時間，一邊偶爾跟他聊上幾句。');
+  addToHistory('「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」', 'dialogue');
+
+  c.innerHTML += `
+    <div class="choices">
+      <div class="choices-label">── 行動選擇 ──</div>
+      <button class="choice-btn" onclick="choiceJoke()">「下雨天出來——是來淋雨的吧？」</button>
+      <button class="choice-btn" onclick="choiceSilent()">沉默地望向窗外的松林。</button>
+    </div>
+  `;
+}
+
+async function choiceJoke() {
+  state.choicesMade.joke = true;
+  state.writing += 1;
+  addToHistory('「下雨天出來——是來淋雨的吧？」', 'choice-made', 'choice');
+  updateStatus();
+  await renderBarber2();
+}
+
+async function choiceSilent() {
+  state.choicesMade.silent = true;
+  addToHistory('沉默地望向窗外的松林。', 'choice-made', 'choice');
+  await renderBarber2();
+}
+
+async function renderBarber2() {
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  if (state.choicesMade.joke) {
+    if (state.writing > 0) showImpact('<span class="impact-label">執筆</span>　+1', 'gain');
+    const sp = document.createElement('div'); sp.className = 'speaker'; sp.textContent = '── 理髮店主人'; c.appendChild(sp);
+    const d = document.createElement('div'); d.className = 'dialogue'; c.appendChild(d);
+    await typeText(d, '「御常談で。……しかしレエン・コオトを着た��霊だって云うんです。」\n「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」');
+    addToHistory('「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」', 'dialogue');
+  } else {
+    const n = document.createElement('div'); n.className = 'narration'; c.appendChild(n);
+    await typeText(n, '理髮店主人見你沉默，又自顧自地說了下去——穿著雨衣的幽靈。');
+    addToHistory('理髮店主人見你沉默，又自顧自地說了下去——穿著雨衣的幽靈。');
+  }
+
+  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
+  await typeText(p, '汽車鳴著喇叭，橫靠在了某個停車場旁。果然——上行列車在兩三分鐘前剛剛開走了。');
+  addToHistory('汽車鳴著喇叭，橫靠在了某個停車場旁。果然——上行列車在兩三分鐘前剛剛開走了。');
+
+  await sleep(300);
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, '候車室的長��上，一個穿著雨衣的男人獨自茫然地望著窗外。');
+  addToHistory('候車室的長椅上，一個穿著雨衣的男人獨自茫然地望著窗外。');
+
+  c.innerHTML += `
+    <div class="choices">
+      <div class="choices-label">── 行動選擇 ──</div>
+      <button class="choice-btn" onclick="observeRaincoat()">仔細觀察那個穿雨衣的男人。</button>
+      <button class="choice-btn" onclick="skipToCafe()">沒有多想，直接走向咖��廳。</button>
+    </div>
+  `;
+}
+
+async function observeRaincoat() {
+  addToHistory('仔細觀察那個穿雨衣的男人。', 'choice-made', 'choice');
+  addNotebook('raincoat_station', 'raincoat', '停車場候車室——穿雨衣的男人，茫然望向窗外');
+  state.choicesMade.observed_raincoat = true;
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
+  await typeText(p, corrupt('他就那樣坐著。雨衣的顏色在冬天的光線下顯得不合時令。他的臉模糊不清——或者說，你沒有記住它。'), 22);
+  addToHistory('他就那樣坐著。雨衣的顏色在冬天的光線下顯得不合時令。');
+  showImpact('🧥 手帖新增：停車場的雨衣男人', 'gain');
+  updateStatus();
+  await sleep(400);
+  await skipToCafe();
+}
+
+async function skipToCafe() {
+  if (!state.choicesMade.observed_raincoat) {
+    addToHistory('沒有多想，直接走向咖啡廳。', 'choice-made', 'choice');
+  }
+  await renderGears();
+}
+
+// ══════════════════ GEARS SCENE ══════════════════
+
+async function renderGears() {
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
+  await typeText(p1, '你提著皮箱，從省線電車的某個停車場步行前往旅館。道路兩側大多是高大的大樓。');
+
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, '走著走著，你忽然想起了松林。');
+
+  await sleep(1500);
+
+  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
+  await typeText(p3, corrupt('然後——你的視野中出現了奇怪的東西。'), 28);
+
+  await sleep(1000);
+
+  const p4 = document.createElement('div'); p4.className = 'narration'; c.appendChild(p4);
+  await typeText(p4, corrupt('半透明的齒輪。不停旋轉的齒��。'), 30);
+
+  const p5 = document.createElement('div'); p5.className = 'inner'; c.appendChild(p5);
+  await typeText(p5, corrupt('你以前也有過幾次這樣的經驗。齒輪會逐漸增多，遮住你半邊視野，但不會持續太久——消失之後，隨之而來的是頭痛。'), 25);
+
+  addToHistory('半透明的齒輪。不停旋轉的齒輪。');
+
+  c.innerHTML += `
+    <div class="choices">
+      <div class="choices-label">── 行動選擇 ──</div>
+      <button class="choice-btn" onclick="testEyes()">用手遮住右眼，測試左眼的視力。</button>
+      <button class="choice-btn" onclick="endureGears()">又來了。低頭繼續走。</button>
+    </div>
+  `;
+}
+
+async function testEyes() {
+  addToHistory('用手遮住右眼，測試左眼的視力。', 'choice-made', 'choice');
+  addNotebook('gear_first', 'gear', '往旅館途中——半透明的齒輪初次出現在右眼瞼內側');
+  state.choicesMade.tested_eyes = true;
+
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
+  await typeText(p1, '左眼沒事。');
+
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, corrupt('但右眼瞼的內側——齒輪仍在旋轉。不止一個。它們的數量正在增加。'), 25);
+
+  addToHistory('右眼瞼的內側——齒輪仍在旋轉。不止一個。');
+  showImpact('⚙️ 手帖新增：齒輪（初次出現）', 'gain');
+  await loseNerve(1, '齒輪出現');
+  updateStatus();
+  await sleep(500);
+  await renderHotelCoat();
+}
+
+async function endureGears() {
+  addToHistory('又來了。低頭繼續走。', 'choice-made', 'choice');
+  addNotebook('gear_first', 'gear', '往旅館途中——半透明的齒輪初次出現');
+
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
+  await typeText(p, corrupt('你低著頭快步走著。視野右側的大樓逐漸被吞沒。你知道這會過去的。齒輪總是會消失。代價是頭痛。'), 22);
+
+  addToHistory('你低著頭快步走著。視野右側的大樓逐漸被吞沒。');
+  showImpact('⚙️ 手帖新增：齒輪（初次出現）', 'gain');
+  await loseNerve(1, '齒輪出現');
+  await sleep(500);
+  await renderHotelCoat();
+}
+
+// ══════════════════ HOTEL COAT — ACTION DEMO ══════════════════
+
+async function renderHotelCoat() {
+  const c = $('#content');
+  c.innerHTML = renderHistory();
+
+  const p1 = document.createElement('div'); p1.className = 'narration'; c.appendChild(p1);
+  await typeText(p1, corrupt('走進旅館玄關時，齒輪已經消失了。但頭痛還在。'));
+  addToHistory('走進旅館玄關時，齒輪已經消失了。但頭痛還在。');
+
+  await sleep(400);
+
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, corrupt('房間裡，皮箱、帽子和外套都已經送來了。'));
+
+  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
+  await typeText(p3, corrupt('——掛在牆上的外套讓你感覺到了你自己站立的身影。'), 28);
+
+  addToHistory('掛在牆上的外套讓你感覺到了你自己站立的身影。');
+
+  // Micro-action
+  const actionDiv = document.createElement('div');
+  actionDiv.innerHTML = `<button class="action-btn" onclick="actionHideCoat(this)">把外套塞進衣櫃裡。</button>`;
+  c.appendChild(actionDiv);
+}
+
+async function actionHideCoat(btn) {
+  btn.disabled = true;
+  btn.style.opacity = '0.3';
+  btn.style.cursor = 'default';
+
+  const response = document.createElement('div');
+  response.className = 'narration';
+  btn.parentElement.after(response);
+  await typeText(response, corrupt('衣櫃門關上了。但你知道它還在裡面。'));
+
+  addToHistory('把外套塞進衣櫃裡。', 'choice-made', 'choice');
+  addToHistory('衣櫃門關上了。但你知道它還在裡面。');
+  state.choicesMade.coat_hidden = true;
+
+  await sleep(600);
+  await renderNerveDrop();
+}
+
+// ══════════════════ NERVE DROP — DEMONSTRATE FORCED STEPS ══════════════════
+
+async function renderNerveDrop() {
+  // Drop nerve to demonstrate effects
+  await loseNerve(3, '持續的頭痛與不安');
+  await sleep(400);
+
+  const c = $('#content');
+
+  const p1 = document.createElement('div'); p1.className = 'inner'; c.appendChild(p1);
+  await typeText(p1, corrupt('你坐在書桌前。蜥蜴皮般的青色摩洛哥皮安樂椅。你打開皮箱，取出原稿用紙。但蘸了墨水的筆怎麼也動不了。'), 25);
+
+  await sleep(800);
+
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, corrupt('——突然，床邊的電話響了。'), 28);
+
+  addToHistory('電話響了。');
+
+  await sleep(600);
+
+  // Now show forced steps based on current nerve
+  const p3 = document.createElement('div'); p3.className = 'inner'; c.appendChild(p3);
+  await typeText(p3, corrupt('你必須接電話。'), 30);
+
+  await sleep(400);
+
+  await renderForcedSequence();
+}
+
+async function renderForcedSequence() {
+  const c = $('#content');
+
+  const steps = getPhoneSteps();
+  const stepsDiv = document.createElement('div');
+  stepsDiv.id = 'forced-steps';
+  stepsDiv.style.margin = '12px 0';
+  c.appendChild(stepsDiv);
+
+  for (let i = 0; i < steps.length; i++) {
+    await showForcedStep(stepsDiv, steps, i);
+  }
+
+  // After all steps complete
+  await sleep(400);
+  await renderPhoneCall();
+}
+
+function getPhoneSteps() {
+  const n = state.nerve;
+  if (n >= 8) return ['接起電話。'];
+  if (n >= 5) return ['站起來。', '走到電話旁。', '拿起聽筒。'];
+  if (n >= 3) return ['站起來。', '左腳。', '右腳。', '伸手。', '握住聽筒。', '貼到耳邊。'];
+  return [
+    '你必須：從椅子上站起來。',
+    '你必須：感覺你的腿。',
+    '你必須：往電話的方向走。',
+    '你必須：伸出手。',
+    '你必須：握住聽筒。',
+    '你必須：把它舉到耳邊。',
+    '你必須：說話。',
+  ];
+}
+
+function showForcedStep(container, steps, index) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '4px';
+    div.innerHTML = renderForcedBtn(steps[index], `completeStep(this, ${index})`);
+    container.appendChild(div);
+
+    // Store resolve so button click can trigger it
+    div.querySelector('.forced-btn')._resolve = resolve;
+    div.querySelector('.forced-btn')._index = index;
+  });
+}
+
+function completeStep(btn, index) {
+  const text = btn.textContent;
+  const wrapper = btn.closest('.forced-wrapper');
+  const container = wrapper.parentElement;
+
+  // Replace button with completed text
+  container.innerHTML = `<div style="color:#5a4a38; font-size:13px; font-style:italic; margin-bottom:4px;">✓ ${text}</div>`;
+
+  // Resolve the promise
+  if (btn._resolve) btn._resolve();
+}
+
+// ══════════════════ PHONE CALL — REVEAL ══════════════════
+
+async function renderPhoneCall() {
+  const c = $('#content');
+
+  const sp = document.createElement('div'); sp.className = 'speaker'; sp.textContent = '── 姪女'; c.appendChild(sp);
+  const d1 = document.createElement('div'); d1.className = 'dialogue'; c.appendChild(d1);
+  await typeText(d1, '「あたしです。あたし……」\n「是我。是我……」', 20);
+
+  const d2 = document.createElement('div'); d2.className = 'dialogue'; c.appendChild(d2);
+  await typeText(d2, '「ええ、あの大へんなことが起ったんです。」\n「是的，出大事了。」', 20);
+
+  await sleep(800);
+
+  const p = document.createElement('div'); p.className = 'narration'; c.appendChild(p);
+  await typeText(p, corrupt('電話就此斷了。'), 30);
+
+  await sleep(1000);
+
+  const inner = document.createElement('div'); inner.className = 'inner'; c.appendChild(inner);
+  await typeText(inner, corrupt('你姊姊的丈夫在當天下午，在離東京不遠的某個鄉下被火車輾死了。'), 28);
+
+  await sleep(600);
+
+  const p2 = document.createElement('div'); p2.className = 'narration'; c.appendChild(p2);
+  await typeText(p2, corrupt('而且穿著一件與季節毫不相稱的雨衣。'), 30);
+
+  addNotebook('raincoat_death', 'raincoat', '姊夫轢死——穿著與季節不符的雨衣');
+  showImpact('🧥 手帖新增：姊夫的雨衣——季節外れのレエン・コオト', 'gain');
+  updateStatus();
+
+  await sleep(1500);
+
+  await loseNerve(2, '死亡與雨衣的連結');
+
+  await sleep(800);
+
+  // Ending
+  const br = document.createElement('div'); br.style.height = '20px'; c.appendChild(br);
+  const p3 = document.createElement('div'); p3.className = 'narration'; c.appendChild(p3);
+  await typeText(p3, corrupt('深夜的走廊沒有人經過。'), 22);
+  const p4 = document.createElement('div'); p4.className = 'narration'; c.appendChild(p4);
+  await typeText(p4, corrupt('但偶爾——門外會傳來翅膀的聲音。'), 28);
+
+  addNotebook('wing_corridor', 'wing', '旅館深夜——門外傳來翅膀的聲音');
+  showImpact('🪽 手帖新增：翼聲', 'gain');
+  updateStatus();
+
+  await sleep(1200);
+
+  const end = document.createElement('div');
+  end.className = 'system-msg';
+  end.style.marginTop = '24px';
+  end.textContent = '第一章「レエン・コオト」 終';
+  c.appendChild(end);
+
+  await sleep(1000);
+
+  const endDiv = document.createElement('div');
+  endDiv.innerHTML = `
+    <div class="end-screen">
+      <div class="end-label">第一章 終</div>
+      <div class="end-stats">
+        手帖：${state.notebook.length} 筆<br>
+        神經：${state.nerve}/10　洞察：${state.insight}　執筆：${state.writing}
+      </div>
+      <button class="action-btn" onclick="openNotebook()">查看手帖</button>
+    </div>
+  `;
+  c.appendChild(endDiv);
+}
+
+// ══════════════════ INIT ══════════════════
+renderTitle();
+</script>
+</body>
+</html>
