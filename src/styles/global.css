@@ -1,0 +1,129 @@
+:root {
+  --washi-bg-outer:   #D5CCBC;
+  --washi-bg-main:    #FAF7F2;
+  --washi-bg-card:    #FFFFFF;
+
+  --washi-ink-deep:   #2C2418;
+  --washi-ink-body:   #4A3F33;
+  --washi-ink-muted:  #8B7E6E;
+  --washi-ink-ghost:  #B5AA98;
+
+  --washi-border:       #C8BFA8;
+  --washi-border-light: #DDD6C6;
+  --washi-divider:      #E0D9CA;
+
+  --washi-accent-red:   #8E3B2A;
+  --washi-accent-gold:  #C9A86A;
+  --washi-accent-green: #5B7A5E;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Serif TC', 'Noto Serif JP', Georgia, serif;
+  background: var(--washi-bg-outer);
+  color: var(--washi-ink-body);
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.shell-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.shell-title {
+  font-size: 42px;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  color: var(--washi-ink-deep);
+}
+
+.shell-subtitle {
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  color: var(--washi-ink-ghost);
+  margin-top: 6px;
+}
+
+.shell-main {
+  width: 100%;
+  max-width: 480px;
+}
+
+.shell-card {
+  background: var(--washi-bg-card);
+  border: 1px solid var(--washi-border-light);
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+}
+
+.shell-status {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--washi-accent-red);
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.shell-desc {
+  font-size: 13px;
+  color: var(--washi-ink-muted);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.shell-info {
+  border-top: 1px solid var(--washi-divider);
+  padding-top: 16px;
+  margin-bottom: 24px;
+}
+
+.shell-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 6px 0;
+}
+
+.shell-label {
+  color: var(--washi-ink-ghost);
+  letter-spacing: 0.06em;
+}
+
+.shell-value {
+  color: var(--washi-ink-body);
+}
+
+.shell-legacy-link {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--washi-accent-green);
+  text-decoration: none;
+  border: 1px solid var(--washi-accent-green);
+  border-radius: 3px;
+  padding: 8px 20px;
+  letter-spacing: 0.06em;
+  transition: background 0.2s, color 0.2s;
+}
+
+.shell-legacy-link:hover {
+  background: var(--washi-accent-green);
+  color: var(--washi-bg-card);
+}
+
+.shell-footer {
+  margin-top: 40px;
+  font-size: 11px;
+  color: var(--washi-ink-ghost);
+  letter-spacing: 0.04em;
+}

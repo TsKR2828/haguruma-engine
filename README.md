@@ -30,23 +30,50 @@ React + 資料驅動架構。
 
 ```
 haguruma-engine/
+├── index.html              Vite 入口 HTML
+├── package.json            Vite + React 18
+├── vite.config.js          Vite 設定
 ├── prototype.html          可遊玩原型（第一章完整版）
+├── legacy/
+│   └── prototype-ch1.html      prototype 備份副本
 ├── ENGINE_SPEC.md          引擎技術規格書
 ├── SCENES_FORMAT.md        場景資料寫作指南
 ├── CHAPTER_GUIDE.md        各章劇本設計筆記
+├── docs/
+│   └── migration-plan.md       遷移計畫
 ├── reference/              原始原型與參考規格
 │   ├── haguruma_ch1.jsx        歯車 React 原型（第一章）
 │   ├── last-letter-game.html   CoC 引擎 v27（最後一封信）
 │   ├── coc-game-spec.md        CoC 文字冒險設計規格
 │   └── GAME_DEV_PLAN.md        脈輪覺醒開發計畫（封存）
-└── src/components/         備用 React 元件
-    ├── Particles.jsx           浮動粒子（神經連動變色）
-    ├── StatRadar.jsx           三軸雷達圖
-    ├── NerveBar.jsx            神經衰減進度條
-    └── ImpactToast.jsx         浮動增減通知
+└── src/
+    ├── main.jsx                React 入口
+    ├── App.jsx                 根元件
+    ├── styles/                 全域樣式
+    ├── components/             React 元件
+    │   ├── Particles.jsx           浮動粒子（神經連動變色）
+    │   ├── StatRadar.jsx           三軸雷達圖
+    │   ├── NerveBar.jsx            神經衰減進度條
+    │   └── ImpactToast.jsx         浮動增減通知
+    ├── engine/                 引擎核心邏輯（待遷移）
+    ├── data/                   場景與資料（待遷移）
+    └── utils/                  工具函式（待遷移）
 ```
 
 ## 啟動方式
+
+### React 版（開發中）
+
+```bash
+npm install
+npm run dev
+```
+
+瀏覽器會自動開啟 `http://localhost:5173`。
+
+> React 版目前正在從 legacy prototype 遷移中，尚未包含完整遊戲內容。
+
+### Legacy Prototype（可遊玩 — 第一章完整版）
 
 ```bash
 npx serve -l 3456 -s .
@@ -55,14 +82,25 @@ npx serve -l 3456 -s .
 瀏覽器開啟 `http://localhost:3456/prototype.html` 即可遊玩。
 
 > 無需 `npm install`。prototype.html 為純前端單檔，僅依賴 Google Fonts CDN。
+> 備份副本保存於 `legacy/prototype-ch1.html`。
+
+### npm scripts
+
+| 指令 | 說明 |
+|------|------|
+| `npm run dev` | 啟動 Vite dev server（React 版） |
+| `npm run build` | 建置生產版本至 `dist/` |
+| `npm run preview` | 預覽 build 結果 |
+| `npm run legacy` | 啟動 legacy prototype server（port 3456） |
 
 ## 技術棧
 
-- Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
-- Vanilla CSS（視覺崩壞效果層、摺書動畫）
+- **React 版（遷移中）：** Vite 6 + React 18（JSX）
+- **Legacy prototype：** Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
+- Vanilla CSS + CSS Variables（和紙色系）
 - SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）
 - Google Fonts（Noto Serif TC / JP）
-- React 18 元件（src/components/ — 同步 inline 至 prototype.html，透過 CDN + Babel standalone 執行）
+- React 18 元件（src/components/ — legacy prototype 中透過 CDN + Babel standalone inline 執行）
 
 ## 開發狀態
 
