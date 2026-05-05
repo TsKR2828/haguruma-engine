@@ -15,6 +15,11 @@
   --washi-accent-red:   #8E3B2A;
   --washi-accent-gold:  #C9A86A;
   --washi-accent-green: #5B7A5E;
+  --washi-accent-blue:  #4A6B7A;
+
+  --washi-hover-bg:     #F0EBE1;
+  --washi-active-bg:    #E8E0D0;
+  --washi-selection:    rgba(201, 168, 106, 0.2);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

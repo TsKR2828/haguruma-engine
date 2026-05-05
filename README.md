@@ -51,27 +51,43 @@ haguruma-engine/
     ├── App.jsx                 根元件
     ├── styles/                 全域樣式
     ├── components/             React 元件
+    │   ├── HagurumaEngine.jsx      主遊戲協調器
+    │   ├── SceneText.jsx           打字機文字渲染
+    │   ├── ChoiceList.jsx          選項列表
+    │   ├── EndScreen.jsx           章末結算畫面
+    │   ├── NotebookPanel.jsx       手帖側欄
     │   ├── Particles.jsx           浮動粒子（神經連動變色）
     │   ├── StatRadar.jsx           三軸雷達圖
     │   ├── NerveBar.jsx            神經衰減進度條
     │   └── ImpactToast.jsx         浮動增減通知
-    ├── engine/                 引擎核心邏輯（待遷移）
-    ├── data/                   場景與資料（待遷移）
-    └── utils/                  工具函式（待遷移）
+    ├── engine/                 引擎核心邏輯
+    │   ├── state.js                初始狀態 + reducer
+    │   ├── effects.js              nerve / insight / writing 變化（純函式）
+    │   ├── corrupt.js              文字崩壞效果（純函式）
+    │   ├── connections.js          連結判定（純函式）
+    │   ├── scenes.js               場景解析（純函式）
+    │   ├── audio.js                Web Audio API 管理
+    │   ├── save.js                 三層存檔系統
+    │   └── settings.js             使用者設定
+    ├── data/                   場景與章節資料
+    │   ├── chapters/chapter01.js   第一章 33 場景
+    │   ├── connections.js          連結規則（5 條）
+    │   └── symbols.js              符號字形對應表
+    └── utils/                  工具函式
 ```
 
 ## 啟動方式
 
-### React 版（開發中）
+### React 版（第一章可遊玩）
 
 ```bash
 npm install
 npm run dev
 ```
 
-瀏覽器會自動開啟 `http://localhost:5173`。
+瀏覽器開啟 `http://localhost:5173`，點擊「開始遊玩」即可進入第一章。
 
-> React 版目前正在從 legacy prototype 遷移中，尚未包含完整遊戲內容。
+> React 版第一章已完成遷移，可從開頭一路遊玩到結算畫面。第二章以後尚未遷移。
 
 ### Legacy Prototype（可遊玩 — 第一章完整版）
 
@@ -92,10 +108,12 @@ npx serve -l 3456 -s .
 | `npm run build` | 建置生產版本至 `dist/` |
 | `npm run preview` | 預覽 build 結果 |
 | `npm run legacy` | 啟動 legacy prototype server（port 3456） |
+| `npm run validate:chapters` | 章節資料驗收（結構 + 通關測試） |
+| `npm run test` | 執行 engine 單元測試 |
 
 ## 技術棧
 
-- **React 版（遷移中）：** Vite 6 + React 18（JSX）
+- **React 版（第一章已遷移）：** Vite 6 + React 18（JSX）
 - **Legacy prototype：** Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
 - Vanilla CSS + CSS Variables（和紙色系）
 - SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）

@@ -37,93 +37,80 @@
 
 ---
 
-### 進行中 / 下一批
-
 #### Batch 2A — Pure Engine Core Modules
 
-狀態：待執行
+狀態：完成
 
-目標：
+完成內容：
 
-將 prototype 裡的命令式遊戲邏輯，拆成可測試、無瀏覽器依賴的純函式模組。
+- src/engine/state.js — initialState + reducer（8 action types）
+- src/engine/effects.js — loseNerve / gainInsight / gainWriting / applyEffects（純函式）
+- src/engine/corrupt.js — corruptText（確定性 hash，非 Math.random）
+- src/engine/connections.js — resolveConnections / applyConnection（純函式）
+- src/engine/scenes.js — getSceneById / resolveText / resolveChoices（純函式）
+- src/engine/index.js — barrel export
+- 完整單元測試覆蓋
 
-預定檔案：
-
-- src/engine/state.js
-- src/engine/effects.js
-- src/engine/corrupt.js
-- src/engine/connections.js
-- src/engine/scenes.js
-
-本批次範圍：
-
-- initialState
-- reducer
-- nerve / insight / writing 狀態變化
-- flags / notebook / connections 管理
-- applyEffects
-- resolveText
-- resolveChoices
-- getSceneById
-- corruptText
-- resolveConnections
-
-本批次排除：
-
-- audio.js
-- save.js
-- settings.js
-- React UI 接線
-- 劇情文字修改
-- 章節內容新增
-
-驗收條件：
+驗收結果：
 
 - npm run build 通過
 - npm run validate:chapters 通過
-- engine module 可被 import
-- 新增 engine 測試
+- npm run test 通過
+- 純核心模組零瀏覽器依賴
 - 不修改 Ch1 劇情文字
 - 不破壞 legacy prototype
 
-預定 commit message：
-
-refactor: extract pure engine core modules
-
 ---
-
-### 後續批次
 
 #### Batch 2B — Browser Engine Adapters
 
-狀態：待排程
+狀態：完成
 
-範圍：
+完成內容：
 
-- src/engine/audio.js
-- src/engine/save.js
-- src/engine/settings.js
+- src/engine/audio.js — Web Audio API 管理（playAmbient / playSfx / stopAllAudio / setVolumes）
+- src/engine/save.js — 三層存檔（localStorage → sessionStorage → memory）
+- src/engine/settings.js — 使用者設定（textSpeed / audioVolume / reducedMotion / autoplay）
 
-說明：
+驗收結果：
 
-這批處理 Web Audio API、localStorage、sessionStorage、使用者設定等瀏覽器相關功能。  
-必須等 Batch 2A 完成後再做，避免純函式核心被瀏覽器依賴污染。
+- npm run build 通過
+- 瀏覽器 adapter 與純核心分離
+- barrel export 分 Pure core / Browser adapters 兩區
 
 ---
 
 #### Batch 3 — React UI Integration
 
-狀態：待排程
+狀態：完成
 
-目標：
+完成內容：
 
-將 React UI 接上 engine core，讓 Ch1 可以透過 React 版本完整遊玩。
+- src/components/HagurumaEngine.jsx — 主遊戲協調器（loadScene / onTextComplete / onChoice / onContinue）
+- src/components/SceneText.jsx — 打字機文字渲染（narration 18ms / inner 25ms / dialogue 20ms / system instant）
+- src/components/ChoiceList.jsx — 選項列表
+- src/components/EndScreen.jsx — 章末結算畫面
+- src/components/NotebookPanel.jsx — 手帖側欄（符號 + 連結 + StatRadar）
+- src/styles/game.css — 完整遊戲 CSS（和紙色系）
+- src/App.jsx — 標題畫面 + 遊戲切換
+- 整合既有元件：Particles / NerveBar / ImpactToast / StatRadar
 
-前置條件：
+驗收結果：
 
-- Batch 2A 完成
-- Batch 2B 完成
-- chapter validator 通過
+- npm run build 通過
+- npm run validate:chapters 通過（22/22 playthroughs reached ending）
+- React 版可從 Ch1 prologue 遊玩到 auto_ending
+- always_first_choice 路線完整通過
+- 最終狀態：神經 6/10、洞察 13、執筆 2、手帖 7 筆、連結 5
+- 打字機效果正常、選項正常、繼續提示正常
+- 連結形成 toast 正常顯示
+- 零 console error
+- 不修改 Ch1 劇情文字
+- 不破壞 legacy prototype
+
+---
+
+### 後續批次
 
 ---
 
@@ -153,7 +140,9 @@ refactor: extract pure engine core modules
 | Date | Batch | Commit | Status | Notes |
 |---|---|---|---|---|
 | 2026-05-06 | Batch 1 | test: add chapter validation tool | done | chapter validator completed |
-| 2026-05-06 | Batch 2A | refactor: extract pure engine core modules | planned | pure engine extraction |
+| 2026-05-06 | Batch 2A | refactor: extract pure engine core modules | done | 5 pure modules + tests |
+| 2026-05-06 | Batch 2B | feat: add browser engine adapters | done | audio / save / settings |
+| 2026-05-06 | Batch 3 | feat: connect React UI to chapter one engine | done | Ch1 playable end-to-end |
 
 ---
 
