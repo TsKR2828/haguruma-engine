@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>歯車 — 原型 v2</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
 
   body {
     font-family: 'Noto Serif TC', 'Noto Serif JP', Georgia, serif;
-    background: #e8dfd0;
+    background: #d8cfbc;
     color: #3a3020;
     min-height: 100vh;
     overflow-x: hidden;
@@ -60,8 +60,8 @@
 
   .layout-left  {
     flex-basis: 200px;
-    background: #e8dfd0;
-    border-right: 1px solid #c8bfad;
+    background: #d8cfbc;
+    border-right: 1px solid #c0b8a4;
   }
   .layout-right {
     flex-basis: 280px;
@@ -70,17 +70,19 @@
         to bottom,
         transparent 0px,
         transparent 27px,
-        rgba(160, 140, 110, 0.12) 27px,
-        rgba(160, 140, 110, 0.12) 28px
+        rgba(160, 140, 110, 0.10) 27px,
+        rgba(160, 140, 110, 0.10) 28px
       ),
-      #e8dfd0;
-    border-left: 1px solid #c8bfad;
+      #d8cfbc;
+    border-left: 1px solid #c0b8a4;
   }
   .layout-center {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
     justify-content: center;
+    background: #f5f0e6;
+    box-shadow: 0 0 24px rgba(60,50,35,0.12), 0 0 6px rgba(60,50,35,0.06);
   }
   @media (max-width: 1100px) {
     .layout-left, .layout-right { display: none; }
@@ -96,10 +98,11 @@
   .ch-header {
     cursor: pointer;
     color: #5a4a38;
-    font-size: 11px;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 0.2em;
-    padding: 6px 0;
-    border-bottom: 1px solid #c8bfad;
+    padding: 8px 0;
+    border-bottom: 1px solid #c0b8a4;
     margin-bottom: 14px;
     display: flex;
     justify-content: space-between;
@@ -116,7 +119,7 @@
 
   .ch-warning {
     color: #7a6a55;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.85;
     font-style: italic;
     padding: 6px 4px;
@@ -129,7 +132,7 @@
   .ch-item {
     padding: 10px 10px 10px 14px;
     margin-bottom: 4px;
-    font-size: 12px;
+    font-size: 13px;
     color: #a09888;
     border-left: 1px solid transparent;
     transition: all 0.2s;
@@ -142,7 +145,7 @@
   }
   .ch-item-num {
     color: #5a4a38;
-    font-size: 9px;
+    font-size: 10px;
     letter-spacing: 0.25em;
     display: block;
     margin-bottom: 3px;
@@ -151,10 +154,10 @@
 
   /* ── Right: side sections ── */
   .right-section {
-    margin-bottom: 20px;
-    padding: 14px 12px 10px;
-    background: rgba(200, 191, 173, 0.25);
-    border: 1px solid #c8bfad;
+    margin-bottom: 24px;
+    padding: 16px 14px 12px;
+    background: rgba(245, 240, 230, 0.5);
+    border: 1px solid #c0b8a4;
     border-radius: 2px;
     position: relative;
   }
@@ -168,14 +171,14 @@
     background: rgba(160, 140, 110, 0.18);
   }
   .right-section-header {
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 700;
     letter-spacing: 0.25em;
-    color: #5a4a38;
+    color: #4a3a28;
     border-bottom: 1px solid #c8bfad;
     padding-bottom: 6px;
     margin-bottom: 12px;
     padding-left: 8px;
-    font-weight: 500;
   }
 
   /* Mini-map (clickable preview) */
@@ -199,8 +202,8 @@
 
   /* Mini-notebook entries (和紙) */
   .mini-nb-entry {
-    padding: 8px 10px 8px 14px;
-    font-size: 11px;
+    padding: 10px 12px 10px 14px;
+    font-size: 12px;
     color: #3a3020;
     border-left: 2px solid #8b7355;
     margin-bottom: 6px;
@@ -225,9 +228,9 @@
   }
   .mini-nb-empty {
     color: #8a7a65;
-    font-size: 10px;
+    font-size: 12px;
     font-style: italic;
-    padding: 6px 14px;
+    padding: 8px 14px;
     letter-spacing: 0.04em;
   }
 
@@ -253,14 +256,14 @@
   }
   .connection-card-title {
     color: #3a2a18;
-    font-size: 12px;
+    font-size: 13px;
     margin-bottom: 3px;
     letter-spacing: 0.04em;
     font-family: 'Noto Serif TC', 'Noto Serif JP', serif;
   }
   .connection-card-subtitle {
     color: #6a5a45;
-    font-size: 10px;
+    font-size: 11px;
     font-style: italic;
     letter-spacing: 0.05em;
   }
@@ -294,9 +297,9 @@
 
   .conn-empty {
     color: #8a7a65;
-    font-size: 10px;
+    font-size: 12px;
     font-style: italic;
-    padding: 6px 14px;
+    padding: 8px 14px;
     line-height: 1.7;
     letter-spacing: 0.04em;
   }
@@ -556,8 +559,6 @@
   @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
 
   /* ── React widget mount points ── */
-  .right-section.stats-section { padding-bottom: 16px; margin-bottom: 18px; }
-  #stats-react-root { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   #status-nerve-bar-root { flex: 1; min-width: 140px; max-width: 220px; }
 
   /* ── Resume button on title ── */
@@ -660,14 +661,6 @@
   <aside class="layout-left" id="chapter-panel"></aside>
   <main class="layout-center"><div id="game"></div></main>
   <aside class="layout-right">
-    <section class="right-section stats-section">
-      <div class="right-section-header">狀態</div>
-      <div id="stats-react-root"></div>
-    </section>
-    <section class="right-section">
-      <div class="right-section-header">行路</div>
-      <div id="mini-map-container" onclick="openMap()"></div>
-    </section>
     <section class="right-section">
       <div class="right-section-header">手帖</div>
       <div id="mini-notebook"></div>
@@ -675,6 +668,10 @@
     <section class="right-section">
       <div class="right-section-header">連結</div>
       <div id="connection-cards"></div>
+    </section>
+    <section class="right-section">
+      <div class="right-section-header">行路</div>
+      <div id="mini-map-container" onclick="openMap()"></div>
     </section>
   </aside>
 </div>
@@ -2651,56 +2648,6 @@ function NerveBar({ nerve = 10, max = 10 }) {
   );
 }
 
-// ── StatRadar (三軸雷達圖) ──
-function StatRadar({ nerve = 10, insight = 0, writing = 0, displayMax = 30 }) {
-  const cx = 100, cy = 100, R = 60;
-  const labels = ['神經', '洞察', '執筆'];
-  const values = [
-    nerve / 10,
-    Math.min(insight / displayMax, 1),
-    Math.min(writing / displayMax, 1),
-  ];
-  const angles = [0, 1, 2].map(i => (Math.PI * 2 * i) / 3 - Math.PI / 2);
-  const poly = (scale) =>
-    angles.map(a => `${cx + R * scale * Math.cos(a)},${cy + R * scale * Math.sin(a)}`).join(' ');
-  const dataPoints = values
-    .map((v, i) => `${cx + R * v * Math.cos(angles[i])},${cy + R * v * Math.sin(angles[i])}`)
-    .join(' ');
-  const nerveRatio = nerve / 10;
-  const fillColor = nerveRatio > 0.5 ? 'rgba(139, 115, 85, 0.15)' : 'rgba(180, 60, 60, 0.18)';
-  const strokeColor = nerveRatio > 0.5 ? '#8b7355' : '#a04040';
-  const dotColor = nerveRatio > 0.5 ? '#5a4a38' : '#a04040';
-  return (
-    <svg viewBox="0 0 200 200" style={{ width: '100%', maxWidth: 200 }}>
-      {[0.25, 0.5, 0.75, 1].map(s => (
-        <polygon key={s} points={poly(s)} fill="none" stroke="rgba(160,140,110,0.2)" strokeWidth="1" />
-      ))}
-      {angles.map((a, i) => (
-        <line key={i} x1={cx} y1={cy} x2={cx + R * Math.cos(a)} y2={cy + R * Math.sin(a)}
-          stroke="rgba(160,140,110,0.25)" strokeWidth="1" />
-      ))}
-      <polygon points={dataPoints} fill={fillColor} stroke={strokeColor} strokeWidth="1.5" />
-      {values.map((v, i) => {
-        const lx = cx + (R + 22) * Math.cos(angles[i]);
-        const ly = cy + (R + 22) * Math.sin(angles[i]);
-        const raw = [nerve, insight, writing][i];
-        return (
-          <g key={i}>
-            <circle cx={cx + R * v * Math.cos(angles[i])} cy={cy + R * v * Math.sin(angles[i])} r="3" fill={dotColor} />
-            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
-              fill="#7a6a55" fontSize="10" fontFamily="'Noto Serif TC', serif">{labels[i]}</text>
-            <text x={lx} y={ly + 13} textAnchor="middle" dominantBaseline="central"
-              fill={i === 0 && nerveRatio <= 0.4 ? '#a04040' : '#3a2a18'} fontSize="11"
-              fontFamily="'Noto Serif TC', serif">
-              {i === 0 ? `${nerve}/10` : raw}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 // ── ImpactToast (浮動增減通知) ──
 function ImpactToast({ impact, duration = 2200 }) {
   const [visible, setVisible] = useState(false);
@@ -2761,13 +2708,11 @@ function useHgrImpact() {
 
 function ConnectedParticles()  { const s = useHgrState(); return <Particles nerve={s.nerve} />; }
 function ConnectedNerveBar()   { const s = useHgrState(); return <NerveBar nerve={s.nerve} />; }
-function ConnectedStatRadar()  { const s = useHgrState(); return <StatRadar nerve={s.nerve} insight={s.insight} writing={s.writing} />; }
 function ConnectedImpactToast(){ const i = useHgrImpact(); return <ImpactToast impact={i} />; }
 
 // ── Mount: particles / impact toast 立即掛；nerve bar / stat radar 等容器存在後再掛 ──
 ReactDOM.createRoot(document.getElementById('particles-root')).render(<ConnectedParticles />);
 ReactDOM.createRoot(document.getElementById('impact-toast-root')).render(<ConnectedImpactToast />);
-ReactDOM.createRoot(document.getElementById('stats-react-root')).render(<ConnectedStatRadar />);
 
 // NerveBar 在 #status 內，#status 由 updateStatus() 動態建立；
 // 用 MutationObserver 偵測掛載點出現後一次性 mount。
