@@ -62,7 +62,7 @@ npx serve -l 3456 -s .
 - Vanilla CSS（視覺崩壞效果層、摺書動畫）
 - SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）
 - Google Fonts（Noto Serif TC / JP）
-- React 元件（src/components/ — 備用，尚未整合至原型）
+- React 18 元件（src/components/ — 同步 inline 至 prototype.html，透過 CDN + Babel standalone 執行）
 
 ## 開發狀態
 
@@ -75,7 +75,8 @@ npx serve -l 3456 -s .
 - [x] 三欄佈局（章節目錄 / 遊戲本體 / 地圖＋手帖＋連結卡）
 - [x] SVG 東京路線地圖（5 地點 + 神經扭曲）
 - [x] 連結卡系統（5 條規則全部驗證通過）
-- [ ] 存檔系統
+- [x] 存檔系統（三層備援 localStorage / sessionStorage / 記憶體；場景進入時自動存檔）
+- [x] React 元件整合（Particles / StatRadar / NerveBar / ImpactToast 經 CustomEvent 橋接）
 - [ ] 第二至十一章
 
 ## 第一章驗收結果

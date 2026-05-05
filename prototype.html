@@ -511,16 +511,55 @@
   .title-cn { color:#6b6860; font-size:14px; letter-spacing:0.15em; animation: fadeIn 2s; margin-bottom: 50px; }
   .title-start { color:#8b7355; font-size:12px; letter-spacing:0.2em; animation: pulse 3s ease infinite; }
   @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+
+  /* ── React widget mount points ── */
+  .right-section.stats-section { padding-bottom: 16px; border-bottom: 1px solid rgba(30,30,36,0.4); margin-bottom: 18px; }
+  #stats-react-root { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #status-nerve-bar-root { flex: 1; min-width: 140px; max-width: 220px; }
+
+  /* ── Resume button on title ── */
+  .title-resume {
+    margin-top: 22px;
+    color: #8b7355;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    background: none;
+    border: 1px solid rgba(139,115,85,0.35);
+    padding: 7px 24px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+    animation: fadeIn 2.5s;
+  }
+  .title-resume:hover { color: #c8c4b8; border-color: #8b7355; background: rgba(139,115,85,0.08); }
+  .title-resume-meta { display: block; color: #5a4a38; font-size: 9px; letter-spacing: 0.1em; margin-top: 4px; font-style: italic; }
+  .title-clear {
+    margin-top: 12px; color: #4a4036; font-size: 10px; letter-spacing: 0.1em;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .title-clear:hover { color: #8b4040; }
 </style>
+
+<!-- React 18 + Babel for JSX (single-file prototype; build pipeline avoided intentionally) -->
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
 </head>
 <body>
+<div id="particles-root"></div>
 <div id="distortion"></div>
 <div id="noise"></div>
+<div id="impact-toast-root"></div>
 
 <div class="layout">
   <aside class="layout-left" id="chapter-panel"></aside>
   <main class="layout-center"><div id="game"></div></main>
   <aside class="layout-right">
+    <section class="right-section stats-section">
+      <div class="right-section-header">狀態</div>
+      <div id="stats-react-root"></div>
+    </section>
     <section class="right-section">
       <div class="right-section-header">行路</div>
       <div id="mini-map-container" onclick="openMap()"></div>
@@ -677,6 +716,16 @@ const SYMBOLS = {
 // ══════════════════ UTILS ══════════════════
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ── React state bridge ──
+function dispatchHgrState() {
+  window.dispatchEvent(new CustomEvent('hgr-state', {
+    detail: { nerve: state.nerve, insight: state.insight, writing: state.writing }
+  }));
+}
+function dispatchHgrImpact(impact) {
+  window.dispatchEvent(new CustomEvent('hgr-impact', { detail: impact }));
+}
 
 function corrupt(text) {
   const ratio = state.nerve / 10;
@@ -875,20 +924,26 @@ async function typeAndWait(el, text, speed = 18) {
 // ══════════════════ STATUS / NOTEBOOK / IMPACT ══════════════════
 
 function updateStatus() {
-  const nerveClass = state.nerve <= 3 ? 'danger' : '';
   const statusEl = $('#status');
   if (!statusEl) return;
-  statusEl.innerHTML = `
-    <div class="stat-group">
-      <span>神經 <span class="stat-val ${nerveClass}">${state.nerve}/10</span></span>
-      <span>洞察 <span class="stat-val">${state.insight}</span></span>
-      <span>執筆 <span class="stat-val">${state.writing}</span></span>
-    </div>
-    <div>
-      <button id="map-btn" onclick="openMap()">地圖</button>
-      <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
-    </div>
-  `;
+  // NerveBar 由 React 接管；此處留 mount 點，洞察/執筆仍以文字呈現
+  if (!statusEl.querySelector('#status-nerve-bar-root')) {
+    statusEl.innerHTML = `
+      <div class="stat-group" style="flex:1; display:flex; align-items:center; gap:18px;">
+        <div id="status-nerve-bar-root"></div>
+        <span>洞察 <span class="stat-val" id="status-insight">${state.insight}</span></span>
+        <span>執筆 <span class="stat-val" id="status-writing">${state.writing}</span></span>
+      </div>
+      <div>
+        <button id="map-btn" onclick="openMap()">地圖</button>
+        <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
+      </div>
+    `;
+  } else {
+    $('#status-insight').textContent = state.insight;
+    $('#status-writing').textContent = state.writing;
+    $('#notebook-btn').textContent = `手帖 (${state.notebook.length})`;
+  }
 }
 
 function addNotebook(key, symbol, desc) {
@@ -1098,6 +1153,8 @@ async function formConnection(conn) {
   if (conn.insightGain) {
     state.insight += conn.insightGain;
     updateStatus();
+    dispatchHgrState();
+    dispatchHgrImpact({ type: 'gain', label: '洞察', amount: conn.insightGain, reason: conn.title });
     showImpact(
       `<span class="impact-label">洞察</span>　+${conn.insightGain}　${conn.title}`,
       'gain'
@@ -1302,6 +1359,8 @@ async function loseNerve(amount, reason) {
   state.nerve = Math.max(0, state.nerve - amount);
   updateDistortion();
   updateStatus();
+  dispatchHgrState();
+  dispatchHgrImpact({ type: 'loss', label: '神經', amount, reason });
   showImpact(
     `<span class="impact-label">神經</span>　${before} → ${state.nerve}　<strong>−${amount}</strong>` +
     (reason ? `<br><span class="impact-label">原因</span>　${reason}` : ''),
@@ -1313,6 +1372,8 @@ async function loseNerve(amount, reason) {
 function gainStat(stat, amount, reason) {
   state[stat] += amount;
   updateStatus();
+  dispatchHgrState();
+  dispatchHgrImpact({ type: 'gain', label: stat === 'insight' ? '洞察' : '執筆', amount, reason });
   showImpact(
     `<span class="impact-label">${stat === 'insight' ? '洞察' : '執筆'}</span>　+${amount}` +
     (reason ? `　${reason}` : ''),
@@ -1424,15 +1485,61 @@ document.addEventListener('keydown', (e) => {
 // ══════════════════ TITLE ════════��═════════
 
 function renderTitle() {
+  const saved = loadSaveRaw();
+  const canResume = !!(saved && saved.scene && saved.scene !== 'title');
+  let resumeMeta = '';
+  if (canResume) {
+    const d = new Date(saved.savedAt || Date.now());
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    resumeMeta = `第 ${CH_NUM_KANJI[(saved.currentChapter || 1) - 1]} 章 · 神經 ${saved.nerve}/10 · ${mm}/${dd} ${hh}:${mi}`;
+  }
   $('#game').innerHTML = `
-    <div class="title-screen" onclick="startGame()">
+    <div class="title-screen">
       <div class="title-sub">芥川龍之介 遺稿</div>
       <div class="title-main">歯車</div>
       <div class="title-cn">齒輪</div>
-      <div class="title-start">點擊任意處開始</div>
+      <div class="title-start" id="title-start-btn">${canResume ? '新遊戲' : '點擊任意處開始'}</div>
+      ${canResume ? `
+        <button class="title-resume" id="title-resume-btn">
+          繼續
+          <span class="title-resume-meta">${resumeMeta}</span>
+        </button>
+        <button class="title-clear" id="title-clear-btn">刪除存檔</button>
+      ` : ''}
     </div>
   `;
+  if (canResume) {
+    $('#title-start-btn').onclick = (e) => { e.stopPropagation(); confirmNewGame(); };
+    $('#title-resume-btn').onclick = (e) => { e.stopPropagation(); resumeGame(); };
+    $('#title-clear-btn').onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('確定刪除存檔？此動作無法復原。')) { clearSave(); renderTitle(); }
+    };
+  } else {
+    $('.title-screen').onclick = startGame;
+  }
   refreshSidePanels();
+  dispatchHgrState();
+}
+
+function confirmNewGame() {
+  if (hasSave() && !confirm('開始新遊戲將覆蓋現有存檔，繼續嗎？')) return;
+  clearSave();
+  // 重置 state 至初始
+  state.scene = 'title';
+  state.nerve = 10;
+  state.insight = 0;
+  state.writing = 0;
+  state.notebook = [];
+  state.history = [];
+  state.choicesMade = {};
+  state.journey = { current: 'kasugai', visited: [], symbols: {} };
+  state.connections = [];
+  state.currentChapter = 1;
+  startGame();
 }
 
 // ══════════════════ GAME START ══════════════════
@@ -1537,6 +1644,7 @@ async function playScene(sceneId) {
     return;
   }
   state.scene = sceneId;
+  saveGame(); // 自動存檔（每場景進入時）
 
   // Fold previous scene if specified
   if (scene.fold) {
@@ -1591,6 +1699,94 @@ async function playScene(sceneId) {
     await waitForClick();
     showEndOverlay();
   }
+}
+
+// ══════════════════ SAVE SYSTEM (三層備援) ══════════════════
+// Layer 1: localStorage   (跨 session 持久)
+// Layer 2: sessionStorage (重整不丟，關閉 tab 後丟失)
+// Layer 3: 記憶體變數      (最後一道保險，本次 session 內保命)
+
+const SAVE_KEY = 'haguruma_save_v1';
+let _memorySave = null;
+
+function buildSaveData() {
+  return {
+    v: 1,
+    scene: state.scene,
+    nerve: state.nerve,
+    insight: state.insight,
+    writing: state.writing,
+    notebook: state.notebook,
+    choicesMade: state.choicesMade,
+    journey: state.journey,
+    connections: state.connections,
+    currentChapter: state.currentChapter,
+    savedAt: Date.now(),
+  };
+}
+
+function saveGame() {
+  if (state.scene === 'title' || !state.scene) return;
+  const data = JSON.stringify(buildSaveData());
+  _memorySave = data;
+  try { localStorage.setItem(SAVE_KEY, data); } catch (e) {}
+  try { sessionStorage.setItem(SAVE_KEY, data); } catch (e) {}
+}
+
+function loadSaveRaw() {
+  let data = null;
+  try { data = localStorage.getItem(SAVE_KEY); } catch (e) {}
+  if (!data) { try { data = sessionStorage.getItem(SAVE_KEY); } catch (e) {} }
+  if (!data) data = _memorySave;
+  if (!data) return null;
+  try { return JSON.parse(data); } catch (e) { return null; }
+}
+
+function hasSave() {
+  const s = loadSaveRaw();
+  return s && s.scene && s.scene !== 'title';
+}
+
+function clearSave() {
+  _memorySave = null;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+function restoreState(saved) {
+  state.scene          = saved.scene;
+  state.nerve          = saved.nerve;
+  state.insight        = saved.insight;
+  state.writing        = saved.writing;
+  state.notebook       = saved.notebook       || [];
+  state.choicesMade    = saved.choicesMade    || {};
+  state.journey        = saved.journey        || { current: 'kasugai', visited: [], symbols: {} };
+  state.connections    = saved.connections    || [];
+  state.currentChapter = saved.currentChapter || 1;
+  state.history        = []; // history 不存盤——讀檔即重啟，不重播
+}
+
+async function resumeGame() {
+  const saved = loadSaveRaw();
+  if (!saved) { startGame(); return; }
+  restoreState(saved);
+  $('#game').innerHTML = `
+    <div id="status"></div>
+    <div id="content"></div>
+  `;
+  // 顯示「已讀章節」摺疊條，提示玩家從何處續
+  const recap = document.createElement('div');
+  recap.className = 'fold-summary expanded';
+  recap.style.opacity = '0.55';
+  recap.innerHTML = `<span>── 續・第 ${CH_NUM_KANJI[state.currentChapter - 1]} 章（前情已讀過） ──</span><span class="fold-arrow">∨</span>`;
+  $('#content').appendChild(recap);
+
+  updateStatus();
+  updateDistortion();
+  refreshSidePanels();
+  dispatchHgrState();
+  newScene();
+  await playScene(state.scene);
 }
 
 // ══════════════════ SCENES (Chapter 1: レエン・コオト) ══════════════════
@@ -2044,6 +2240,221 @@ const SCENES = {
 
 // ══════════════════ INIT ══════════════════
 renderTitle();
+</script>
+
+<!-- ══════════════════ REACT WIDGETS ══════════════════
+     四個元件源自 src/components/ — 此處 inline 是為了單檔原型可直接 npx serve。
+     正式 build 時應從 src/components/ 匯入。
+     State 同步：監聽 'hgr-state' / 'hgr-impact' CustomEvent。
+-->
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+// ── Particles (浮動粒子) ──
+function Particles({ nerve = 10, count = 15 }) {
+  const ratio = nerve / 10;
+  const baseColor = ratio > 0.5
+    ? `rgba(200, 196, 184, ${0.08 + (1 - ratio) * 0.12})`
+    : `rgba(139, 64, 64, ${0.10 + (1 - ratio) * 0.18})`;
+  const particles = useMemo(() =>
+    Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 8,
+      dur: 6 + Math.random() * 6,
+      size: 1 + Math.random() * 2,
+    })), [count]);
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
+      {particles.map(p => (
+        <div key={p.id} style={{
+          position: 'absolute', left: `${p.left}%`, bottom: '-5%',
+          width: p.size, height: p.size, borderRadius: '50%', background: baseColor,
+          animation: `hgr-float-up ${p.dur}s ${p.delay}s infinite linear`,
+        }} />
+      ))}
+      <style>{`
+        @keyframes hgr-float-up {
+          0%   { transform: translateY(0);     opacity: 0;    }
+          10%  { opacity: 0.3; }
+          90%  { opacity: 0.05; }
+          100% { transform: translateY(-105vh); opacity: 0;   }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── NerveBar (神經衰減條) ──
+function NerveBar({ nerve = 10, max = 10 }) {
+  const ratio = nerve / max;
+  const pct = Math.max(0, Math.min(100, ratio * 100));
+  const isDanger = ratio <= 0.4;
+  const isCritical = ratio <= 0.2;
+  const barColor = isCritical
+    ? 'linear-gradient(90deg, #8b4040, #5e2a2a)'
+    : isDanger
+      ? 'linear-gradient(90deg, #8b4040, #a05050)'
+      : 'linear-gradient(90deg, #6b6860, #c8c4b8)';
+  const labelColor = isDanger ? '#8b4040' : '#6b6860';
+  const valueColor = isDanger ? '#d4a89a' : '#c8c4b8';
+  return (
+    <div style={{ width: '100%', minWidth: 140 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, letterSpacing: '0.08em', marginBottom: 3 }}>
+        <span style={{ color: labelColor }}>神經</span>
+        <span style={{ color: valueColor }}>{nerve} / {max}</span>
+      </div>
+      <div style={{
+        height: 5, background: 'rgba(30, 30, 36, 0.8)', borderRadius: 3, overflow: 'hidden',
+        border: `1px solid ${isDanger ? 'rgba(139,64,64,0.3)' : '#1e1e24'}`,
+      }}>
+        <div style={{
+          width: `${pct}%`, height: '100%', background: barColor, borderRadius: 3,
+          transition: 'width 0.8s ease, background 0.6s ease',
+          ...(isCritical ? { animation: 'hgr-nerve-pulse 2s infinite' } : {}),
+        }} />
+      </div>
+      <style>{`@keyframes hgr-nerve-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }`}</style>
+    </div>
+  );
+}
+
+// ── StatRadar (三軸雷達圖) ──
+function StatRadar({ nerve = 10, insight = 0, writing = 0, displayMax = 30 }) {
+  const cx = 100, cy = 100, R = 60;
+  const labels = ['神經', '洞察', '執筆'];
+  const values = [
+    nerve / 10,
+    Math.min(insight / displayMax, 1),
+    Math.min(writing / displayMax, 1),
+  ];
+  const angles = [0, 1, 2].map(i => (Math.PI * 2 * i) / 3 - Math.PI / 2);
+  const poly = (scale) =>
+    angles.map(a => `${cx + R * scale * Math.cos(a)},${cy + R * scale * Math.sin(a)}`).join(' ');
+  const dataPoints = values
+    .map((v, i) => `${cx + R * v * Math.cos(angles[i])},${cy + R * v * Math.sin(angles[i])}`)
+    .join(' ');
+  const nerveRatio = nerve / 10;
+  const fillColor = nerveRatio > 0.5 ? 'rgba(200, 196, 184, 0.18)' : 'rgba(139, 64, 64, 0.22)';
+  const strokeColor = nerveRatio > 0.5 ? '#6b6860' : '#8b4040';
+  const dotColor = nerveRatio > 0.5 ? '#c8c4b8' : '#8b4040';
+  return (
+    <svg viewBox="0 0 200 200" style={{ width: '100%', maxWidth: 200 }}>
+      {[0.25, 0.5, 0.75, 1].map(s => (
+        <polygon key={s} points={poly(s)} fill="none" stroke="rgba(107,104,96,0.12)" strokeWidth="1" />
+      ))}
+      {angles.map((a, i) => (
+        <line key={i} x1={cx} y1={cy} x2={cx + R * Math.cos(a)} y2={cy + R * Math.sin(a)}
+          stroke="rgba(107,104,96,0.15)" strokeWidth="1" />
+      ))}
+      <polygon points={dataPoints} fill={fillColor} stroke={strokeColor} strokeWidth="1.5" />
+      {values.map((v, i) => {
+        const lx = cx + (R + 22) * Math.cos(angles[i]);
+        const ly = cy + (R + 22) * Math.sin(angles[i]);
+        const raw = [nerve, insight, writing][i];
+        return (
+          <g key={i}>
+            <circle cx={cx + R * v * Math.cos(angles[i])} cy={cy + R * v * Math.sin(angles[i])} r="3" fill={dotColor} />
+            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
+              fill="#6b6860" fontSize="10" fontFamily="'Noto Serif TC', serif">{labels[i]}</text>
+            <text x={lx} y={ly + 13} textAnchor="middle" dominantBaseline="central"
+              fill={i === 0 && nerveRatio <= 0.4 ? '#8b4040' : '#c8c4b8'} fontSize="11"
+              fontFamily="'Noto Serif TC', serif">
+              {i === 0 ? `${nerve}/10` : raw}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── ImpactToast (浮動增減通知) ──
+function ImpactToast({ impact, duration = 2200 }) {
+  const [visible, setVisible] = useState(false);
+  const [current, setCurrent] = useState(null);
+  useEffect(() => {
+    if (!impact) return;
+    setCurrent(impact);
+    setVisible(true);
+    const timer = setTimeout(() => setVisible(false), duration);
+    return () => clearTimeout(timer);
+  }, [impact, duration]);
+  if (!current) return null;
+  const isLoss = current.type === 'loss';
+  const bg = isLoss ? 'rgba(40, 10, 10, 0.92)' : 'rgba(20, 30, 20, 0.92)';
+  const border = isLoss ? '#8b4040' : '#6b8a4a';
+  const textColor = isLoss ? '#d4a89a' : '#b8c89a';
+  const sign = isLoss ? '−' : '+';
+  return (
+    <div style={{
+      position: 'fixed', top: 28, left: '50%',
+      transform: `translateX(-50%) translateY(${visible ? 0 : -50}px)`,
+      background: bg, border: `1px solid ${border}`, borderRadius: 6,
+      padding: '10px 22px', color: textColor, fontSize: 13,
+      fontFamily: "'Noto Serif TC', serif", letterSpacing: '0.04em',
+      zIndex: 200, transition: 'transform 0.4s ease, opacity 0.4s ease',
+      opacity: visible ? 1 : 0, pointerEvents: 'none',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+      display: 'flex', alignItems: 'center', gap: 10,
+    }}>
+      <span style={{ fontWeight: 500 }}>{current.label}</span>
+      <span style={{ fontSize: 15, fontWeight: 600 }}>{sign}{current.amount}</span>
+      {current.reason && (
+        <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 4 }}>— {current.reason}</span>
+      )}
+    </div>
+  );
+}
+
+// ── 連線到全域 state ──
+function useHgrState() {
+  const [s, setS] = useState({ nerve: 10, insight: 0, writing: 0 });
+  useEffect(() => {
+    const h = e => setS(e.detail);
+    window.addEventListener('hgr-state', h);
+    return () => window.removeEventListener('hgr-state', h);
+  }, []);
+  return s;
+}
+function useHgrImpact() {
+  const [imp, setImp] = useState(null);
+  useEffect(() => {
+    const h = e => setImp({ ...e.detail, _id: Date.now() + Math.random() });
+    window.addEventListener('hgr-impact', h);
+    return () => window.removeEventListener('hgr-impact', h);
+  }, []);
+  return imp;
+}
+
+function ConnectedParticles()  { const s = useHgrState(); return <Particles nerve={s.nerve} />; }
+function ConnectedNerveBar()   { const s = useHgrState(); return <NerveBar nerve={s.nerve} />; }
+function ConnectedStatRadar()  { const s = useHgrState(); return <StatRadar nerve={s.nerve} insight={s.insight} writing={s.writing} />; }
+function ConnectedImpactToast(){ const i = useHgrImpact(); return <ImpactToast impact={i} />; }
+
+// ── Mount: particles / impact toast 立即掛；nerve bar / stat radar 等容器存在後再掛 ──
+ReactDOM.createRoot(document.getElementById('particles-root')).render(<ConnectedParticles />);
+ReactDOM.createRoot(document.getElementById('impact-toast-root')).render(<ConnectedImpactToast />);
+ReactDOM.createRoot(document.getElementById('stats-react-root')).render(<ConnectedStatRadar />);
+
+// NerveBar 在 #status 內，#status 由 updateStatus() 動態建立；
+// 用 MutationObserver 偵測掛載點出現後一次性 mount。
+let _nerveBarMounted = false;
+const _nerveBarObserver = new MutationObserver(() => {
+  if (_nerveBarMounted) return;
+  const el = document.getElementById('status-nerve-bar-root');
+  if (el) {
+    ReactDOM.createRoot(el).render(<ConnectedNerveBar />);
+    _nerveBarMounted = true;
+    _nerveBarObserver.disconnect();
+  }
+});
+_nerveBarObserver.observe(document.body, { childList: true, subtree: true });
+
+// 初始狀態廣播一次（讓 React widgets 拿到初值）
+window.dispatchEvent(new CustomEvent('hgr-state', {
+  detail: { nerve: state.nerve, insight: state.insight, writing: state.writing }
+}));
 </script>
 </body>
 </html>
