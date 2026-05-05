@@ -77,6 +77,8 @@ npx serve -l 3456 -s .
 - [x] 連結卡系統（5 條規則全部驗證通過）
 - [x] 存檔系統（三層備援 localStorage / sessionStorage / 記憶體；場景進入時自動存檔）
 - [x] React 元件整合（Particles / StatRadar / NerveBar / ImpactToast 經 CustomEvent 橋接）
+- [x] 設定面板（打字速度 / 自動推進 / 音量，存 localStorage）
+- [x] 音效基礎架構（Web Audio API：playAmbient / playSfx / stopAmbient，場景 audio 欄位）
 - [ ] 第二至十一章
 
 ## 第一章驗收結果

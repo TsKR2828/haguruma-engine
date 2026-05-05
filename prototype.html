@@ -539,6 +539,66 @@
     text-decoration: underline; text-underline-offset: 3px;
   }
   .title-clear:hover { color: #8b4040; }
+
+  /* ── Settings overlay ── */
+  #settings-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10,10,12,0.94); z-index: 60;
+    display: none; justify-content: center; align-items: center;
+  }
+  #settings-overlay.open { display: flex; }
+  #settings-panel {
+    background: #12121a; border: 1px solid #2a241e; border-radius: 6px;
+    padding: 32px 36px; min-width: 320px; max-width: 400px;
+    position: relative;
+  }
+  .settings-title {
+    color: #c8c4b8; font-size: 14px; letter-spacing: 0.2em;
+    margin-bottom: 24px; text-align: center;
+  }
+  .settings-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px; color: #8b7355; font-size: 12px; letter-spacing: 0.08em;
+  }
+  .settings-row label { color: #6b6860; }
+  .settings-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 140px; height: 4px; border-radius: 2px;
+    background: #2a241e; outline: none;
+  }
+  .settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px;
+    border-radius: 50%; background: #8b7355; cursor: pointer;
+  }
+  .settings-toggle {
+    background: none; border: 1px solid #3a3530; border-radius: 4px;
+    color: #6b6860; font-family: inherit; font-size: 11px;
+    padding: 4px 14px; cursor: pointer; letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+  .settings-toggle.active { border-color: #8b7355; color: #c8c4b8; background: rgba(139,115,85,0.12); }
+  .settings-val { color: #5a4a38; font-size: 10px; min-width: 28px; text-align: right; }
+  .settings-close {
+    position: absolute; top: 12px; right: 16px;
+    background: none; border: none; color: #6b6860;
+    font-size: 16px; cursor: pointer; font-family: inherit;
+  }
+  .settings-close:hover { color: #c8c4b8; }
+  #settings-btn {
+    background: none; border: 1px solid #3a3530; color: #6b6860;
+    font-family: inherit; font-size: 11px; padding: 3px 8px;
+    cursor: pointer; border-radius: 3px; letter-spacing: 0.08em;
+    transition: all 0.2s;
+  }
+  #settings-btn:hover { border-color: #8b7355; color: #8b7355; }
+  .settings-section-label {
+    color: #5a4a38; font-size: 10px; letter-spacing: 0.15em;
+    margin-bottom: 10px; margin-top: 6px;
+  }
+  .settings-divider { border: none; border-top: 1px solid #1e1e24; margin: 16px 0; }
+  .settings-row-stack { margin-bottom: 14px; }
+  .settings-row-stack label { display: block; color: #6b6860; font-size: 12px; margin-bottom: 6px; letter-spacing: 0.08em; }
+  .settings-row-stack .settings-row-inner { display: flex; align-items: center; gap: 10px; }
 </style>
 
 <!-- React 18 + Babel for JSX (single-file prototype; build pipeline avoided intentionally) -->
@@ -589,6 +649,50 @@
     <div class="end-label" id="end-label"></div>
     <div class="end-stats" id="end-stats"></div>
     <button class="action-btn" onclick="openNotebook()" style="display:block;margin:0 auto">查看手帖</button>
+  </div>
+</div>
+
+<div id="settings-overlay">
+  <div id="settings-panel" onclick="event.stopPropagation()">
+    <button class="settings-close" onclick="closeSettings()">✕</button>
+    <div class="settings-title">設 定</div>
+
+    <div class="settings-section-label">文字</div>
+    <div class="settings-row">
+      <label>打字速度</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="range" class="settings-slider" id="set-text-speed" min="0" max="40" value="18" oninput="onTextSpeedChange(this.value)">
+        <span class="settings-val" id="set-text-speed-val">18</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <label>自動推進</label>
+      <button class="settings-toggle" id="set-auto-advance" onclick="toggleAutoAdvance()">關閉</button>
+    </div>
+    <div class="settings-row" id="set-auto-delay-row" style="display:none">
+      <label>推進間隔</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="range" class="settings-slider" id="set-auto-delay" min="500" max="5000" step="250" value="2000" oninput="onAutoDelayChange(this.value)">
+        <span class="settings-val" id="set-auto-delay-val">2.0s</span>
+      </div>
+    </div>
+
+    <hr class="settings-divider">
+    <div class="settings-section-label">音效</div>
+    <div class="settings-row">
+      <label>環境音</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="range" class="settings-slider" id="set-ambient-vol" min="0" max="100" value="60" oninput="onAmbientVolChange(this.value)">
+        <span class="settings-val" id="set-ambient-vol-val">60</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <label>效果音</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="range" class="settings-slider" id="set-sfx-vol" min="0" max="100" value="80" oninput="onSfxVolChange(this.value)">
+        <span class="settings-val" id="set-sfx-vol-val">80</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -716,6 +820,164 @@ const SYMBOLS = {
 // ══════════════════ UTILS ══════════════════
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ══════════════════ SETTINGS SYSTEM ══════════════════
+
+const SETTINGS_KEY = 'haguruma_settings_v1';
+
+const settings = {
+  textSpeed: 18,     // ms per character (0 = instant)
+  autoAdvance: false,
+  autoDelay: 2000,   // ms between auto-advances
+  ambientVol: 0.6,   // 0–1
+  sfxVol: 0.8,       // 0–1
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) Object.assign(settings, JSON.parse(raw));
+  } catch (e) {}
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+}
+loadSettings();
+
+function openSettings() {
+  $('#set-text-speed').value = settings.textSpeed;
+  $('#set-text-speed-val').textContent = settings.textSpeed;
+  const autoBtn = $('#set-auto-advance');
+  autoBtn.textContent = settings.autoAdvance ? '開啟' : '關閉';
+  autoBtn.classList.toggle('active', settings.autoAdvance);
+  $('#set-auto-delay-row').style.display = settings.autoAdvance ? 'flex' : 'none';
+  $('#set-auto-delay').value = settings.autoDelay;
+  $('#set-auto-delay-val').textContent = (settings.autoDelay / 1000).toFixed(1) + 's';
+  $('#set-ambient-vol').value = settings.ambientVol * 100;
+  $('#set-ambient-vol-val').textContent = Math.round(settings.ambientVol * 100);
+  $('#set-sfx-vol').value = settings.sfxVol * 100;
+  $('#set-sfx-vol-val').textContent = Math.round(settings.sfxVol * 100);
+  $('#settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  $('#settings-overlay').classList.remove('open');
+  saveSettings();
+}
+function onTextSpeedChange(v) {
+  settings.textSpeed = parseInt(v, 10);
+  $('#set-text-speed-val').textContent = v;
+}
+function toggleAutoAdvance() {
+  settings.autoAdvance = !settings.autoAdvance;
+  const btn = $('#set-auto-advance');
+  btn.textContent = settings.autoAdvance ? '開啟' : '關閉';
+  btn.classList.toggle('active', settings.autoAdvance);
+  $('#set-auto-delay-row').style.display = settings.autoAdvance ? 'flex' : 'none';
+}
+function onAutoDelayChange(v) {
+  settings.autoDelay = parseInt(v, 10);
+  $('#set-auto-delay-val').textContent = (v / 1000).toFixed(1) + 's';
+}
+function onAmbientVolChange(v) {
+  settings.ambientVol = parseInt(v, 10) / 100;
+  $('#set-ambient-vol-val').textContent = v;
+  audioUpdateVolumes();
+}
+function onSfxVolChange(v) {
+  settings.sfxVol = parseInt(v, 10) / 100;
+  $('#set-sfx-vol-val').textContent = v;
+}
+
+// ══════════════════ AUDIO SYSTEM ══════════════════
+// Web Audio API 基礎架構。音檔以 URL 載入，支援：
+//   playAmbient(url, { loop, fadeIn }) — 環境音（同時僅一條，切換自動 crossfade）
+//   playSfx(url)                       — 一次性效果音
+//   stopAmbient(fadeOut)               — 淡出環境音
+// 場景資料可加 audio: { ambient: 'url', sfx: ['url'] }
+
+let _audioCtx = null;
+let _ambientSource = null;
+let _ambientGain = null;
+const _audioCache = {};
+
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+async function fetchAudioBuffer(url) {
+  if (_audioCache[url]) return _audioCache[url];
+  try {
+    const ctx = getAudioCtx();
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+    const decoded = await ctx.decodeAudioData(buf);
+    _audioCache[url] = decoded;
+    return decoded;
+  } catch (e) {
+    console.warn('Audio load failed:', url, e);
+    return null;
+  }
+}
+
+async function playAmbient(url, { loop = true, fadeIn = 1.5 } = {}) {
+  if (!url) return;
+  const ctx = getAudioCtx();
+  const buffer = await fetchAudioBuffer(url);
+  if (!buffer) return;
+
+  // Crossfade: fade out previous
+  if (_ambientSource) stopAmbient(1.0);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(settings.ambientVol, ctx.currentTime + fadeIn);
+  gain.connect(ctx.destination);
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = loop;
+  source.connect(gain);
+  source.start();
+
+  _ambientSource = source;
+  _ambientGain = gain;
+}
+
+function stopAmbient(fadeOut = 1.5) {
+  if (!_ambientGain || !_ambientSource) return;
+  const ctx = getAudioCtx();
+  const g = _ambientGain;
+  const s = _ambientSource;
+  g.gain.linearRampToValueAtTime(0, ctx.currentTime + fadeOut);
+  setTimeout(() => { try { s.stop(); } catch (e) {} }, fadeOut * 1000 + 100);
+  _ambientSource = null;
+  _ambientGain = null;
+}
+
+async function playSfx(url) {
+  if (!url || settings.sfxVol <= 0) return;
+  const ctx = getAudioCtx();
+  const buffer = await fetchAudioBuffer(url);
+  if (!buffer) return;
+
+  const gain = ctx.createGain();
+  gain.gain.value = settings.sfxVol;
+  gain.connect(ctx.destination);
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(gain);
+  source.start();
+}
+
+function audioUpdateVolumes() {
+  if (_ambientGain) {
+    const ctx = getAudioCtx();
+    _ambientGain.gain.linearRampToValueAtTime(settings.ambientVol, ctx.currentTime + 0.3);
+  }
+}
 
 // ── React state bridge ──
 function dispatchHgrState() {
@@ -861,9 +1123,10 @@ function toggleFold(foldEl, sceneEl) {
 }
 
 // ══════════════════ CLICK-TO-ADVANCE ══════════════════
-const INTERACTIVE_SELECTOR = 'button, .choices, .action-btn, .forced-btn, .forced-wrapper, #status, #notebook-overlay, #end-overlay, #map-overlay, .fold-summary, .layout-left, .layout-right, .ch-header, .ch-item, #mini-map-container, .mini-nb-entry, .connection-card';
+const INTERACTIVE_SELECTOR = 'button, .choices, .action-btn, .forced-btn, .forced-wrapper, #status, #notebook-overlay, #end-overlay, #map-overlay, #settings-overlay, .fold-summary, .layout-left, .layout-right, .ch-header, .ch-item, #mini-map-container, .mini-nb-entry, .connection-card';
 
-async function typeText(el, text, speed = 18) {
+async function typeText(el, text, speed) {
+  const spd = speed ?? settings.textSpeed;
   el.textContent = '';
   el.classList.add('typing-cursor');
 
@@ -874,10 +1137,14 @@ async function typeText(el, text, speed = 18) {
   }
   document.addEventListener('click', skipHandler);
 
-  for (let i = 0; i < text.length; i++) {
-    if (skipped) { el.textContent = text; break; }
-    el.textContent += text[i];
-    await sleep(speed);
+  if (spd <= 0) {
+    el.textContent = text;
+  } else {
+    for (let i = 0; i < text.length; i++) {
+      if (skipped) { el.textContent = text; break; }
+      el.textContent += text[i];
+      await sleep(spd);
+    }
   }
 
   document.removeEventListener('click', skipHandler);
@@ -889,9 +1156,14 @@ async function waitForClick() {
   return new Promise(resolve => {
     const indicator = document.createElement('div');
     indicator.className = 'click-continue';
-    indicator.textContent = '▼';
+    indicator.textContent = settings.autoAdvance ? '▶' : '▼';
     currentSceneEl.appendChild(indicator);
     scrollToBottom();
+
+    let autoTimer = null;
+    if (settings.autoAdvance) {
+      autoTimer = setTimeout(() => { cleanup(); resolve(); }, settings.autoDelay);
+    }
 
     function handler(e) {
       if (e.target.closest(INTERACTIVE_SELECTOR)) return;
@@ -906,6 +1178,7 @@ async function waitForClick() {
       }
     }
     function cleanup() {
+      if (autoTimer) clearTimeout(autoTimer);
       indicator.remove();
       document.removeEventListener('click', handler);
       document.removeEventListener('keydown', keyHandler);
@@ -937,6 +1210,7 @@ function updateStatus() {
       <div>
         <button id="map-btn" onclick="openMap()">地圖</button>
         <button id="notebook-btn" onclick="openNotebook()">手帖 (${state.notebook.length})</button>
+        <button id="settings-btn" onclick="openSettings()">⚙</button>
       </div>
     `;
   } else {
@@ -1476,10 +1750,15 @@ $('#end-overlay').addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if ($('#notebook-overlay.open')) closeNotebook();
-    if ($('#end-overlay.open')) closeEndOverlay();
-    if ($('#map-overlay.open')) closeMap();
+    if ($('#settings-overlay.open')) closeSettings();
+    else if ($('#notebook-overlay.open')) closeNotebook();
+    else if ($('#end-overlay.open')) closeEndOverlay();
+    else if ($('#map-overlay.open')) closeMap();
   }
+});
+
+$('#settings-overlay').addEventListener('click', (e) => {
+  if (e.target === $('#settings-overlay')) closeSettings();
 });
 
 // ══════════════════ TITLE ════════��═════════
@@ -1650,6 +1929,15 @@ async function playScene(sceneId) {
   if (scene.fold) {
     await foldCurrentScene(scene.fold);
     newScene();
+  }
+
+  // Audio (ambient / sfx)
+  if (scene.audio) {
+    if (scene.audio.ambient) playAmbient(scene.audio.ambient);
+    if (scene.audio.sfx) {
+      const sfxList = Array.isArray(scene.audio.sfx) ? scene.audio.sfx : [scene.audio.sfx];
+      sfxList.forEach(u => playSfx(u));
+    }
   }
 
   // Visit location
