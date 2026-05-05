@@ -30,23 +30,66 @@ React + 資料驅動架構。
 
 ```
 haguruma-engine/
+├── index.html              Vite 入口 HTML
+├── package.json            Vite + React 18
+├── vite.config.js          Vite 設定
 ├── prototype.html          可遊玩原型（第一章完整版）
+├── legacy/
+│   └── prototype-ch1.html      prototype 備份副本
 ├── ENGINE_SPEC.md          引擎技術規格書
 ├── SCENES_FORMAT.md        場景資料寫作指南
 ├── CHAPTER_GUIDE.md        各章劇本設計筆記
+├── docs/
+│   └── migration-plan.md       遷移計畫
 ├── reference/              原始原型與參考規格
 │   ├── haguruma_ch1.jsx        歯車 React 原型（第一章）
 │   ├── last-letter-game.html   CoC 引擎 v27（最後一封信）
 │   ├── coc-game-spec.md        CoC 文字冒險設計規格
 │   └── GAME_DEV_PLAN.md        脈輪覺醒開發計畫（封存）
-└── src/components/         備用 React 元件
-    ├── Particles.jsx           浮動粒子（神經連動變色）
-    ├── StatRadar.jsx           三軸雷達圖
-    ├── NerveBar.jsx            神經衰減進度條
-    └── ImpactToast.jsx         浮動增減通知
+└── src/
+    ├── main.jsx                React 入口
+    ├── App.jsx                 根元件
+    ├── styles/                 全域樣式
+    ├── components/             React 元件
+    │   ├── HagurumaEngine.jsx      主遊戲協調器
+    │   ├── SceneText.jsx           打字機文字渲染
+    │   ├── ChoiceList.jsx          選項列表
+    │   ├── EndScreen.jsx           章末結算畫面
+    │   ├── NotebookPanel.jsx       手帖側欄
+    │   ├── Particles.jsx           浮動粒子（神經連動變色）
+    │   ├── StatRadar.jsx           三軸雷達圖
+    │   ├── NerveBar.jsx            神經衰減進度條
+    │   └── ImpactToast.jsx         浮動增減通知
+    ├── engine/                 引擎核心邏輯
+    │   ├── state.js                初始狀態 + reducer
+    │   ├── effects.js              nerve / insight / writing 變化（純函式）
+    │   ├── corrupt.js              文字崩壞效果（純函式）
+    │   ├── connections.js          連結判定（純函式）
+    │   ├── scenes.js               場景解析（純函式）
+    │   ├── audio.js                Web Audio API 管理
+    │   ├── save.js                 三層存檔系統
+    │   └── settings.js             使用者設定
+    ├── data/                   場景與章節資料
+    │   ├── chapters/chapter01.js   第一章 33 場景
+    │   ├── connections.js          連結規則（5 條）
+    │   └── symbols.js              符號字形對應表
+    └── utils/                  工具函式
 ```
 
 ## 啟動方式
+
+### React 版（第一章可遊玩）
+
+```bash
+npm install
+npm run dev
+```
+
+瀏覽器開啟 `http://localhost:5173`，點擊「開始遊玩」即可進入第一章。
+
+> React 版第一章已完成遷移，可從開頭一路遊玩到結算畫面。第二章以後尚未遷移。
+
+### Legacy Prototype（可遊玩 — 第一章完整版）
 
 ```bash
 npx serve -l 3456 -s .
@@ -55,14 +98,27 @@ npx serve -l 3456 -s .
 瀏覽器開啟 `http://localhost:3456/prototype.html` 即可遊玩。
 
 > 無需 `npm install`。prototype.html 為純前端單檔，僅依賴 Google Fonts CDN。
+> 備份副本保存於 `legacy/prototype-ch1.html`。
+
+### npm scripts
+
+| 指令 | 說明 |
+|------|------|
+| `npm run dev` | 啟動 Vite dev server（React 版） |
+| `npm run build` | 建置生產版本至 `dist/` |
+| `npm run preview` | 預覽 build 結果 |
+| `npm run legacy` | 啟動 legacy prototype server（port 3456） |
+| `npm run validate:chapters` | 章節資料驗收（結構 + 通關測試） |
+| `npm run test` | 執行 engine 單元測試 |
 
 ## 技術棧
 
-- Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
-- Vanilla CSS（視覺崩壞效果層、摺書動畫）
+- **React 版（第一章已遷移）：** Vite 6 + React 18（JSX）
+- **Legacy prototype：** Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
+- Vanilla CSS + CSS Variables（和紙色系）
 - SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）
 - Google Fonts（Noto Serif TC / JP）
-- React 18 元件（src/components/ — 同步 inline 至 prototype.html，透過 CDN + Babel standalone 執行）
+- React 18 元件（src/components/ — legacy prototype 中透過 CDN + Babel standalone inline 執行）
 
 ## 開發狀態
 
