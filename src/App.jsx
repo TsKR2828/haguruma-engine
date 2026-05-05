@@ -1,3 +1,17 @@
+import {
+  CH1_SCENES,
+  CONNECTIONS,
+  LOCATIONS,
+  SYMBOLS,
+  SYMBOL_GLYPHS,
+  CHAPTERS,
+} from "./data";
+
+const sceneKeys = Object.keys(CH1_SCENES);
+const dynamicScenes = sceneKeys.filter(
+  (k) => typeof CH1_SCENES[k].text === "function"
+);
+
 export default function App() {
   return (
     <div className="app-shell">
@@ -23,13 +37,42 @@ export default function App() {
             </div>
             <div className="shell-info-row">
               <span className="shell-label">狀態</span>
-              <span className="shell-value">Batch 0 — 工具鏈建立</span>
+              <span className="shell-value">Batch 1 — 資料層提取</span>
             </div>
           </div>
-          <a
-            className="shell-legacy-link"
-            href="/prototype.html"
-          >
+
+          <div className="shell-info" style={{ marginTop: 16 }}>
+            <div className="shell-info-row">
+              <span className="shell-label">場景數</span>
+              <span className="shell-value">{sceneKeys.length}</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">動態場景</span>
+              <span className="shell-value">{dynamicScenes.length}（{dynamicScenes.join(", ")}）</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">連結規則</span>
+              <span className="shell-value">{CONNECTIONS.length}</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">地點</span>
+              <span className="shell-value">{LOCATIONS.length}</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">符號類別</span>
+              <span className="shell-value">{Object.keys(SYMBOLS).length}</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">符號 Glyphs</span>
+              <span className="shell-value">{Object.keys(SYMBOL_GLYPHS).length}</span>
+            </div>
+            <div className="shell-info-row">
+              <span className="shell-label">章節</span>
+              <span className="shell-value">{CHAPTERS.length}</span>
+            </div>
+          </div>
+
+          <a className="shell-legacy-link" href="/prototype.html">
             遊玩 Legacy Prototype（第一章）
           </a>
         </div>
