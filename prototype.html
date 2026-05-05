@@ -68,7 +68,7 @@
     display: flex;
     align-items: flex-start;
     min-height: 100vh;
-    max-width: 1280px;
+    max-width: 1400px;
     margin: 0 auto;
   }
   .layout-left, .layout-right {
@@ -76,7 +76,7 @@
     top: 0;
     height: 100vh;
     overflow-y: auto;
-    padding: 28px 16px;
+    padding: 28px 20px;
     flex: 0 0 auto;
     z-index: 5;
     scrollbar-width: thin;
@@ -89,12 +89,12 @@
   .layout-left::-webkit-scrollbar-track, .layout-right::-webkit-scrollbar-track { background: transparent; }
 
   .layout-left  {
-    flex-basis: 200px;
+    flex-basis: 240px;
     background: var(--washi-bg-sidebar);
     border-right: 1px solid var(--washi-border);
   }
   .layout-right {
-    flex-basis: 280px;
+    flex-basis: 320px;
     background:
       repeating-linear-gradient(
         to bottom,
@@ -128,7 +128,7 @@
   .ch-header {
     cursor: pointer;
     color: var(--washi-ink-body);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.2em;
     padding: 8px 0;
@@ -149,7 +149,7 @@
 
   .ch-warning {
     color: var(--washi-ink-muted);
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.85;
     font-style: italic;
     padding: 6px 4px;
@@ -162,7 +162,7 @@
   .ch-item {
     padding: 10px 10px 10px 14px;
     margin-bottom: 4px;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--washi-ink-ghost);
     border-left: 1px solid transparent;
     transition: all 0.2s;
@@ -175,7 +175,7 @@
   }
   .ch-item-num {
     color: var(--washi-ink-body);
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.25em;
     display: block;
     margin-bottom: 3px;
@@ -201,7 +201,7 @@
     background: var(--washi-divider);
   }
   .right-section-header {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.25em;
     color: var(--washi-ink-deep);
@@ -222,7 +222,7 @@
     content: '展開';
     position: absolute;
     top: 6px; right: 6px;
-    font-size: 9px;
+    font-size: 11px;
     color: var(--washi-ink-body);
     letter-spacing: 0.15em;
     opacity: 0;
@@ -233,7 +233,7 @@
   /* Mini-notebook entries (和紙) */
   .mini-nb-entry {
     padding: 10px 12px 10px 14px;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--washi-ink-body);
     border-left: 2px solid var(--washi-accent-gold);
     margin-bottom: 6px;
@@ -258,7 +258,7 @@
   }
   .mini-nb-empty {
     color: var(--washi-ink-muted);
-    font-size: 12px;
+    font-size: 14px;
     font-style: italic;
     padding: 8px 14px;
     letter-spacing: 0.04em;
@@ -286,14 +286,14 @@
   }
   .connection-card-title {
     color: var(--washi-ink-deep);
-    font-size: 13px;
+    font-size: 14px;
     margin-bottom: 3px;
     letter-spacing: 0.04em;
     font-family: 'Noto Serif TC', 'Noto Serif JP', serif;
   }
   .connection-card-subtitle {
     color: var(--washi-ink-muted);
-    font-size: 11px;
+    font-size: 13px;
     font-style: italic;
     letter-spacing: 0.05em;
   }
@@ -327,7 +327,7 @@
 
   .conn-empty {
     color: var(--washi-ink-muted);
-    font-size: 12px;
+    font-size: 14px;
     font-style: italic;
     padding: 8px 14px;
     line-height: 1.7;
@@ -582,10 +582,10 @@
 
   /* ── Title (和紙) ── */
   .title-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90vh; cursor:pointer; }
-  .title-sub { color:var(--washi-ink-muted); font-size:12px; letter-spacing:0.3em; animation: fadeIn 1s; }
-  .title-main { color:var(--washi-ink-deep); font-size:44px; font-weight:300; letter-spacing:0.3em; font-family:'Noto Serif JP',serif; animation: fadeIn 1.5s; margin: 16px 0 6px; }
-  .title-cn { color:var(--washi-ink-muted); font-size:14px; letter-spacing:0.15em; animation: fadeIn 2s; margin-bottom: 50px; }
-  .title-start { color:var(--washi-ink-muted); font-size:12px; letter-spacing:0.2em; animation: pulse 3s ease infinite; }
+  .title-sub { color:var(--washi-ink-muted); font-size:16px; letter-spacing:0.3em; animation: fadeIn 1s; }
+  .title-main { color:var(--washi-ink-deep); font-size:56px; font-weight:300; letter-spacing:0.35em; font-family:'Noto Serif JP',serif; animation: fadeIn 1.5s; margin: 20px 0 8px; }
+  .title-cn { color:var(--washi-ink-muted); font-size:18px; letter-spacing:0.15em; animation: fadeIn 2s; margin-bottom: 50px; }
+  .title-start { color:var(--washi-ink-muted); font-size:15px; letter-spacing:0.2em; animation: pulse 3s ease infinite; }
   @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
 
   /* ── React widget mount points ── */
@@ -595,20 +595,20 @@
   .title-resume {
     margin-top: 22px;
     color: var(--washi-ink-body);
-    font-size: 11px;
+    font-size: 14px;
     letter-spacing: 0.18em;
     background: none;
     border: 1px solid var(--washi-border);
-    padding: 7px 24px;
+    padding: 10px 30px;
     cursor: pointer;
     font-family: inherit;
     transition: all 0.3s;
     animation: fadeIn 2.5s;
   }
   .title-resume:hover { color: var(--washi-ink-deep); border-color: var(--washi-accent-gold); background: rgba(201,168,106,0.08); }
-  .title-resume-meta { display: block; color: var(--washi-ink-muted); font-size: 9px; letter-spacing: 0.1em; margin-top: 4px; font-style: italic; }
+  .title-resume-meta { display: block; color: var(--washi-ink-muted); font-size: 12px; letter-spacing: 0.1em; margin-top: 4px; font-style: italic; }
   .title-clear {
-    margin-top: 12px; color: var(--washi-ink-ghost); font-size: 10px; letter-spacing: 0.1em;
+    margin-top: 12px; color: var(--washi-ink-ghost); font-size: 13px; letter-spacing: 0.1em;
     background: none; border: none; cursor: pointer; font-family: inherit;
     text-decoration: underline; text-underline-offset: 3px;
   }
