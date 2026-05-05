@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "legacy": "npx serve -l 3456 -s ."
+    "legacy": "npx serve -l 3456 -s .",
+    "validate:chapters": "node scripts/validate-chapters.js"
   },
   "dependencies": {
     "react": "^18.3.1",
