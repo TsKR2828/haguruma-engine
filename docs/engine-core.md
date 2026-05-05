@@ -1,8 +1,12 @@
 # Engine Core Modules
 
-純函式引擎核心，位於 `src/engine/`。所有模組無瀏覽器依賴，可獨立測試。
+引擎模組位於 `src/engine/`，分為兩層：純函式核心（無瀏覽器依賴）與瀏覽器 adapter。
+
+純函式核心不可 import 瀏覽器 adapter；UI 層只透過 adapter 呼叫瀏覽器功能。
 
 ## 模組一覽
+
+### 純函式核心
 
 | 模組 | 責任 |
 |------|------|
@@ -11,7 +15,18 @@
 | `corrupt.js` | 神經衰弱時的文字雜訊化 |
 | `connections.js` | 筆記符號 → 連結判定 |
 | `scenes.js` | 場景查詢、文本解析、選項過濾 |
-| `index.js` | Barrel export |
+
+### 瀏覽器 Adapter
+
+| 模組 | 責任 |
+|------|------|
+| `audio.js` | Web Audio API 封裝（ambient / sfx / 音量） |
+| `save.js` | 三層備援存檔（localStorage → sessionStorage → memory） |
+| `settings.js` | 使用者設定讀寫（localStorage） |
+
+| 檔案 | 責任 |
+|------|------|
+| `index.js` | Barrel export（核心 + adapter） |
 
 ---
 
@@ -115,6 +130,67 @@
 
 ---
 
+---
+
+## audio.js
+
+Web Audio API 封裝。管理 ambient 背景音樂與 sfx 音效。
+
+| 函式 | 簽名 | 說明 |
+|------|------|------|
+| `playAmbient` | `(url, opts?) → Promise` | 播放背景音，支援 loop 與 fadeIn（預設 1.5s），自動 crossfade |
+| `playSfx` | `(url) → Promise` | 播放一次性音效 |
+| `stopAllAudio` | `(fadeOut?) → void` | 停止所有音訊，預設 1.5s 淡出 |
+| `setVolumes` | `({ ambientVol?, sfxVol? }) → void` | 即時調整音量，ambient 會平滑過渡 |
+
+內部快取已解碼的 AudioBuffer，避免重複 fetch + decode。
+
+---
+
+## save.js
+
+三層備援存讀檔系統：localStorage → sessionStorage → memory。
+
+| 函式 | 簽名 | 說明 |
+|------|------|------|
+| `saveGame` | `(state) → void` | 序列化 state 並寫入三層 |
+| `loadSave` | `() → object \| null` | 依序嘗試三層讀取 |
+| `hasSave` | `() → boolean` | 是否有有效存檔 |
+| `clearSave` | `() → void` | 清除所有層的存檔 |
+| `restoreState` | `(saved) → state` | 從存檔物件還原為 engine state |
+| `exportSave` | `(state) → string` | 匯出 JSON 字串（供手動備份） |
+| `importSave` | `(json) → state \| null` | 從 JSON 字串匯入，失敗回傳 null |
+
+`saveGame` 接收 engine state 物件（非全域變數），`restoreState` 回傳新 state 物件。
+
+---
+
+## settings.js
+
+使用者偏好設定，持久化到 localStorage。
+
+| 函式 | 簽名 | 說明 |
+|------|------|------|
+| `loadSettings` | `() → settings` | 從 localStorage 讀取，回傳合併後的設定 |
+| `saveSettings` | `() → void` | 將當前設定寫入 localStorage |
+| `getSettings` | `() → settings` | 取得當前設定（不讀 storage） |
+| `updateSettings` | `(partial) → settings` | 部分更新 + 自動持久化 |
+| `resetSettings` | `() → settings` | 重置為預設值 + 持久化 |
+
+### 預設值
+
+```js
+{
+  textSpeed: 18,                          // ms/字
+  audioVolume: { ambient: 0.6, sfx: 0.8 },
+  reducedMotion: false,
+  autoplay: false,
+  autoplayDelay: 2000,                    // ms
+}
+```
+
+---
+
 ## 測試
 
 ```bash
@@ -122,4 +198,4 @@ npm test                    # vitest run（一次性）
 npm run test:watch          # vitest（watch mode）
 ```
 
-測試檔案位於 `tests/engine/`，涵蓋所有模組。
+測試檔案位於 `tests/engine/`，涵蓋純函式核心模組。瀏覽器 adapter 需在整合測試中驗證。
