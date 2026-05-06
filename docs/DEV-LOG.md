@@ -110,6 +110,73 @@
 
 ---
 
+---
+
+## 2026-05-07
+
+### 已完成
+
+#### Batch 3.5A — Chapter Management Mechanism
+
+狀態：完成
+
+動機：
+
+審查框架後發現 HagurumaEngine 硬寫 CHAPTER_01、CONNECTIONS 全域、initialState 硬寫 kasugai，無法直接加 Ch2。在寫 Ch2 spec 前先補章節管理層。
+
+完成內容：
+
+- chapter01.js 改為自含式（scenes + connections + locations + startLocation）
+- 新增 src/data/chapterRegistry.js — 章節註冊表（getChapter / getAllChapters / getChapterCount）
+- src/engine/state.js 新增 createChapterState(chapter, carryOver) — 取代 hardcode initialState
+- HagurumaEngine.jsx 改為接收 chapter / carryOver / onChapterEnd props
+- App.jsx 新增章節管理（chapterNum state + handleChapterEnd + advanceChapter）
+- NotebookPanel 改用 chapter.connections 取代全域 CONNECTIONS import
+- data/index.js 清理，移除舊的全域 export
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（39/39）
+- Ch1 仍可從 prologue 遊玩到 ending
+- 加新章節只需：寫 chapterXX.js + 在 chapterRegistry 加一行 import
+
+---
+
+#### Batch 3.5B — Framework Audit Fix
+
+狀態：完成
+
+動機：
+
+全面審計框架，發現 Critical 4 項 + Important 5 項問題。在 Ch2 開發前修復以避免事後通盤改。
+
+完成內容：
+
+- C1：EndScreen 新增「次の章へ」按鈕 + advanceChapter 接通（App → HagurumaEngine → EndScreen）
+- C2：save.js restoreState 移除 hardcode "kasugai" fallback，改為 null
+- C3：HagurumaEngine 每次選擇後自動呼叫 saveGame；App.jsx 啟動時從 loadSave 恢復 chapterNum
+- I1：NotebookPanel 修復 SYMBOL_GLYPHS 渲染 bug（object → glyph 屬性）
+- I3：handleChapterEnd 改用排除式（解構排除 currentSceneId / currentChapter / journey），未來新增 state 欄位自動 carry over
+- I5：孤兒檔案（ch1_raincoat.js / connections.js / locations.js）移至 legacy/
+- N1：loadScene useCallback deps 修正為 [chapter]
+- 新增 .end-advance-btn CSS 樣式（和紙色系一致）
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（39/39）
+- Ch1 遊戲流程正常
+- 瀏覽器 preview 標題畫面 → 開始遊玩 → 打字機效果正常
+- 零 console error
+
+備註：
+
+- C4（schema doc + validator 更新 locations/connections/startLocation）留到 Batch 4 寫 Ch2 spec 時一起處理
+- I2（journey.symbols 跨章節是否保留）為設計決策，待確認
+
+---
+
 ### 後續批次
 
 ---
@@ -132,6 +199,8 @@
 - connections
 - Nerve / Insight / Writing 變化
 - 驗收條件
+- 更新 docs/chapter-data-schema.md（補 locations / connections / startLocation 欄位）
+- 更新 scripts/validate-chapters.js（驗證新欄位）
 
 ---
 
@@ -143,18 +212,11 @@
 | 2026-05-06 | Batch 2A | refactor: extract pure engine core modules | done | 5 pure modules + tests |
 | 2026-05-06 | Batch 2B | feat: add browser engine adapters | done | audio / save / settings |
 | 2026-05-06 | Batch 3 | feat: connect React UI to chapter one engine | done | Ch1 playable end-to-end |
+| 2026-05-07 | Batch 3.5A | refactor: add chapter management | done | self-contained chapters + registry + props |
+| 2026-05-07 | Batch 3.5B | fix: framework audit fixes | pending commit | EndScreen / save / NotebookPanel / orphans |
 
 ---
 
 ## Rules for Future Agents
 
-1. 每一批只做指定範圍。
-2. 不要自行擴張任務。
-3. 不要刪除 legacy prototype。
-4. 不要修改劇情文字，除非任務明確要求。
-5. 每批完成後更新 DEV-LOG。
-6. 每批都要留下驗收結果。
-7. 每批都要有 commit message。
-8. 新增章節前先寫 spec。
-9. 新增章節資料後先跑 validator。
-10. React UI 接線前，engine core 必須先可測試。
+見 `CLAUDE.md`「工作規則」段落。設計決策見 `docs/DECISIONS.md`。

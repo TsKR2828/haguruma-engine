@@ -21,7 +21,7 @@ export default function NotebookPanel({ state, chapter, onClose }) {
         {notebook.map((entry, i) => (
           <div key={i} className="notebook-entry">
             <span className="notebook-symbol">
-              {SYMBOL_GLYPHS[entry.key] || "◇"}
+              {SYMBOL_GLYPHS[entry.key]?.glyph || "◇"}
             </span>
             <span className="notebook-desc">{entry.desc}</span>
           </div>

@@ -3,6 +3,7 @@ import { createChapterState } from "../engine/state";
 import { applyEffects } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
 import { resolveConnections, applyConnection } from "../engine/connections";
+import { saveGame } from "../engine/save";
 import Particles from "./Particles";
 import NerveBar from "./NerveBar";
 import ImpactToast from "./ImpactToast";
@@ -11,7 +12,7 @@ import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
 
-export default function HagurumaEngine({ chapter, carryOver, onChapterEnd }) {
+export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNextChapter, onAdvance }) {
   const [gs, setGs] = useState(() => createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -93,7 +94,7 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd }) {
       setBlocks(resolveText(sc, next));
       setPhase("text");
     },
-    [],
+    [chapter],
   );
 
   const onTextComplete = useCallback(() => {
@@ -172,6 +173,7 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd }) {
 
       setGs(next);
       gsRef.current = next;
+      saveGame(next);
 
       if (choice.next) loadScene(choice.next);
     },
@@ -246,7 +248,12 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd }) {
       )}
 
       {phase === "ending" && (
-        <EndScreen state={gs} chapter={chapter} />
+        <EndScreen
+          state={gs}
+          chapter={chapter}
+          hasNextChapter={hasNextChapter}
+          onAdvance={onAdvance}
+        />
       )}
     </div>
   );

@@ -1,24 +1,22 @@
 import { useState, useCallback } from "react";
 import HagurumaEngine from "./components/HagurumaEngine";
 import { getChapter } from "./data/chapterRegistry";
+import { loadSave, clearSave } from "./engine/save";
 import "./styles/game.css";
 
 export default function App() {
   const [playing, setPlaying] = useState(false);
-  const [chapterNum, setChapterNum] = useState(1);
+  const [chapterNum, setChapterNum] = useState(() => {
+    const saved = loadSave();
+    return saved?.currentChapter ?? 1;
+  });
   const [carryOver, setCarryOver] = useState(null);
 
   const chapter = getChapter(chapterNum);
 
   const handleChapterEnd = useCallback((finalState) => {
-    setCarryOver({
-      nerve: finalState.nerve,
-      insight: finalState.insight,
-      writing: finalState.writing,
-      notebook: finalState.notebook,
-      choicesMade: finalState.choicesMade,
-      connections: finalState.connections,
-    });
+    const { currentSceneId, currentChapter, journey, ...persistent } = finalState;
+    setCarryOver(persistent);
   }, []);
 
   const advanceChapter = useCallback(() => {
@@ -35,6 +33,8 @@ export default function App() {
         chapter={chapter}
         carryOver={carryOver}
         onChapterEnd={handleChapterEnd}
+        hasNextChapter={!!getChapter(chapterNum + 1)}
+        onAdvance={advanceChapter}
       />
     );
   }

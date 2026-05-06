@@ -357,6 +357,27 @@
   letter-spacing: 0.06em;
 }
 
+.end-advance-btn {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+  color: var(--washi-accent-red);
+  border: 1px solid var(--washi-accent-red);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.end-advance-btn:hover {
+  background: var(--washi-accent-red);
+  color: var(--washi-bg-card);
+}
+
 @keyframes hgr-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }

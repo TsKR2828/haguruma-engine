@@ -54,7 +54,7 @@ export function restoreState(saved) {
     writing: saved.writing,
     notebook: saved.notebook || [],
     choicesMade: saved.choicesMade || {},
-    journey: saved.journey || { current: "kasugai", visited: [], symbols: {} },
+    journey: saved.journey || { current: null, visited: [], symbols: {} },
     connections: saved.connections || [],
   };
 }
