@@ -225,23 +225,47 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 
 ---
 
+#### Batch 3.5E — Cleanup & Integration Tests
+
+狀態：完成
+
+動機：
+
+清理審計產出的低優先項目（L1/L3/L4）並補充整合測試（L2）。
+
+完成內容：
+
+- L1：移除 state.js 未使用的 reducer（67 行死碼），barrel export 改為 createChapterState
+- L2：新增 tests/integration/game-flow.test.js（27 個整合測試案例）
+- L3：validate-chapters.js 改從 initialState import 初始值，不再 hardcode
+- L4：saveGame() 回傳 boolean，失敗時 HagurumaEngine toast 通知用戶
+
+測試覆蓋項目：
+- 開始遊戲（state init + scene load）
+- 推進 scene（auto-advance + notebook/effects）
+- 選擇分歧（condition filter + navigation）
+- flags 正確變化（set + dynamic text response）
+- fold 展開/收合（grouping algorithm + toggle logic）
+- 手帖新增（scene-level + choice-level + dedup + connections）
+- 章結算正確（showEnd + full playthrough + carryOver）
+- 存檔讀檔正確（serialize + restore + import + edge cases）
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（66/66）
+- npm run validate:chapters 通過（22/22 playthroughs）
+- 零 console error
+
+---
+
 ### 待修問題清單（Architecture Audit 產出）
-
-#### Ch3 後再修（低優先）
-
-| # | 項目 | 說明 |
-|---|------|------|
-| L1 | 移除 state.js 未使用的 reducer | HagurumaEngine 直接 setState，reducer 為死碼 |
-| L2 | 加整合測試（章節流程、存讀檔） | Ch1-Ch2 可手動驗收，Ch3 後應自動化 |
-| L3 | validate-chapters.js 從 state.js 讀初始值 | 目前 hardcode nerve=10，應與 initialState 同步 |
-| L4 | save 失敗時 toast 通知用戶 | 極少觸發（quota exceeded） |
 
 #### 不建議拖到 Ch5 後
 
 | # | 項目 | 說明 |
 |---|------|------|
 | D1 | 長篇 history 效能優化 | Ch5+ 每章 40+ 場景可能卡頓，需 React.memo 或虛擬化 |
-| D2 | 整合測試覆蓋存讀檔 + 章節轉換 | 5 章以上手動驗收成本太高 |
 | D3 | save migration 實際實作 | 若 Ch2-Ch4 間新增 state 欄位需 v1→v2 |
 
 ---
@@ -283,6 +307,7 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 | 2026-05-07 | Batch 3.5B | fix: framework audit fixes | done | EndScreen / save / NotebookPanel / orphans |
 | 2026-05-07 | Batch 3.5C | feat: scene history UX | done | fading / fold toggle / scroll comfort |
 | 2026-05-07 | Batch 3.5D | fix: pre-Ch2 architecture fixes | done | save migration / schema / spacer / auto-save |
+| 2026-05-07 | Batch 3.5E | refactor+test: cleanup + integration tests | done | remove reducer / sync validator / save warning / 27 tests |
 
 ---
 
