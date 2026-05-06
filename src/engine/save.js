@@ -1,9 +1,25 @@
 const SAVE_KEY = "haguruma_save_v1";
+const CURRENT_VERSION = 1;
 let _memorySave = null;
+
+const migrations = {
+  // future: 1: (data) => ({ ...data, v: 2, newField: defaultValue })
+};
+
+function migrate(data) {
+  if (!data || typeof data.v !== "number") return data;
+  let current = data;
+  while (current.v < CURRENT_VERSION) {
+    const fn = migrations[current.v];
+    if (!fn) break;
+    current = fn(current);
+  }
+  return current;
+}
 
 export function buildSaveData(state) {
   return {
-    v: 1,
+    v: CURRENT_VERSION,
     scene: state.currentSceneId,
     nerve: state.nerve,
     insight: state.insight,
@@ -31,7 +47,10 @@ export function loadSave() {
   if (!data) { try { data = sessionStorage.getItem(SAVE_KEY); } catch (_) {} }
   if (!data) data = _memorySave;
   if (!data) return null;
-  try { return JSON.parse(data); } catch (_) { return null; }
+  try {
+    const parsed = JSON.parse(data);
+    return migrate(parsed);
+  } catch (_) { return null; }
 }
 
 export function hasSave() {
@@ -67,7 +86,7 @@ export function importSave(json) {
   try {
     const parsed = typeof json === "string" ? JSON.parse(json) : json;
     if (!parsed || !parsed.scene) return null;
-    return restoreState(parsed);
+    return restoreState(migrate(parsed));
   } catch (_) {
     return null;
   }

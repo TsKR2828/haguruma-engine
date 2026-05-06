@@ -147,8 +147,10 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
       setPhase("choices");
     } else if (sc.next) {
       setPhase("continue");
+      saveGame(next);
     } else if (sc.links?.showEnd) {
       setPhase("ending");
+      saveGame(next);
       if (onChapterEnd) onChapterEnd(next);
     }
   }, [toastEffects, checkConns, onChapterEnd]);
