@@ -34,11 +34,16 @@ export function buildSaveData(state) {
 }
 
 export function saveGame(state) {
-  if (!state.currentSceneId) return;
+  if (!state.currentSceneId) return false;
   const data = JSON.stringify(buildSaveData(state));
   _memorySave = data;
-  try { localStorage.setItem(SAVE_KEY, data); } catch (_) {}
-  try { sessionStorage.setItem(SAVE_KEY, data); } catch (_) {}
+  let persisted = false;
+  try { localStorage.setItem(SAVE_KEY, data); persisted = true; } catch (_) {}
+  try { sessionStorage.setItem(SAVE_KEY, data); persisted = true; } catch (_) {}
+  if (!persisted) {
+    console.warn("[haguruma] save failed: storage unavailable, using memory only");
+  }
+  return persisted;
 }
 
 export function loadSave() {

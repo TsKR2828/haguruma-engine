@@ -3,6 +3,7 @@
 import { readdir, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { initialState } from "../src/engine/state.js";
 
 const CHAPTERS_DIR = resolve("src/data/chapters");
 const REPORTS_DIR = resolve("reports");
@@ -228,9 +229,9 @@ function validateChapter(chapter, filename) {
 function simulate(chapter, strategy, rng) {
   const { scenes, startScene } = chapter;
   const state = {
-    nerve: 10,
-    insight: 0,
-    writing: 0,
+    nerve: initialState.nerve,
+    insight: initialState.insight,
+    writing: initialState.writing,
     notebook: [],
     choicesMade: {},
   };

@@ -34,6 +34,11 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
     setImpact({ type, label, amount, reason, _k: impactSeq.current });
   }, []);
 
+  const save = useCallback((state) => {
+    const ok = saveGame(state);
+    if (!ok) toast("loss", "存檔", 0, "儲存失敗，僅保留於記憶體");
+  }, [toast]);
+
   const toastEffects = useCallback(
     (fx) => {
       if (!fx) return;
@@ -147,10 +152,10 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
       setPhase("choices");
     } else if (sc.next) {
       setPhase("continue");
-      saveGame(next);
+      save(next);
     } else if (sc.links?.showEnd) {
       setPhase("ending");
-      saveGame(next);
+      save(next);
       if (onChapterEnd) onChapterEnd(next);
     }
   }, [toastEffects, checkConns, onChapterEnd]);
@@ -189,7 +194,7 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
 
       setGs(next);
       gsRef.current = next;
-      saveGame(next);
+      save(next);
 
       if (choice.next) loadScene(choice.next);
     },
