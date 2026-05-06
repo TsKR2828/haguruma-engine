@@ -19,10 +19,14 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
   const [phase, setPhase] = useState("loading");
   const [impact, setImpact] = useState(null);
   const [showNb, setShowNb] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [collapsed, setCollapsed] = useState({});
 
   const gsRef = useRef(gs);
   gsRef.current = gs;
   const sceneRef = useRef(null);
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
   const impactSeq = useRef(0);
 
   const toast = useCallback((type, label, amount, reason) => {
@@ -61,6 +65,16 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
     (sceneId) => {
       const sc = getSceneById(chapter, sceneId);
       if (!sc) return;
+
+      if (sceneRef.current && blocksRef.current.length > 0) {
+        const prevBlocks = blocksRef.current;
+        const prevFold = sceneRef.current.links?.fold || null;
+        const prevId = gsRef.current.currentSceneId;
+        setHistory((h) => [
+          ...h,
+          { sceneId: prevId, blocks: prevBlocks, fold: prevFold },
+        ]);
+      }
 
       let next = { ...gsRef.current, currentSceneId: sceneId };
 
@@ -216,6 +230,59 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
       </header>
 
       <main className="game-content">
+        {(() => {
+          const sections = [];
+          let cur = { fold: null, entries: [] };
+          for (const entry of history) {
+            if (entry.fold) {
+              if (cur.entries.length > 0) sections.push(cur);
+              cur = { fold: entry.fold, entries: [entry] };
+            } else {
+              cur.entries.push(entry);
+            }
+          }
+          if (cur.entries.length > 0) sections.push(cur);
+
+          return sections.map((sec, si) => {
+            const isLast = si === sections.length - 1;
+            const isCollapsedSec = collapsed[si] ?? !isLast;
+            return (
+              <div key={si} className="scene-section">
+                {sec.fold && (
+                  <div
+                    className="fold-divider fold-clickable"
+                    onClick={() => setCollapsed((c) => ({ ...c, [si]: !isCollapsedSec }))}
+                  >
+                    <span className="fold-arrow">{isCollapsedSec ? "▸" : "▾"}</span>
+                    {sec.fold}
+                  </div>
+                )}
+                {!isCollapsedSec && (
+                  <div className="scene-past">
+                    {sec.entries.flatMap((entry, ei) =>
+                      entry.blocks
+                        .filter((b) => b.type !== "break" && b.type !== "pause")
+                        .map((b, bi) => (
+                          <div key={`${ei}-${bi}`} className={`scene-block scene-block-${b.type} scene-block-read`}>
+                            {b.type === "dialogue" ? (
+                              <>
+                                {b.speaker && <div className="scene-block-speaker">{b.speaker}</div>}
+                                <div className="scene-block-jp">{b.jp}</div>
+                                {b.cn && <div className="scene-block-cn">{b.cn}</div>}
+                              </>
+                            ) : (
+                              b.content || ""
+                            )}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          });
+        })()}
+
         {scene?.links?.fold && (
           <div className="fold-divider">{scene.links.fold}</div>
         )}
@@ -241,6 +308,8 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
             ▾ 點擊繼續
           </div>
         )}
+
+        <div className="game-scroll-spacer" />
       </main>
 
       {showNb && (

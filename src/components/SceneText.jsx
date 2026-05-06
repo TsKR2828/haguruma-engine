@@ -66,7 +66,7 @@ export default function SceneText({ blocks, nerve, onComplete }) {
   }
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [doneCount, charIdx]);
 
   function renderBlock(block, idx, isActive) {
