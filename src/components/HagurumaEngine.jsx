@@ -1,10 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { initialState } from "../engine/state";
+import { createChapterState } from "../engine/state";
 import { applyEffects } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
 import { resolveConnections, applyConnection } from "../engine/connections";
-import { CHAPTER_01 } from "../data/chapters/chapter01";
-import { CONNECTIONS } from "../data/connections";
 import Particles from "./Particles";
 import NerveBar from "./NerveBar";
 import ImpactToast from "./ImpactToast";
@@ -13,10 +11,8 @@ import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
 
-const chapter = CHAPTER_01;
-
-export default function HagurumaEngine() {
-  const [gs, setGs] = useState({ ...initialState });
+export default function HagurumaEngine({ chapter, carryOver, onChapterEnd }) {
+  const [gs, setGs] = useState(() => createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [phase, setPhase] = useState("loading");
@@ -49,14 +45,15 @@ export default function HagurumaEngine() {
   const checkConns = useCallback(
     (st) => {
       let next = st;
-      const formed = resolveConnections(next, CONNECTIONS);
+      const conns = chapter.connections ?? [];
+      const formed = resolveConnections(next, conns);
       for (const conn of formed) {
         next = applyConnection(next, conn);
         toast("gain", "連結", conn.insightGain ?? 0, conn.title);
       }
       return next;
     },
-    [toast],
+    [toast, chapter],
   );
 
   const loadScene = useCallback(
@@ -137,8 +134,9 @@ export default function HagurumaEngine() {
       setPhase("continue");
     } else if (sc.links?.showEnd) {
       setPhase("ending");
+      if (onChapterEnd) onChapterEnd(next);
     }
-  }, [toastEffects, checkConns]);
+  }, [toastEffects, checkConns, onChapterEnd]);
 
   const onChoice = useCallback(
     (choice) => {
@@ -244,7 +242,7 @@ export default function HagurumaEngine() {
       </main>
 
       {showNb && (
-        <NotebookPanel state={gs} onClose={() => setShowNb(false)} />
+        <NotebookPanel state={gs} chapter={chapter} onClose={() => setShowNb(false)} />
       )}
 
       {phase === "ending" && (
