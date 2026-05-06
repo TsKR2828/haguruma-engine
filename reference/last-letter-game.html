@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最後一封信</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Noto Serif TC', 'Cormorant Garamond', serif;
+    background: #0a0d0a;
+    color: #c9b88a;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+  
+  #game {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 30px;
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  /* SAN 扭曲層 */
+  #distortion {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 100;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(20,5,5,0.4) 100%);
+    opacity: 0;
+    transition: opacity 1.5s;
+  }
+  
+  #noise {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='3' /></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.4'/></svg>");
+    transition: opacity 1s;
+  }
+  
+  h1 {
+    font-size: 2.4em;
+    text-align: center;
+    color: #d4c089;
+    margin-bottom: 8px;
+    letter-spacing: 0.15em;
+    font-weight: 500;
+  }
+  
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+    color: #8a7d5a;
+    margin-bottom: 40px;
+    font-family: 'Cormorant Garamond', serif;
+    letter-spacing: 0.05em;
+  }
+  
+  .panel {
+    background: rgba(15, 18, 15, 0.8);
+    border: 1px solid #3a3528;
+    padding: 30px;
+    margin-bottom: 24px;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  
+  .panel h2 {
+    color: #b8a76d;
+    font-size: 1.3em;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #3a3528;
+    padding-bottom: 8px;
+    letter-spacing: 0.1em;
+  }
+  
+  /* 屬性面板 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+  
+  .stat {
+    background: rgba(0,0,0,0.4);
+    padding: 16px;
+    border-left: 2px solid #6b5e3a;
+    position: relative;
+  }
+  
+  .stat-name {
+    font-size: 0.85em;
+    color: #8a7d5a;
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+  
+  .stat-value {
+    font-size: 1.8em;
+    color: #d4c089;
+    font-weight: 500;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  
+  .stat-formula {
+    font-size: 0.75em;
+    color: #5a513a;
+    font-style: italic;
+    margin-top: 4px;
+  }
+  
+  .dice-rolling {
+    animation: shake 0.05s infinite;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+  
+  /* 擲骰判定面板 */
+  .roll-check {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #4a4028;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  
+  .roll-check-title {
+    color: #8a7d5a;
+    font-size: 0.9em;
+    letter-spacing: 0.2em;
+    margin-bottom: 12px;
+  }
+  
+  .roll-check-formula {
+    color: #c9b88a;
+    font-size: 1.1em;
+    margin-bottom: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+  }
+  
+  .roll-dice {
+    font-size: 3em;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    color: #d4c089;
+    margin: 12px 0;
+    letter-spacing: 0.05em;
+    min-height: 1.2em;
+  }
+  
+  .roll-result-success {
+    color: #b8a76d;
+    font-size: 1.2em;
+    letter-spacing: 0.15em;
+    margin-top: 8px;
+  }
+  
+  .roll-result-fail {
+    color: #a04040;
+    font-size: 1.2em;
+    letter-spacing: 0.15em;
+    margin-top: 8px;
+  }
+  
+  /* 損失提示框 */
+  .impact-box {
+    background: rgba(40, 10, 10, 0.4);
+    border-left: 3px solid #a04040;
+    padding: 12px 16px;
+    margin: 16px 0;
+    color: #d4a89a;
+    font-size: 0.95em;
+  }
+  
+  .impact-box.gain {
+    background: rgba(20, 30, 20, 0.4);
+    border-left-color: #6b8a4a;
+    color: #b8c89a;
+  }
+  
+  .impact-box .impact-line {
+    margin: 4px 0;
+  }
+  
+  .impact-box .impact-label {
+    color: #8a7d5a;
+    font-size: 0.85em;
+    letter-spacing: 0.1em;
+  }
+  
+  /* 按鈕 */
+  button {
+    background: transparent;
+    border: 1px solid #6b5e3a;
+    color: #c9b88a;
+    padding: 12px 24px;
+    font-family: inherit;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.1em;
+    margin: 6px 4px;
+  }
+  
+  button:hover:not(:disabled) {
+    background: #2a2418;
+    border-color: #c9b88a;
+    color: #e8d99a;
+  }
+  
+  button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+  
+  /* 文字內容 */
+  .narrative {
+    font-size: 1.05em;
+    margin-bottom: 20px;
+    text-align: justify;
+    min-height: 60px;
+  }
+  
+  .narrative p {
+    margin-bottom: 14px;
+  }
+  
+  .typing::after {
+    content: '▊';
+    animation: blink 0.8s infinite;
+    color: #b8a76d;
+  }
+  
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+  
+  /* 狀態列 */
+  #status-bar {
+    position: sticky;
+    top: 0;
+    background: rgba(10, 13, 10, 0.95);
+    border-bottom: 1px solid #3a3528;
+    padding: 12px 20px;
+    margin: -40px -30px 30px -30px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.9em;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+  }
+  
+  .status-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .status-label {
+    color: #6b5e3a;
+    letter-spacing: 0.1em;
+    font-size: 0.85em;
+  }
+  
+  .status-value {
+    color: #d4c089;
+    font-weight: 500;
+  }
+  
+  .san-low { color: #a04040 !important; }
+  
+  /* 信件 */
+  .letter {
+    background: linear-gradient(135deg, #1a1812 0%, #14110a 100%);
+    border: 1px solid #4a4028;
+    padding: 32px;
+    font-family: 'Cormorant Garamond', 'Noto Serif TC', serif;
+    font-style: italic;
+    line-height: 2;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.4);
+  }
+  
+  .letter::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence baseFrequency='0.6' numOctaves='2' /></filter><rect width='100' height='100' filter='url(%23n)' opacity='0.05'/></svg>");
+    pointer-events: none;
+  }
+  
+  /* 線索清單 */
+  .clue-list {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  .clue-list li {
+    padding: 8px 0 8px 20px;
+    border-left: 2px solid #4a4028;
+    margin-bottom: 6px;
+    color: #a89968;
+    font-size: 0.95em;
+  }
+  
+  .clue-new {
+    animation: clueGlow 2s;
+  }
+  
+  @keyframes clueGlow {
+    0% { color: #e8d99a; border-left-color: #c9b88a; }
+    100% { color: #a89968; border-left-color: #4a4028; }
+  }
+  
+  /* 結局 */
+  .ending {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .ending-title {
+    font-size: 2em;
+    color: #d4c089;
+    letter-spacing: 0.3em;
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+  
+  .ending-text {
+    font-style: italic;
+    color: #a89968;
+    line-height: 2;
+    max-width: 540px;
+    margin: 0 auto 30px;
+    font-family: 'Cormorant Garamond', 'Noto Serif TC', serif;
+  }
+  
+  /* SAN 雜訊文字效果 */
+  .corrupted {
+    display: inline-block;
+  }
+  
+  /* 房間導航 */
+  .room-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .room-btn {
+    padding: 18px;
+    text-align: left;
+    line-height: 1.4;
+  }
+  
+  .room-btn small {
+    display: block;
+    color: #6b5e3a;
+    font-size: 0.8em;
+    margin-top: 4px;
+    font-style: italic;
+  }
+  
+  /* 必讀章節提示 */
+  .chapter-locked {
+    color: #5a4030;
+    font-style: italic;
+  }
+  
+  .warning {
+    color: #a04040;
+    font-size: 0.9em;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  
+  /* 滾動條 */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #0a0d0a; }
+  ::-webkit-scrollbar-thumb { background: #3a3528; }
+</style>
+</head>
+<body>
+<div id="distortion"></div>
+<div id="noise"></div>
+<div id="game"></div>
+
+<script>
+// ==================== 遊戲狀態 ====================
+const state = {
+  scene: 'title',
+  stats: { san: 0, sanMax: 0, int: 0, edu: 0, pow: 0, luck: 0 },
+  rerollUsed: false,
+  time: 0, // 遊戲內分鐘數，從 0 開始
+  timeLimit: 360, // 6 小時 = 360 分鐘到天亮
+  clues: [],
+  visited: {},
+  flags: {},
+  chaptersRead: [],
+};
+
+// ==================== 工具函式 ====================
+const $ = (sel) => document.querySelector(sel);
+const game = () => $('#game');
+
+const roll = (n, sides) => {
+  let total = 0;
+  for (let i = 0; i < n; i++) total += Math.floor(Math.random() * sides) + 1;
+  return total;
+};
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// SAN 視覺效果
+function updateDistortion() {
+  const ratio = state.stats.san / state.stats.sanMax;
+  const distort = $('#distortion');
+  const noise = $('#noise');
+  if (ratio < 0.7) distort.style.opacity = (0.7 - ratio) * 1.5;
+  else distort.style.opacity = 0;
+  if (ratio < 0.4) noise.style.opacity = (0.4 - ratio) * 0.6;
+  else noise.style.opacity = 0;
+}
+
+// 文字雜訊化（SAN 越低越亂）
+function corrupt(text) {
+  const ratio = state.stats.san / state.stats.sanMax;
+  if (ratio > 0.5) return text;
+  const corruptChars = '̷̧̢̡̕͝͞҉̴̶̸͍̩̭̮̯̪̟̱̬̜̦̤̳';
+  const intensity = (0.5 - ratio) * 2;
+  return text.split('').map(c => {
+    if (Math.random() < intensity * 0.15 && c.trim()) {
+      return c + corruptChars[Math.floor(Math.random() * corruptChars.length)];
+    }
+    return c;
+  }).join('');
+}
+
+// 打字機效果
+async function typeText(element, text, speed = 30) {
+  element.textContent = '';
+  element.classList.add('typing');
+  for (let i = 0; i < text.length; i++) {
+    element.textContent += text[i];
+    await sleep(speed);
+  }
+  element.classList.remove('typing');
+}
+
+// 扣 SAN
+function loseSan(amount, reason = '') {
+  const before = state.stats.san;
+  state.stats.san = Math.max(0, state.stats.san - amount);
+  updateDistortion();
+  return { before, after: state.stats.san, lost: before - state.stats.san };
+}
+
+// 擲骰判定動畫（d100 vs 屬性）
+async function performCheck(statName, statValue, label) {
+  // 找 panel 容器或直接掛在 game 下
+  let host = $('#check-area');
+  if (!host) {
+    // 在 panel 內找一個地方插入
+    const panel = document.querySelector('.panel');
+    if (panel) {
+      host = document.createElement('div');
+      host.id = 'check-area-temp';
+      panel.appendChild(host);
+    } else {
+      host = document.createElement('div');
+      game().appendChild(host);
+    }
+  }
+  
+  host.innerHTML = `
+    <div class="roll-check">
+      <div class="roll-check-title">${label}</div>
+      <div class="roll-check-formula">d100 ≤ ${statName} (${statValue})</div>
+      <div class="roll-dice" id="dice-display">--</div>
+      <div id="roll-outcome"></div>
+    </div>
+  `;
+  
+  const display = host.querySelector('#dice-display');
+  const outcome = host.querySelector('#roll-outcome');
+  
+  // 滾動動畫（前快後慢）
+  for (let i = 0; i < 20; i++) {
+    display.textContent = String(Math.floor(Math.random() * 100) + 1).padStart(2, '0');
+    await sleep(40 + i * 10);
+  }
+  
+  const result = roll(1, 100);
+  const success = result <= statValue;
+  display.textContent = String(result).padStart(2, '0');
+  display.style.color = success ? '#b8a76d' : '#a04040';
+  
+  await sleep(500);
+  outcome.innerHTML = success
+    ? `<div class="roll-result-success">✓ 判定成功</div>`
+    : `<div class="roll-result-fail">✗ 判定失敗</div>`;
+  
+  await sleep(1100);
+  return { success, value: result };
+}
+
+// 顯示影響（SAN 損失、線索獲得等）
+function showImpact(lines, type = 'loss') {
+  const box = document.createElement('div');
+  box.className = `impact-box ${type === 'gain' ? 'gain' : ''}`;
+  box.innerHTML = lines.map(l => `<div class="impact-line">${l}</div>`).join('');
+  
+  // 優先掛在 impact-area，否則找 panel，否則 game
+  let host = $('#impact-area');
+  if (!host) {
+    const panel = document.querySelector('.panel');
+    host = panel || game();
+  }
+  host.appendChild(box);
+  return box;
+}
+
+// SAN 損失含動畫
+async function loseSanAnimated(amount, reason) {
+  const before = state.stats.san;
+  state.stats.san = Math.max(0, state.stats.san - amount);
+  updateDistortion();
+  
+  showImpact([
+    `<span class="impact-label">理智值</span>　${before} → ${state.stats.san}　<strong style="color:#d4a89a;">−${amount}</strong>`,
+    reason ? `<span class="impact-label">原因</span>　${reason}` : ''
+  ].filter(Boolean));
+  
+  // 更新狀態列
+  const sb = $('#status-bar');
+  if (sb) {
+    const newBar = document.createElement('div');
+    newBar.innerHTML = statusBar();
+    sb.replaceWith(newBar.firstElementChild);
+  }
+  
+  await sleep(800);
+}
+
+// 加線索
+function addClue(text) {
+  if (!state.clues.includes(text)) {
+    state.clues.push(text);
+    return true;
+  }
+  return false;
+}
+
+// 推進時間
+function advanceTime(minutes) {
+  state.time += minutes;
+}
+
+// 格式化時間（從 23:00 開始算）
+function formatTime() {
+  const startHour = 23, startMin = 0;
+  const totalMin = startHour * 60 + startMin + state.time;
+  const h = Math.floor(totalMin / 60) % 24;
+  const m = totalMin % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+// ==================== 存檔系統 ====================
+// 三層備份：window.storage（持久化）→ sessionStorage（次選）→ window.__lastLetterSaves（記憶體最後備援）
+const SAVE_PREFIX = 'last-letter-save:';
+
+async function saveGame(slot = 'auto') {
+  const saveData = {
+    state: JSON.parse(JSON.stringify(state)),
+    timestamp: new Date().toISOString(),
+    slot,
+  };
+  const key = SAVE_PREFIX + slot;
+  const json = JSON.stringify(saveData);
+  
+  // 1. 持久化儲存（artifact 環境支援，跨 session）
+  try {
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set(key, json);
+    }
+  } catch (e) {
+    console.warn('window.storage 存檔失敗，改用 sessionStorage:', e);
+  }
+  
+  // 2. sessionStorage 同步寫一份（當前分頁可用）
+  try {
+    if (typeof Storage !== 'undefined' && window.sessionStorage) {
+      sessionStorage.setItem(key, json);
+    }
+  } catch (e) {}
+  
+  // 3. 記憶體備份
+  window.__lastLetterSaves = window.__lastLetterSaves || {};
+  window.__lastLetterSaves[slot] = saveData;
+  
+  return true;
+}
+
+async function loadGame(slot = 'auto') {
+  const key = SAVE_PREFIX + slot;
+  
+  // 1. 優先從 window.storage 讀
+  try {
+    if (window.storage && typeof window.storage.get === 'function') {
+      const result = await window.storage.get(key);
+      if (result && result.value) {
+        const data = JSON.parse(result.value);
+        Object.assign(state, data.state);
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('window.storage 讀檔失敗:', e);
+  }
+  
+  // 2. sessionStorage 次選
+  try {
+    if (typeof Storage !== 'undefined' && window.sessionStorage) {
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        const data = JSON.parse(raw);
+        Object.assign(state, data.state);
+        return data;
+      }
+    }
+  } catch (e) {}
+  
+  // 3. 記憶體最後備援
+  if (window.__lastLetterSaves && window.__lastLetterSaves[slot]) {
+    const data = window.__lastLetterSaves[slot];
+    Object.assign(state, data.state);
+    return data;
+  }
+  
+  return null;
+}
+
+async function hasSave(slot = 'auto') {
+  const info = await getSaveInfo(slot);
+  return !!info;
+}
+
+async function getSaveInfo(slot = 'auto') {
+  const key = SAVE_PREFIX + slot;
+  
+  try {
+    if (window.storage && typeof window.storage.get === 'function') {
+      const result = await window.storage.get(key);
+      if (result && result.value) return JSON.parse(result.value);
+    }
+  } catch (e) {}
+  
+  try {
+    if (typeof Storage !== 'undefined' && window.sessionStorage) {
+      const raw = sessionStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    }
+  } catch (e) {}
+  
+  if (window.__lastLetterSaves && window.__lastLetterSaves[slot]) {
+    return window.__lastLetterSaves[slot];
+  }
+  return null;
+}
+
+async function deleteSave(slot = 'auto') {
+  const key = SAVE_PREFIX + slot;
+  try {
+    if (window.storage && typeof window.storage.delete === 'function') {
+      await window.storage.delete(key);
+    }
+  } catch (e) {}
+  try {
+    if (typeof Storage !== 'undefined' && window.sessionStorage) {
+      sessionStorage.removeItem(key);
+    }
+  } catch (e) {}
+  if (window.__lastLetterSaves) delete window.__lastLetterSaves[slot];
+}
+
+function autoSave() {
+  // 不 await — 自動存檔不阻塞遊戲流程
+  saveGame('auto').catch(e => console.warn('autoSave failed:', e));
+}
+
+async function continueFromSave(slot = 'auto') {
+  const data = await loadGame(slot);
+  if (!data) {
+    alert('沒有可用的存檔。');
+    return;
+  }
+  resumeScene();
+}
+
+function resumeScene() {
+  const scene = state.scene;
+  if (scene === 'creation') startCharCreation();
+  else if (scene === 'arrival') renderArrival();
+  else if (scene === 'hall') renderHall();
+  else if (scene === 'study') renderStudy();
+  else if (scene === 'library') renderLibrary();
+  else if (scene === 'bedroom') renderBedroom();
+  else if (scene === 'basement') renderBasement();
+  else renderHall();
+  
+  updateDistortion();
+}
+
+async function showSaveMenu() {
+  const info = await getSaveInfo('auto');
+  const manual = await getSaveInfo('manual');
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">存檔 · 讀檔</h1>
+    <div class="panel">
+      <h2>自動存檔</h2>
+      ${info ? `
+        <div style="padding: 12px; background: rgba(0,0,0,0.3); margin-bottom: 16px;">
+          <div style="color: #8a7d5a; font-size: 0.85em;">時間：${new Date(info.timestamp).toLocaleString('zh-TW')}</div>
+          <div style="color: #c9b88a; margin-top: 4px;">場景：${sceneNameMap[info.state.scene] || info.state.scene}　SAN：${info.state.stats.san}/${info.state.stats.sanMax}　線索：${info.state.clues.length}</div>
+        </div>
+      ` : '<div style="color: #6b5e3a; font-style: italic; margin-bottom: 16px;">無自動存檔</div>'}
+      
+      <h2 style="margin-top: 24px;">手動存檔</h2>
+      ${manual ? `
+        <div style="padding: 12px; background: rgba(0,0,0,0.3); margin-bottom: 16px;">
+          <div style="color: #8a7d5a; font-size: 0.85em;">時間：${new Date(manual.timestamp).toLocaleString('zh-TW')}</div>
+          <div style="color: #c9b88a; margin-top: 4px;">場景：${sceneNameMap[manual.state.scene] || manual.state.scene}　SAN：${manual.state.stats.san}/${manual.state.stats.sanMax}　線索：${manual.state.clues.length}</div>
+        </div>
+      ` : '<div style="color: #6b5e3a; font-style: italic; margin-bottom: 16px;">無手動存檔</div>'}
+      
+      <div class="button-row">
+        <button onclick="saveManual()">儲存到手動存檔</button>
+        ${manual ? '<button onclick="loadManual()">讀取手動存檔</button>' : ''}
+        <button onclick="resumeScene()">返回遊戲</button>
+      </div>
+    </div>
+  `;
+}
+
+async function saveManual() {
+  const ok = await saveGame('manual');
+  if (ok) {
+    alert('已儲存到手動存檔。');
+    showSaveMenu();
+  } else {
+    alert('儲存失敗。');
+  }
+}
+
+async function loadManual() {
+  if (confirm('讀取手動存檔將覆蓋當前進度，確定？')) {
+    const data = await loadGame('manual');
+    if (data) {
+      resumeScene();
+    } else {
+      alert('讀取失敗。');
+    }
+  }
+}
+
+const sceneNameMap = {
+  title: '標題',
+  creation: '角色建立',
+  arrival: '門廳',
+  hall: '迴廊',
+  study: '書房',
+  library: '圖書室',
+  bedroom: '主臥',
+  basement: '地下室',
+  ending: '結局',
+};
+
+// ==================== 場景渲染 ====================
+
+async function renderTitle() {
+  const autoInfo = await getSaveInfo('auto');
+  const manualInfo = await getSaveInfo('manual');
+  const hasAuto = !!autoInfo;
+  const hasManual = !!manualInfo;
+  
+  game().innerHTML = `
+    <div style="margin-top: 80px;">
+      <h1>最後一封信</h1>
+      <div class="subtitle">The Last Letter — Arkham, 1923</div>
+      <div class="panel" style="margin-top: 60px;">
+        <p class="narrative" style="text-align: center; font-style: italic; color: #a89968;">
+          冬夜。煤油燈芯在手中顫抖。<br>
+          老友的急信攤在桌上——<br>
+          「我發現了不該存在的東西。請來。」<br><br>
+          天亮前，妳必須找出答案。<br>
+          或者，永遠不要找到。
+        </p>
+        <div class="button-row" style="margin-top: 32px;">
+          <button onclick="startCharCreation()">擲骰 · 開始新遊戲</button>
+        </div>
+        ${hasAuto || hasManual ? `
+          <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #3a3528;">
+            <div style="color: #8a7d5a; font-size: 0.85em; text-align: center; margin-bottom: 12px; letter-spacing: 0.15em;">— 繼續舊有命運 —</div>
+            <div class="button-row">
+              ${hasAuto ? `<button onclick="continueFromSave('auto')">繼續（自動存檔）<br><small style="color:#6b5e3a; font-style:italic;">${sceneNameMap[autoInfo.state.scene] || ''}　SAN ${autoInfo.state.stats.san}</small></button>` : ''}
+              ${hasManual ? `<button onclick="continueFromSave('manual')">讀取手動存檔<br><small style="color:#6b5e3a; font-style:italic;">${sceneNameMap[manualInfo.state.scene] || ''}　SAN ${manualInfo.state.stats.san}</small></button>` : ''}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+async function startCharCreation() {
+  state.scene = 'creation';
+  game().innerHTML = `
+    <h1>角色建立</h1>
+    <div class="subtitle">Roll the Dice — Character Creation</div>
+    <div class="panel">
+      <h2>擲骰判定</h2>
+      <p style="color: #8a7d5a; font-size: 0.95em; margin-bottom: 8px;">
+        命運將決定妳能承受多少真相。
+      </p>
+      <p style="color: #6b5e3a; font-size: 0.85em; margin-bottom: 20px; font-style: italic;">
+        依 CoC 7e 規則：SAN 起始值 = POW
+      </p>
+      <div class="stats-grid" id="stats-grid">
+        ${renderStatCard('POW', '意志', '3d6 × 5', 'pow')}
+        ${renderStatCard('SAN', '理智值', '= POW（起始）', 'san')}
+        ${renderStatCard('INT', '智力', '(2d6+6) × 5', 'int')}
+        ${renderStatCard('EDU', '教育', '(2d6+6) × 5', 'edu')}
+        ${renderStatCard('LUC', '幸運', '3d6 × 5', 'luck')}
+      </div>
+      <div id="creation-buttons" class="button-row" style="margin-top: 30px;">
+        <button onclick="rollAllStats()">擲骰</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStatCard(code, name, formula, key) {
+  return `
+    <div class="stat" id="stat-${key}">
+      <div class="stat-name">${code} · ${name}</div>
+      <div class="stat-value" id="val-${key}">--</div>
+      <div class="stat-formula">${formula}</div>
+    </div>
+  `;
+}
+
+async function rollAllStats() {
+  const buttons = $('#creation-buttons');
+  buttons.innerHTML = '<span style="color: #6b5e3a; font-style: italic;">擲骰中…</span>';
+  
+  // CoC 7e 標準：POW 用 3d6×5 擲，SAN 起始 = POW
+  const pow = roll(3,6) * 5;
+  const finalStats = {
+    pow: pow,
+    san: pow,        // 起始 SAN = POW
+    int: (roll(2,6) + 6) * 5,
+    edu: (roll(2,6) + 6) * 5,
+    luck: roll(3,6) * 5,
+  };
+  
+  // 動畫：每個屬性快速跳數字後落定
+  // 順序：POW 先擲，SAN 跟著 POW 顯示
+  const keys = ['pow', 'san', 'int', 'edu', 'luck'];
+  for (const k of keys) {
+    const card = $(`#stat-${k}`);
+    const val = $(`#val-${k}`);
+    card.classList.add('dice-rolling');
+    
+    if (k === 'san') {
+      // SAN 顯示為從 POW 同步
+      for (let i = 0; i < 8; i++) {
+        val.textContent = Math.floor(Math.random() * 90) + 15;
+        await sleep(40);
+      }
+      val.textContent = finalStats.san;
+      // 加個小提示
+      const formula = card.querySelector('.stat-formula');
+      if (formula) formula.textContent = `= POW (${pow})`;
+    } else {
+      for (let i = 0; i < 12; i++) {
+        val.textContent = Math.floor(Math.random() * 90) + 15;
+        await sleep(40);
+      }
+      val.textContent = finalStats[k];
+    }
+    card.classList.remove('dice-rolling');
+    await sleep(150);
+  }
+  
+  state.stats = { ...finalStats, sanMax: finalStats.san };
+  
+  // 顯示確認/重骰
+  const rerollBtn = state.rerollUsed ? '' : '<button onclick="rerollStats()">重骰一次（僅一次機會）</button>';
+  buttons.innerHTML = `
+    ${rerollBtn}
+    <button onclick="confirmStats()">承擔此命運</button>
+  `;
+}
+
+async function rerollStats() {
+  state.rerollUsed = true;
+  await rollAllStats();
+}
+
+function confirmStats() {
+  // 給玩家看屬性影響
+  game().innerHTML = `
+    <h1>命運已定</h1>
+    <div class="panel">
+      <h2>屬性詮釋</h2>
+      <div class="narrative">
+        <p><strong style="color: #d4c089;">POW ${state.stats.pow}</strong>　
+          ${state.stats.pow >= 60 ? '意志堅定，能抵抗低語誘惑。' :
+            '意志一般，黑暗可能會說服妳。'}</p>
+        <p><strong style="color: #d4c089;">SAN ${state.stats.san}</strong>　
+          ${state.stats.san >= 60 ? '理智堅實。妳能承受不少真相。' :
+            state.stats.san >= 40 ? '理智尚可，但禁不起太多衝擊。' :
+            '理智脆弱。每一個發現都可能將妳推向深淵。'}</p>
+        <p><strong style="color: #d4c089;">INT ${state.stats.int}</strong>　
+          ${state.stats.int >= 70 ? '敏銳的觀察力，能看見他人忽略的細節。' :
+            state.stats.int >= 50 ? '一般的理解力。' :
+            '思緒遲鈍，許多線索將與妳擦身而過。'}</p>
+        <p><strong style="color: #d4c089;">EDU ${state.stats.edu}</strong>　
+          ${state.stats.edu >= 70 ? '博學。即使是禁忌文獻也能讀懂。' :
+            state.stats.edu >= 50 ? '受過良好教育，能讀懂《死靈之書》前半部。' :
+            '《死靈之書》深處的章節，對妳將是無解的天書。'}</p>
+        <p><strong style="color: #d4c089;">幸運 ${state.stats.luck}</strong>　
+          ${state.stats.luck >= 60 ? '運氣眷顧妳。' :
+            state.stats.luck >= 40 ? '運氣中庸。' :
+            '運氣低迷。命運不站在妳這邊。'}</p>
+      </div>
+      <div class="button-row">
+        <button onclick="startGame()">推開那扇門</button>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== 主遊戲 ====================
+
+function startGame() {
+  state.scene = 'arrival';
+  renderArrival();
+}
+
+function statusBar() {
+  const sanRatio = state.stats.san / state.stats.sanMax;
+  const sanClass = sanRatio < 0.4 ? 'san-low' : '';
+  return `
+    <div id="status-bar">
+      <div class="status-item">
+        <span class="status-label">時間</span>
+        <span class="status-value">${formatTime()}</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">SAN</span>
+        <span class="status-value ${sanClass}">${state.stats.san}/${state.stats.sanMax}</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">線索</span>
+        <span class="status-value">${state.clues.length}</span>
+      </div>
+    </div>
+  `;
+}
+
+async function renderArrival() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">門廳</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  const text = corrupt(`雪花打在臉上，融化成冷水順著衣領流下。妳推開老宅的橡木門，鉸鏈發出長長的呻吟。
+
+門廳空無一人。煤油燈擱在玄關桌上，火苗微弱地搖晃——有人剛剛還在這裡。地毯上有泥靴的印子，往書房方向去了。
+
+牆上的老座鐘指著十一點。距離天亮還有六個小時。`);
+  
+  await typeText($('#text'), text, 25);
+  
+  $('#actions').innerHTML = `
+    <div class="button-row">
+      <button onclick="readLetter()">取出友人的信再讀一遍</button>
+      <button onclick="goToHall()">深入老宅</button>
+    </div>
+  `;
+}
+
+async function readLetter() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">友人的信</h1>
+    <div class="letter">
+      <p id="letter-text"></p>
+    </div>
+    <div class="button-row" id="actions" style="margin-top: 20px;"></div>
+  `;
+  
+  const text = `致 摯友——
+
+我寫這封信時手在發抖，但我必須寫完。
+
+阿卡姆郊外這棟老宅，是我祖父留下的。我以為只是普通的繼承，直到我在地下室找到那本書。不，不是「找到」——它一直在那裡等我。
+
+我做了我不該做的事。我讀了它。現在我知道了不該知道的東西，而它們也知道了我。
+
+低語從牆裡傳來。鏡子裡的不是我。
+
+請來。在天亮前。書房抽屜第二格有鑰匙。地下室——不，妳先別下去。先讀我留在書房的日記。
+
+如果妳到的時候我已經不在了，請燒掉那本書。無論如何都要燒掉。
+
+如果妳到的時候我「在」——請更要燒掉。
+
+H.W.`;
+  
+  await typeText($('#letter-text'), text, 20);
+  
+  $('#actions').innerHTML = `
+    <button onclick="renderArrival()">收起信</button>
+  `;
+  
+  if (addClue('友人 H.W. 的求救信')) {}
+}
+
+// ==================== 房間導覽 ====================
+
+function goToHall() {
+  state.scene = 'hall';
+  advanceTime(5);
+  renderHall();
+}
+
+async function renderHall() {
+  state.scene = 'hall';
+  autoSave();
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">迴廊中央</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  const text = corrupt(`迴廊中央。四個方向各有一道門。地板上的灰塵被擾動過——有人在這裡來回走過很多次。
+
+煤油燈的光只能照到不遠處。再往前的黑暗裡，似乎有什麼在呼吸。`);
+  
+  await typeText($('#text'), text, 25);
+  
+  // 檢查時間
+  if (checkTimeOut()) return;
+  
+  $('#actions').innerHTML = `
+    <div class="room-grid">
+      <button class="room-btn" onclick="enterRoom('study')">
+        書房
+        <small>${state.visited.study ? '（已探索）' : '門縫透出微光'}</small>
+      </button>
+      <button class="room-btn" onclick="enterRoom('library')">
+        圖書室
+        <small>${state.visited.library ? '（已探索）' : '友人說書房裡有日記'}</small>
+      </button>
+      <button class="room-btn" onclick="enterRoom('bedroom')">
+        主臥
+        <small>${state.visited.bedroom ? '（已探索）' : '門半開著'}</small>
+      </button>
+      <button class="room-btn" onclick="enterRoom('basement')" ${needsKey() ? 'disabled' : ''}>
+        地下室
+        <small>${needsKey() ? '門鎖著，需要鑰匙' : (state.visited.basement ? '（已探索）' : '低語從深處傳來')}</small>
+      </button>
+    </div>
+    <div style="margin-top: 16px; text-align: center; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+      ${state.clues.length > 0 ? `<button onclick="showClues()">檢視線索（${state.clues.length}）</button>` : ''}
+      <button onclick="showSaveMenu()">存檔 · 讀檔</button>
+      ${state.flags.canEscape ? '<button onclick="tryEscape()" style="border-color: #b8a76d;">嘗試離開老宅</button>' : ''}
+    </div>
+  `;
+}
+
+function needsKey() {
+  return !state.flags.hasKey;
+}
+
+function showClues() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">已知線索</h1>
+    <div class="panel">
+      <ul class="clue-list">
+        ${state.clues.map(c => `<li>${c}</li>`).join('')}
+      </ul>
+      <div class="button-row" style="margin-top: 20px;">
+        <button onclick="renderHall()">回到迴廊</button>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== 各房間 ====================
+
+function enterRoom(room) {
+  advanceTime(3);
+  if (checkTimeOut()) return;
+  
+  if (room === 'study') renderStudy();
+  else if (room === 'library') renderLibrary();
+  else if (room === 'bedroom') renderBedroom();
+  else if (room === 'basement') renderBasement();
+}
+
+// ===== 書房 =====
+async function renderStudy() {
+  state.visited.study = true;
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">書房</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  const text = corrupt(`書房裡的爐火還沒完全熄滅。煤油燈擺在書桌上，旁邊有一本攤開的日記，墨水尚未完全乾透。
+
+抽屜微微露出縫隙。書架佔據整面牆，但其中一本書凸出特別多——彷彿剛被人取出又放回，但沒放對位置。`);
+  
+  await typeText($('#text'), text, 25);
+  
+  renderStudyActions();
+}
+
+function renderStudyActions() {
+  $('#actions').innerHTML = `
+    <div class="button-row">
+      ${!state.flags.readDiary ? '<button onclick="readDiary()">翻閱日記</button>' : ''}
+      ${!state.flags.hasKey ? '<button onclick="searchDrawer()">檢查抽屜</button>' : ''}
+      <button onclick="examineBook()">檢視凸出的那本書</button>
+      <button onclick="renderHall()">回到迴廊</button>
+    </div>
+  `;
+}
+
+async function readDiary() {
+  state.flags.readDiary = true;
+  advanceTime(8);
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">友人的日記</h1>
+    <div class="panel">
+      <div class="narrative" id="pre-text" style="font-style: italic; color: #8a7d5a;">
+        妳翻開日記。字跡密密麻麻，墨水深淺不一。能讀懂多少，取決於妳的觀察力。
+      </div>
+      <div id="check-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await sleep(800);
+  
+  // INT 判定（手動三段判定）
+  const host = $('#check-area');
+  host.innerHTML = `
+    <div class="roll-check">
+      <div class="roll-check-title">智力判定 · 解讀字跡</div>
+      <div class="roll-check-formula">d100 ≤ INT (${state.stats.int})</div>
+      <div class="roll-dice" id="dice-display">--</div>
+      <div id="roll-outcome"></div>
+    </div>
+  `;
+  
+  const display = host.querySelector('#dice-display');
+  const outcome = host.querySelector('#roll-outcome');
+  
+  for (let i = 0; i < 20; i++) {
+    display.textContent = String(Math.floor(Math.random() * 100) + 1).padStart(2, '0');
+    await sleep(40 + i * 10);
+  }
+  
+  const result = roll(1, 100);
+  display.textContent = String(result).padStart(2, '0');
+  
+  let level;
+  if (result <= Math.floor(state.stats.int / 2)) {
+    level = 'great';
+    display.style.color = '#d4c089';
+    outcome.innerHTML = `<div class="roll-result-success">✓ 極限成功（資訊全收）</div>`;
+  } else if (result <= state.stats.int) {
+    level = 'success';
+    display.style.color = '#b8a76d';
+    outcome.innerHTML = `<div class="roll-result-success">✓ 判定成功</div>`;
+  } else {
+    level = 'fail';
+    display.style.color = '#a04040';
+    outcome.innerHTML = `<div class="roll-result-fail">✗ 判定失敗</div>`;
+  }
+  
+  await sleep(1300);
+  
+  // 顯示日記內容
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">友人的日記</h1>
+    <div class="letter">
+      <p id="diary-text"></p>
+    </div>
+    <div id="impact-area"></div>
+    <div class="button-row" id="actions" style="margin-top: 20px;"></div>
+  `;
+  
+  let text;
+  if (level === 'great') {
+    text = `十一月三日　雪。
+祖父的遺物裡有一把銅鑰匙。地下室的鎖已經鏽了五十年。今天我打開了它。
+
+十一月七日　
+那本書是真的。我以前以為《死靈之書》只是 Lovecraft 的虛構。我錯了。阿拉伯文原典——不，這是後來的拉丁譯本，但仍然——它是真的。
+
+十一月十二日　
+我讀了第一章。SAN 的概念在這種時候顯得多麼諷刺。我是個學者，這是我的職責。我讀了。
+
+十一月十五日　
+鏡子。鏡子裡那個影子停留得比我久了半秒。我做了個實驗，舉起左手——它舉了右手。當然——鏡像本來就會這樣。但停留時間。停留時間不對。
+
+十一月二十日　
+低語從牆裡傳來，是拉丁文。我能聽懂的拉丁文。它在叫我的名字。我必須寫信給她——但她若來了，我會不會就是把她也帶進來？
+
+最後一頁，墨跡已乾但筆觸潦草：
+「燒掉它。承諾我。如果妳讀到這裡，我大概已經——不對，我大概還在。但已經不是我。」`;
+  } else if (level === 'success') {
+    text = `（許多段落字跡潦草，難以辨認）
+
+……祖父的遺物……銅鑰匙……地下室……
+
+……《死靈之書》是真的……我以為只是虛構……
+
+……鏡子裡的影子……停留時間不對……
+
+……低語……拉丁文……它在叫我的名字……
+
+最後一頁：「燒掉它。」`;
+  } else {
+    text = `（妳的視線難以聚焦在密密麻麻的字跡上。只能勉強辨認出幾個詞——）
+
+「鑰匙」「地下室」「死靈之書」「鏡子」「低語」「燒掉它」
+
+更多的內容像是某種妳讀不懂的語言。`;
+  }
+  
+  await typeText($('#diary-text'), text, 18);
+  
+  const sanLoss = roll(1, 4);
+  await loseSanAnimated(sanLoss, '閱讀友人關於異象的記述');
+  addClue(`友人日記：提及《死靈之書》、鏡子異象、地下室`);
+  if (level === 'great') addClue('日記細節：銅鑰匙來自祖父遺物，友人聽得懂的拉丁文低語');
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#actions').innerHTML = `<button onclick="renderStudy()">闔上日記</button>`;
+}
+
+async function searchDrawer() {
+  state.flags.hasKey = true;
+  advanceTime(2);
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">書桌抽屜</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="impact-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`第二格抽屜。一把銅鑰匙，沉甸甸的。鑰匙柄上刻著看不懂的符號——不是英文，也不是拉丁文。
+
+抽屜底部還壓著一張照片：年輕時的友人和一位老人（他祖父？）站在這棟老宅前，地下室的入口在他們腳邊半掩著。`), 22);
+  
+  addClue('地下室鑰匙（銅鑰匙，刻有未知符號）');
+  
+  showImpact([
+    `<span class="impact-label">獲得</span>　地下室鑰匙`,
+    `<span class="impact-label">解鎖</span>　可進入地下室`
+  ], 'gain');
+  
+  $('#actions').innerHTML = `<button onclick="renderStudy()">關上抽屜</button>`;
+}
+
+async function examineBook() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">凸出的書</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  if (!state.flags.foundNecronomicon) {
+    state.flags.foundNecronomicon = true;
+    await typeText($('#text'), corrupt(`妳抽出那本書。
+
+封面是黑色皮革，沒有書名——但燙金的圖案是一隻無眼的山羊頭，圍繞著用拉丁文寫成的咒語。
+
+書脊內側有一行小字：
+《NECRONOMICON》——拉丁譯本，1228 年 Olaus Wormius 譯。
+
+妳的手在發抖。`), 25);
+    
+    const sanLoss = roll(1, 6);
+    await loseSanAnimated(sanLoss, '僅僅是看見《死靈之書》本身');
+    addClue('《死靈之書》（Necronomicon，拉丁譯本）');
+    
+    if (state.stats.san <= 0) {
+      $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+      return;
+    }
+    
+    $('#actions').innerHTML = `
+      <div class="button-row">
+        <button onclick="openNecronomicon()">翻開《死靈之書》</button>
+        <button onclick="renderStudy()">放回原處</button>
+      </div>
+    `;
+  } else {
+    await typeText($('#text'), `《死靈之書》仍在原位。已讀章節：${state.chaptersRead.length}/5`, 22);
+    $('#actions').innerHTML = `
+      <div class="button-row">
+        <button onclick="openNecronomicon()">繼續閱讀</button>
+        <button onclick="renderStudy()">闔上</button>
+      </div>
+    `;
+  }
+}
+
+// ===== 死靈之書章節 =====
+const necronomiconChapters = [
+  {
+    id: 0,
+    title: '第一章 · 渾沌之始',
+    eduRequired: 0,
+    sanLoss: '1d10',
+    text: `「在時間之前，混沌已存在。所謂神，所謂理性，皆為人類後造之物。原初的祂們從未離開——祂們只是沉睡。」
+
+文字在妳讀的當下扭曲變形。妳閉上眼，但那些拉丁文已經印在視網膜後方。`,
+    clue: '《死靈之書》第一章：原初存在「沉睡未死」的概念',
+  },
+  {
+    id: 1,
+    title: '第二章 · 鏡之回廊',
+    eduRequired: 0,
+    sanLoss: '1d8',
+    text: `「鏡子並非反射。鏡子是門。當妳凝視鏡子，鏡子也凝視妳——而從另一側凝視妳的，未必是妳的影像。」
+
+妳忽然想起友人日記裡關於鏡子的記載。`,
+    clue: '《死靈之書》第二章：鏡子是「門」而非反射',
+  },
+  {
+    id: 2,
+    title: '第三章 · 言語的契約',
+    eduRequired: 50,
+    sanLoss: '1d10',
+    text: `「祂們的名字不能被念出。念出名字即是召喚，召喚即是契約。但人類仍會念——因為祂們在低語中教會人類念。」
+
+書頁邊緣有友人的鉛筆批註：「我念了。我念了祂的名字。我以為只是學術研究——」`,
+    clue: '《死靈之書》第三章：友人念出了某個名字',
+  },
+  {
+    id: 3,
+    title: '第四章 · 血脈的繼承',
+    eduRequired: 50,
+    sanLoss: '1d10',
+    text: `「契約一旦訂立，無法撤銷。立約者的血脈將承繼此契約——除非以更深的契約覆蓋之。」
+
+友人的批註：「祖父——所以是祖父先做了這件事？我繼承的不只是這棟房子。」`,
+    clue: '《死靈之書》第四章：友人的祖父早已立下契約',
+  },
+  {
+    id: 4,
+    title: '第五章 · 開門的儀式',
+    eduRequired: 70,
+    sanLoss: '2d10',
+    text: `（接下來的內容妳幾乎無法直視。文字在頁面上爬行，重組，發出聲音。妳不是在「讀」——妳是在「被告知」。）
+
+關於儀式，關於入口，關於不該理解卻已理解的真相。
+
+妳明白了。妳明白為什麼友人寫下「燒掉它」——他寫下這句話時就已經知道他自己無法做到。
+
+而現在妳也知道了。`,
+    clue: '《死靈之書》第五章：開門儀式的全貌（解鎖見證結局）',
+  },
+];
+
+async function openNecronomicon() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">《死靈之書》</h1>
+    <div class="panel">
+      <h2>章節目錄</h2>
+      <div id="chapters"></div>
+      <div class="button-row" style="margin-top: 20px;">
+        <button onclick="renderStudy()">闔上書本</button>
+      </div>
+    </div>
+  `;
+  
+  const list = necronomiconChapters.map((ch, i) => {
+    const read = state.chaptersRead.includes(ch.id);
+    const locked = state.stats.edu < ch.eduRequired;
+    
+    if (read) {
+      return `<div style="padding: 12px; border-left: 2px solid #4a4028; margin-bottom: 8px; color: #6b5e3a;">
+        ✓ ${ch.title}　<small style="font-style: italic;">已讀</small>
+      </div>`;
+    } else if (locked) {
+      return `<div style="padding: 12px; border-left: 2px solid #2a2418; margin-bottom: 8px;" class="chapter-locked">
+        ${ch.title}　<small>（需要 EDU ≥ ${ch.eduRequired}，妳的 EDU 為 ${state.stats.edu}）</small>
+      </div>`;
+    } else {
+      return `<div style="padding: 12px; margin-bottom: 8px;">
+        <button onclick="readChapter(${ch.id})" style="width: 100%; text-align: left;">
+          ${ch.title}<br>
+          <small style="color: #8a7d5a;">扣 SAN：${ch.sanLoss}</small>
+        </button>
+      </div>`;
+    }
+  }).join('');
+  
+  $('#chapters').innerHTML = list;
+}
+
+async function readChapter(id) {
+  const ch = necronomiconChapters[id];
+  state.chaptersRead.push(id);
+  advanceTime(10);
+  
+  // 計算 SAN 損失
+  const [n, s] = ch.sanLoss.split('d').map(Number);
+  const loss = roll(n, s);
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">${ch.title}</h1>
+    <div class="letter">
+      <p id="ch-text"></p>
+    </div>
+    <div id="impact-area"></div>
+    <div class="button-row" id="actions" style="margin-top: 20px;"></div>
+  `;
+  
+  await typeText($('#ch-text'), corrupt(ch.text), 22);
+  
+  await loseSanAnimated(loss, `閱讀${ch.title}（扣 ${ch.sanLoss} = ${loss}）`);
+  addClue(ch.clue);
+  
+  // SAN 歸零判定
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#actions').innerHTML = `<button onclick="openNecronomicon()">闔上此章</button>`;
+}
+
+// ===== 圖書室 =====
+async function renderLibrary() {
+  state.scene = 'library';
+  state.visited.library = true;
+  autoSave();
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">圖書室</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`圖書室比書房大得多。挑高的書架直達天花板，許多書都倒著放——有人匆忙翻找過。
+
+角落有一面落地長鏡。${state.flags.mirrorSeen ? '妳寧願不再看向那個方向。' : '妳的影像在鏡中——但不知為何，妳猶豫了一下，沒有立刻看過去。'}
+
+壁爐架上有一封未寄出的信。`), 25);
+  
+  // 動態組合按鈕：鏡子的選項依狀態而變
+  let mirrorBtn = '';
+  if (!state.flags.mirrorSeen) {
+    mirrorBtn = '<button onclick="lookMirror()">凝視鏡子</button>';
+  } else if (state.flags.mirrorSeen && !state.flags.mirrorRevisited) {
+    mirrorBtn = '<button onclick="forceLookMirror()" style="border-color: #6b3030; color: #a04040;">強迫自己再看一次鏡子</button>';
+  } else {
+    mirrorBtn = '<button disabled>鏡子（妳不會再靠近）</button>';
+  }
+  
+  $('#actions').innerHTML = `
+    <div class="button-row">
+      ${!state.flags.readUnsent ? '<button onclick="readUnsentLetter()">讀未寄出的信</button>' : ''}
+      ${mirrorBtn}
+      <button onclick="renderHall()">回到迴廊</button>
+    </div>
+  `;
+}
+
+async function renderBedroom() {
+  state.scene = 'bedroom';
+  state.visited.bedroom = true;
+  autoSave();
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">主臥</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`主臥的床鋪整齊，但被子下隆起著什麼形狀。${state.flags.bedChecked ? '——妳已經知道下面是什麼了。' : ''}
+
+梳妝台上有一個小木盒，雕著與銅鑰匙相同的符號。窗戶外是無盡的雪。
+
+床邊地板上，有一行用粉筆畫的線——像某種防護圈。已經被擦掉了一半。`), 25);
+  
+  $('#actions').innerHTML = `
+    <div class="button-row">
+      ${!state.flags.bedChecked ? '<button onclick="checkBed()">掀開被子</button>' : ''}
+      ${!state.flags.openedBox ? '<button onclick="openBox()">打開木盒</button>' : ''}
+      ${!state.flags.circleExamined ? '<button onclick="examineCircle()">檢視粉筆圈</button>' : ''}
+      <button onclick="renderHall()">回到迴廊</button>
+    </div>
+  `;
+}
+
+async function readUnsentLetter() {
+  state.flags.readUnsent = true;
+  advanceTime(4);
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <div class="letter">
+      <p id="unsent-text"></p>
+    </div>
+    <div id="impact-area"></div>
+    <div class="button-row" id="actions" style="margin-top: 20px;"></div>
+  `;
+  
+  await typeText($('#unsent-text'), `致祖父——
+
+我知道您不會收到這封信。您已經死了三十年。
+
+但我必須寫。因為我現在明白了——您留下這棟房子給我，不是遺贈。是繼承。是您把契約留給了我。
+
+書房裡那本書，是您從某個地方帶回來的。地下室裡的那個——那個東西——是您召喚的。您用了一輩子壓制它，等到您死，它就只是……等著下一個血脈。
+
+我恨您。但我也理解您。因為現在我也想——
+
+（信到這裡中斷）`, 18);
+  
+  const sanLoss = roll(1, 4);
+  await loseSanAnimated(sanLoss, '理解友人的命運：祖父留下的契約');
+  addClue('未寄出的信：友人寫給已故祖父，揭示契約由祖父發起');
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#actions').innerHTML = `<button onclick="renderLibrary()">放回壁爐架</button>`;
+}
+
+async function lookMirror() {
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">落地鏡</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`妳站在鏡前。
+
+鏡中的妳也站在鏡前。
+
+舉起左手——鏡像舉起右手。
+
+放下。鏡像放下。
+
+但停留時間。停留時間多了半秒。
+
+鏡中的妳的眼睛——不是妳的眼睛。`), 30);
+  
+  // POW 判定
+  const powRoll = roll(1, 100);
+  const success = powRoll <= state.stats.pow;
+  
+  await sleep(800);
+  
+  if (success) {
+    $('#text').innerHTML += `<p style="color: #b8a76d; margin-top: 16px;">妳猛地別過頭。意志的力量讓妳沒有繼續凝視。</p>`;
+    loseSan(roll(1, 3));
+    addClue(`鏡像異常確認：鏡中存在「他者」（POW 判定成功）`);
+    $('#actions').innerHTML = `<button onclick="renderLibrary()">離開鏡前</button>`;
+  } else {
+    $('#text').innerHTML += `<p style="color: #a04040; margin-top: 16px;">妳無法移開視線。鏡中的「妳」緩緩微笑——而妳的臉並沒有在笑。</p>`;
+    loseSan(roll(2, 6));
+    addClue('鏡像異常確認：鏡中「他者」對妳微笑（POW 判定失敗）');
+    
+    if (state.stats.san <= 0) {
+      setTimeout(() => endingAssimilation(), 2000);
+      return;
+    }
+    
+    $('#actions').innerHTML = `<button onclick="renderLibrary()">勉強掙脫</button>`;
+  }
+}
+
+// ===== 主臥 =====
+// renderBedroom 已在上方定義
+
+async function checkBed() {
+  state.flags.bedChecked = true;
+  game().innerHTML = `
+    ${statusBar()}
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`妳掀開被子。
+
+底下沒有人。
+
+只有一套疊好的衣服——是友人的衣服。剛脫下來的，還留有體溫。
+
+但人在哪裡？`), 28);
+  
+  const sanLoss = roll(1, 4);
+  await loseSanAnimated(sanLoss, '友人的體溫還在，人卻不見');
+  addClue('主臥床上：友人的衣服剛脫下，人卻不見');
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#text').innerHTML += `<p style="color: #8a7d5a; margin-top: 16px; font-style: italic;">妳放下被子。妳不會再掀開它。</p>`;
+  
+  $('#actions').innerHTML = `<button onclick="renderBedroom()">退離床邊</button>`;
+}
+
+async function openBox() {
+  state.flags.openedBox = true;
+  advanceTime(2);
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">雕花木盒</h1>
+    <div class="panel">
+      <div class="narrative" id="pre-text" style="font-style: italic; color: #8a7d5a;">
+        妳打開木盒。盒子裡有什麼，看妳的運氣。
+      </div>
+      <div id="check-area"></div>
+      <div id="text-area" style="margin-top: 20px;"></div>
+      <div id="impact-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await sleep(800);
+  
+  // 幸運判定
+  const { success } = await performCheck('幸運', state.stats.luck, '幸運判定 · 木盒內容');
+  
+  const textArea = $('#text-area');
+  textArea.innerHTML = `<div class="narrative" id="text"></div>`;
+  
+  if (success) {
+    await typeText($('#text'), corrupt(`木盒裡有一個玻璃小瓶，標籤上寫著「以鹽圈為界，火為終結」。
+
+是某種儀式材料。妳猜——應該是燒掉某物時所需。`), 25);
+    state.flags.hasRitualSalt = true;
+    addClue('儀式之鹽（可用於焚毀儀式）');
+    
+    showImpact([
+      `<span class="impact-label">獲得</span>　儀式之鹽`,
+      `<span class="impact-label">用途</span>　可在地下室焚毀《死靈之書》`
+    ], 'gain');
+    
+    $('#actions').innerHTML = `<button onclick="renderBedroom()">收起小瓶</button>`;
+  } else {
+    await typeText($('#text'), corrupt(`木盒裡空空如也。
+
+但盒底刻著一行字：「來得太晚了。」`), 25);
+    
+    const sanLoss = roll(1, 3);
+    await loseSanAnimated(sanLoss, '某種被諷刺的感覺');
+    
+    if (state.stats.san <= 0) {
+      $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+      return;
+    }
+    
+    $('#actions').innerHTML = `<button onclick="renderBedroom()">闔上木盒</button>`;
+  }
+}
+
+async function examineCircle() {
+  state.flags.circleExamined = true;
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.6em;">粉筆圈</h1>
+    <div class="panel">
+      <div class="narrative" id="pre-text" style="font-style: italic; color: #8a7d5a;">
+        妳蹲下檢視地板上的粉筆痕跡。它們的意義，取決於妳的學識能否辨識出那些符號。
+      </div>
+      <div id="check-area"></div>
+      <div id="text-area" style="margin-top: 20px;"></div>
+      <div id="impact-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await sleep(800);
+  
+  // INT 判定
+  const { success } = await performCheck('INT', state.stats.int, '智力判定 · 辨識符號');
+  
+  const textArea = $('#text-area');
+  textArea.innerHTML = `<div class="narrative" id="text"></div>`;
+  
+  if (success) {
+    await typeText($('#text'), corrupt(`這是一個防護圈。粉筆畫的，搭配特定符號——妳在書本裡看過類似的設計。
+
+但圈的東邊缺了一塊——像是有什麼東西從圈內走了出去。
+
+從圈內。`), 28);
+    addClue('主臥防護圈：友人從圈內走出（而非從外被攻擊）');
+    
+    const sanLoss = roll(1, 4);
+    await loseSanAnimated(sanLoss, '理解到友人是自願離開防護圈');
+  } else {
+    await typeText($('#text'), corrupt(`地上有一些粉筆痕跡。可能是塗鴉？妳不太能看懂。`), 25);
+    addClue('主臥地板有粉筆塗鴉（未能辨識）');
+  }
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#actions').innerHTML = `<button onclick="renderBedroom()">站起身</button>`;
+}
+
+// ===== 地下室 =====
+async function renderBasement() {
+  // 如果已下去過且已退出，不再進入
+  if (state.flags.basementSeen) {
+    game().innerHTML = `
+      ${statusBar()}
+      <h1 style="font-size: 1.6em;">地下室階梯</h1>
+      <div class="panel">
+        <div class="narrative" id="text"></div>
+        <div id="actions" style="margin-top: 20px;"></div>
+      </div>
+    `;
+    await typeText($('#text'), corrupt(`妳站在地下室階梯口。
+
+下面那個「他」還在等。
+
+妳這次知道，再下去就沒有退路了。`), 25);
+    
+    let buttons = '<button onclick="renderHall()">退離階梯口</button>';
+    if (state.flags.hasRitualSalt && state.flags.foundNecronomicon && !state.flags.bookBurned) {
+      buttons += '<button onclick="burnNecronomicon()" style="border-color: #b8a76d;">取出儀式之鹽，焚毀《死靈之書》</button>';
+    }
+    if (state.chaptersRead.length === 5) {
+      buttons += '<button onclick="endingWitness()" style="border-color: #a04040;">下去完成儀式（已讀完全書）</button>';
+    }
+    $('#actions').innerHTML = `<div class="button-row">${buttons}</div>`;
+    return;
+  }
+  
+  state.visited.basement = true;
+  state.flags.basementSeen = true;
+  state.flags.canEscape = true; // 進入過地下室後可選擇離開
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <h1 style="font-size: 1.8em;">地下室</h1>
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="impact-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`銅鑰匙轉動。鎖鏽了五十年的喀噠聲。
+
+樓梯往下。每一階都在呻吟。
+
+底部是一個圓形的房間。中央是一個用石頭砌成的祭壇，上面用粉筆畫著巨大的符號——還沒完成。
+
+祭壇旁站著一個人。
+
+是友人。
+
+但他的眼睛——不是他的眼睛。
+
+他朝妳微笑，緩緩開口：
+
+「妳來了。妳會幫我把它畫完，對嗎？」`), 28);
+  
+  const sanLoss = roll(2, 6);
+  await loseSanAnimated(sanLoss, '直面已被同化的友人（扣 2d6 = ' + sanLoss + '）');
+  addClue('地下室：友人正在進行未完成的儀式');
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  let buttons = '';
+  if (state.flags.hasRitualSalt && state.flags.foundNecronomicon) {
+    buttons += '<button onclick="burnNecronomicon()" style="border-color: #b8a76d;">取出儀式之鹽，焚毀《死靈之書》</button>';
+  }
+  buttons += '<button onclick="refuseRitual()">後退，逃離地下室</button>';
+  if (state.chaptersRead.length === 5) {
+    buttons += '<button onclick="endingWitness()" style="border-color: #a04040;">完成儀式（已讀完全書）</button>';
+  }
+  
+  $('#actions').innerHTML = `<div class="button-row">${buttons}</div>`;
+}
+
+async function refuseRitual() {
+  game().innerHTML = `
+    ${statusBar()}
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="impact-area"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`妳後退。
+
+「他」歪著頭，仍然微笑：「妳會回來的。妳已經知道了。」
+
+樓梯太長。妳爬回主層時，雙腿幾乎不聽使喚。`), 26);
+  
+  const sanLoss = roll(1, 4);
+  await loseSanAnimated(sanLoss, '逃離過程中的恐懼');
+  
+  if (state.stats.san <= 0) {
+    $('#actions').innerHTML = `<button onclick="endingAssimilation()">……</button>`;
+    return;
+  }
+  
+  $('#actions').innerHTML = `<button onclick="renderHall()">回到迴廊</button>`;
+}
+
+async function burnNecronomicon() {
+  if (!state.flags.foundNecronomicon) {
+    alert('妳還沒有找到《死靈之書》！');
+    return;
+  }
+  
+  game().innerHTML = `
+    ${statusBar()}
+    <div class="panel">
+      <div class="narrative" id="text"></div>
+      <div id="actions" style="margin-top: 20px;"></div>
+    </div>
+  `;
+  
+  await typeText($('#text'), corrupt(`妳衝回書房，抓起《死靈之書》。
+
+「他」在地下室嘶吼，聲音穿過層層地板——那不是人類的聲音。
+
+妳撒下儀式之鹽，劃亮火柴。
+
+書頁燃燒時發出尖叫——書本身在尖叫。封面的山羊頭融化，黑色的東西從書頁裡爬出又被火舌吞沒。
+
+地下室的嘶吼也漸漸變成人的聲音——是友人的聲音——是友人在哭。
+
+然後一切歸於寂靜。`), 28);
+  
+  state.flags.bookBurned = true;
+  addClue('《死靈之書》已焚毀');
+  
+  await sleep(1500);
+  $('#actions').innerHTML = `<button onclick="endingEscape()">天色將亮，離開老宅</button>`;
+}
+
+// ==================== 結局判定 ====================
+
+function tryEscape() {
+  // 結局分流
+  if (state.chaptersRead.length === 5) {
+    endingWitness();
+  } else if (state.flags.bookBurned) {
+    endingEscape();
+  } else if (state.clues.length >= 5 && state.stats.san >= 30) {
+    endingEscape();
+  } else {
+    endingSilence();
+  }
+}
+
+function checkTimeOut() {
+  if (state.time >= state.timeLimit) {
+    endingTimeout();
+    return true;
+  }
+  return false;
+}
+
+async function endingEscape() {
+  state.scene = 'ending';
+  game().innerHTML = `<div class="ending"><div id="ending-content"></div></div>`;
+  
+  await sleep(500);
+  
+  $('#ending-content').innerHTML = `
+    <div class="ending-title">逃　離</div>
+    <div class="ending-text" id="text"></div>
+    <div id="actions" style="margin-top: 30px;"></div>
+  `;
+  
+  await typeText($('#text'), `天色泛白。雪停了。
+
+妳推開老宅的橡木門，走進清晨的灰光裡。
+
+身後的房子靜默無聲——但妳知道。妳知道那些東西並沒有消失，只是暫時失去了入口。
+
+警察會來。會發現一具在地下室祭壇旁的屍體——友人的屍體，眼睛閉著，神情安詳。
+
+妳會做筆錄。妳不會提到《死靈之書》、鏡子、低語、契約。
+
+沒有人會相信。但妳記得。妳餘生都會記得。
+
+——SAN：${state.stats.san}　線索：${state.clues.length}　活著回來。`, 22);
+  
+  $('#actions').innerHTML = `<button onclick="restart()">再開始一次</button>`;
+}
+
+async function endingAssimilation() {
+  state.scene = 'ending';
+  $('#noise').style.opacity = '0.6';
+  $('#distortion').style.opacity = '0.8';
+  
+  game().innerHTML = `<div class="ending"><div id="ending-content"></div></div>`;
+  await sleep(500);
+  
+  $('#ending-content').innerHTML = `
+    <div class="ending-title" style="color: #a04040;">同　化</div>
+    <div class="ending-text" id="text"></div>
+    <div id="actions" style="margin-top: 30px;"></div>
+  `;
+  
+  await typeText($('#text'), corrupt(`理智歸零。
+
+妳看見了。妳看見了一切。
+
+那些不該存在的形狀。那些不該被聽見的頻率。那些不該被妳的大腦處理的資訊。
+
+但現在妳的大腦不再是「妳的」了。
+
+鏡子裡的「他者」對妳微笑——而妳的臉終於也學會了那個微笑。
+
+妳走進地下室。妳幫「他」把符號畫完。
+
+天亮時，老宅裡有兩個人——但其實沒有人。
+
+——SAN：0　妳已成為它的一部分。`), 25);
+  
+  $('#actions').innerHTML = `<button onclick="restart()">再開始一次</button>`;
+}
+
+async function endingSilence() {
+  state.scene = 'ending';
+  game().innerHTML = `<div class="ending"><div id="ending-content"></div></div>`;
+  await sleep(500);
+  
+  $('#ending-content').innerHTML = `
+    <div class="ending-title">沉　默</div>
+    <div class="ending-text" id="text"></div>
+    <div id="actions" style="margin-top: 30px;"></div>
+  `;
+  
+  await typeText($('#text'), `天亮了。妳走出老宅。
+
+警察來了，問妳發生了什麼事。
+
+妳搖頭。妳什麼都不知道。
+
+友人失蹤了。沒有屍體。沒有線索。沒有解釋。
+
+妳回到自己的城市，繼續日常。但每當夜深、每當妳路過鏡子、每當風從某個角度吹來——
+
+妳會停下，皺眉，覺得有什麼事情……忘了。
+
+但妳想不起來。
+
+也許這樣比較好。
+
+——SAN：${state.stats.san}　線索：${state.clues.length}　線索不足，妳活著，但什麼也沒解開。`, 22);
+  
+  $('#actions').innerHTML = `<button onclick="restart()">再開始一次</button>`;
+}
+
+async function endingWitness() {
+  state.scene = 'ending';
+  $('#noise').style.opacity = '0.4';
+  $('#distortion').style.opacity = '0.6';
+  
+  game().innerHTML = `<div class="ending"><div id="ending-content"></div></div>`;
+  await sleep(500);
+  
+  $('#ending-content').innerHTML = `
+    <div class="ending-title" style="color: #b8a76d;">見　證</div>
+    <div class="ending-text" id="text"></div>
+    <div id="actions" style="margin-top: 30px;"></div>
+  `;
+  
+  await typeText($('#text'), corrupt(`妳完成了儀式。
+
+不，是儀式完成了它自己——透過妳。
+
+地下室的牆壁塌陷，露出後面的「空間」——那不是空間，是一個沒有空間概念的「在那裡」。
+
+祂醒了。祂看見妳了。祂——
+
+但祂沒有摧毀妳。祂只是「看見」了妳。
+
+然後祂回去睡了。
+
+妳走出老宅。妳活著。但妳的大腦永遠失去了「不知道」這個選項。
+
+妳將餘生戴著理性的面具。妳會結婚、工作、衰老、死去。
+
+但每當夜深，妳都會想起那一刻——當宇宙真正的形狀向妳展開時，妳是宇宙裡唯一一個「看見」的人。
+
+那是孤獨。也是榮光。
+
+——SAN：${state.stats.san}　《死靈之書》全 5 章已讀。妳是見證者。`), 22);
+  
+  $('#actions').innerHTML = `<button onclick="restart()">再開始一次</button>`;
+}
+
+async function endingTimeout() {
+  state.scene = 'ending';
+  game().innerHTML = `<div class="ending"><div id="ending-content"></div></div>`;
+  await sleep(500);
+  
+  $('#ending-content').innerHTML = `
+    <div class="ending-title" style="color: #6b5e3a;">天　亮</div>
+    <div class="ending-text" id="text"></div>
+    <div id="actions" style="margin-top: 30px;"></div>
+  `;
+  
+  await typeText($('#text'), `日出。
+
+但妳還在屋裡。
+
+陽光照進老宅，照在祭壇上，照在友人——他正等著妳。
+
+「妳沒能在天亮前離開。」他笑了。「現在，妳是這裡的一部分了。」
+
+——時間用盡。`, 22);
+  
+  $('#actions').innerHTML = `<button onclick="restart()">再開始一次</button>`;
+}
+
+async function restart() {
+  // 重置所有狀態
+  state.scene = 'title';
+  state.stats = { san: 0, sanMax: 0, int: 0, edu: 0, pow: 0, luck: 0 };
+  state.rerollUsed = false;
+  state.time = 0;
+  state.clues = [];
+  state.visited = {};
+  state.flags = {};
+  state.chaptersRead = [];
+  // 清除自動存檔（保留手動存檔）
+  await deleteSave('auto');
+  $('#distortion').style.opacity = '0';
+  $('#noise').style.opacity = '0';
+  renderTitle();
+}
+
+// ==================== 啟動 ====================
+renderTitle();
+</script>
+</body>
+</html>
