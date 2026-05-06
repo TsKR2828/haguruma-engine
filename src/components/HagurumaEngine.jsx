@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { createChapterState } from "../engine/state";
 import { applyEffects } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
@@ -11,6 +11,45 @@ import SceneText from "./SceneText";
 import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
+
+const HistoryBlock = memo(function HistoryBlock({ block }) {
+  if (block.type === "dialogue") {
+    return (
+      <div className={`scene-block scene-block-dialogue scene-block-read`}>
+        {block.speaker && <div className="scene-block-speaker">{block.speaker}</div>}
+        <div className="scene-block-jp">{block.jp}</div>
+        {block.cn && <div className="scene-block-cn">{block.cn}</div>}
+      </div>
+    );
+  }
+  return (
+    <div className={`scene-block scene-block-${block.type} scene-block-read`}>
+      {block.content || ""}
+    </div>
+  );
+});
+
+const HistorySection = memo(function HistorySection({ section, isCollapsed, onToggle }) {
+  return (
+    <div className="scene-section">
+      {section.fold && (
+        <div className="fold-divider fold-clickable" onClick={onToggle}>
+          <span className="fold-arrow">{isCollapsed ? "▸" : "▾"}</span>
+          {section.fold}
+        </div>
+      )}
+      {!isCollapsed && (
+        <div className="scene-past">
+          {section.entries.flatMap((entry, ei) =>
+            entry.blocks
+              .filter((b) => b.type !== "break" && b.type !== "pause")
+              .map((b, bi) => <HistoryBlock key={`${ei}-${bi}`} block={b} />)
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNextChapter, onAdvance }) {
   const [gs, setGs] = useState(() => createChapterState(chapter, carryOver));
@@ -210,6 +249,21 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
     loadScene(chapter.startScene);
   }, [loadScene]);
 
+  const sections = useMemo(() => {
+    const result = [];
+    let cur = { fold: null, entries: [] };
+    for (const entry of history) {
+      if (entry.fold) {
+        if (cur.entries.length > 0) result.push(cur);
+        cur = { fold: entry.fold, entries: [entry] };
+      } else {
+        cur.entries.push(entry);
+      }
+    }
+    if (cur.entries.length > 0) result.push(cur);
+    return result;
+  }, [history]);
+
   return (
     <div className="game-container">
       <Particles nerve={gs.nerve} />
@@ -237,58 +291,14 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
       </header>
 
       <main className="game-content">
-        {(() => {
-          const sections = [];
-          let cur = { fold: null, entries: [] };
-          for (const entry of history) {
-            if (entry.fold) {
-              if (cur.entries.length > 0) sections.push(cur);
-              cur = { fold: entry.fold, entries: [entry] };
-            } else {
-              cur.entries.push(entry);
-            }
-          }
-          if (cur.entries.length > 0) sections.push(cur);
-
-          return sections.map((sec, si) => {
-            const isLast = si === sections.length - 1;
-            const isCollapsedSec = collapsed[si] ?? !isLast;
-            return (
-              <div key={si} className="scene-section">
-                {sec.fold && (
-                  <div
-                    className="fold-divider fold-clickable"
-                    onClick={() => setCollapsed((c) => ({ ...c, [si]: !isCollapsedSec }))}
-                  >
-                    <span className="fold-arrow">{isCollapsedSec ? "▸" : "▾"}</span>
-                    {sec.fold}
-                  </div>
-                )}
-                {!isCollapsedSec && (
-                  <div className="scene-past">
-                    {sec.entries.flatMap((entry, ei) =>
-                      entry.blocks
-                        .filter((b) => b.type !== "break" && b.type !== "pause")
-                        .map((b, bi) => (
-                          <div key={`${ei}-${bi}`} className={`scene-block scene-block-${b.type} scene-block-read`}>
-                            {b.type === "dialogue" ? (
-                              <>
-                                {b.speaker && <div className="scene-block-speaker">{b.speaker}</div>}
-                                <div className="scene-block-jp">{b.jp}</div>
-                                {b.cn && <div className="scene-block-cn">{b.cn}</div>}
-                              </>
-                            ) : (
-                              b.content || ""
-                            )}
-                          </div>
-                        ))
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          });
-        })()}
+        {sections.map((sec, si) => (
+          <HistorySection
+            key={si}
+            section={sec}
+            isCollapsed={collapsed[si] ?? (si !== sections.length - 1)}
+            onToggle={() => setCollapsed((c) => ({ ...c, [si]: !(c[si] ?? (si !== sections.length - 1)) }))}
+          />
+        ))}
 
         {scene?.links?.fold && (
           <div className="fold-divider">{scene.links.fold}</div>

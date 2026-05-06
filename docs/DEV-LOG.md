@@ -259,13 +259,50 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 
 ---
 
+#### Batch 4 — History Render Optimization
+
+狀態：完成
+
+動機：
+
+審計項目 D1「長篇 history 效能優化」。Ch1 有 33 場景，每次 setGs/setPhase 都會重新遍歷 history 並重建所有 section JSX。隨章節增長會線性惡化。
+
+分析：
+
+- 原始實作：history 分組邏輯在 render 內 IIFE 中，無 memo 邊界
+- 每次 gs/phase/blocks 變化都觸發父層 re-render → 重建所有 history section 的 JSX
+- 已摺疊的 section 原本已正確不渲染 blocks（`{!isCollapsed && ...}`）
+- 打字機 charIdx 變化不觸發父層（僅在 SceneText 內部）✓
+- 預估 Ch5+ 每章 40 場景，每次 state 變化重建 ~40 個 section 的 DOM diff 成本會增加
+
+修正方式：
+
+- 拆出 `HistorySection`（memo）— 只在 section/isCollapsed/onToggle 變化時重新渲染
+- 拆出 `HistoryBlock`（memo）— 只在 block 資料變化時重新渲染
+- 用 `useMemo([history])` 緩存 section 分組計算，不隨 gs/phase 變化重跑
+- 已摺疊的 section 仍然不渲染內部 blocks（行為不變）
+- 未導入虛擬列表套件（Ch1-Ch3 不需要）
+
+修改檔案：
+
+- src/components/HagurumaEngine.jsx
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（66/66）
+- npm run validate:chapters 通過（22/22）
+- 瀏覽器驗證：fold toggle 正常（▸/▾）、opacity 0.35、展開/收合 block 數量正確
+- 零 console error
+
+---
+
 ### 待修問題清單（Architecture Audit 產出）
 
 #### 不建議拖到 Ch5 後
 
 | # | 項目 | 說明 |
 |---|------|------|
-| D1 | 長篇 history 效能優化 | Ch5+ 每章 40+ 場景可能卡頓，需 React.memo 或虛擬化 |
 | D3 | save migration 實際實作 | 若 Ch2-Ch4 間新增 state 欄位需 v1→v2 |
 
 ---
@@ -274,7 +311,7 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 
 ---
 
-#### Batch 4 — Chapter 2 Spec
+#### Batch 5 — Chapter 2 Spec
 
 狀態：待排程
 
@@ -308,6 +345,7 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 | 2026-05-07 | Batch 3.5C | feat: scene history UX | done | fading / fold toggle / scroll comfort |
 | 2026-05-07 | Batch 3.5D | fix: pre-Ch2 architecture fixes | done | save migration / schema / spacer / auto-save |
 | 2026-05-07 | Batch 3.5E | refactor+test: cleanup + integration tests | done | remove reducer / sync validator / save warning / 27 tests |
+| 2026-05-07 | Batch 4 | perf: optimize history fold rendering | done | React.memo + useMemo, no virtual list needed yet |
 
 ---
 
