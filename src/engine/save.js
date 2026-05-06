@@ -1,9 +1,9 @@
 const SAVE_KEY = "haguruma_save_v1";
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 let _memorySave = null;
 
 const migrations = {
-  // future: 1: (data) => ({ ...data, v: 2, newField: defaultValue })
+  1: (data) => ({ ...data, v: 2, nextScene: data.scene }),
 };
 
 function migrate(data) {
@@ -17,10 +17,11 @@ function migrate(data) {
   return current;
 }
 
-export function buildSaveData(state) {
+export function buildSaveData(state, nextScene = null) {
   return {
     v: CURRENT_VERSION,
     scene: state.currentSceneId,
+    nextScene,
     nerve: state.nerve,
     insight: state.insight,
     writing: state.writing,
@@ -33,9 +34,9 @@ export function buildSaveData(state) {
   };
 }
 
-export function saveGame(state) {
+export function saveGame(state, nextScene = null) {
   if (!state.currentSceneId) return false;
-  const data = JSON.stringify(buildSaveData(state));
+  const data = JSON.stringify(buildSaveData(state, nextScene));
   _memorySave = data;
   let persisted = false;
   try { localStorage.setItem(SAVE_KEY, data); persisted = true; } catch (_) {}
@@ -71,7 +72,7 @@ export function clearSave() {
 
 export function restoreState(saved) {
   return {
-    currentSceneId: saved.scene,
+    currentSceneId: saved.nextScene !== undefined ? saved.nextScene : saved.scene,
     currentChapter: saved.currentChapter || 1,
     nerve: saved.nerve,
     insight: saved.insight,
@@ -84,7 +85,7 @@ export function restoreState(saved) {
 }
 
 export function exportSave(state) {
-  return JSON.stringify(buildSaveData(state), null, 2);
+  return JSON.stringify(buildSaveData(state, state.currentSceneId), null, 2);
 }
 
 export function importSave(json) {

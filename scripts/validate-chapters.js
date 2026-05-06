@@ -1,9 +1,8 @@
-#!/usr/bin/env node
-
 import { readdir, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { initialState } from "../src/engine/state.js";
+import { SYMBOL_GLYPHS } from "../src/data/symbols.js";
 
 const CHAPTERS_DIR = resolve("src/data/chapters");
 const REPORTS_DIR = resolve("reports");
@@ -60,9 +59,75 @@ function extractChapter(mod, filename) {
   return null;
 }
 
+// ── Namespace validation ───────────────────────────────────
+
+const EXEMPT_CHAPTERS = [1];
+
+function namespacePrefix(chapterNum) {
+  return `ch${String(chapterNum).padStart(2, "0")}.`;
+}
+
+function isValidNamespacedKey(key, chapterNum) {
+  if (EXEMPT_CHAPTERS.includes(chapterNum)) return true;
+  const prefix = namespacePrefix(chapterNum);
+  return key.startsWith(prefix) || key.startsWith("global.");
+}
+
+export function validateNamespaces(chapter, errors, warnings) {
+  const num = chapter.chapter;
+
+  if (EXEMPT_CHAPTERS.includes(num)) {
+    let count = 0;
+    for (const scene of Object.values(chapter.scenes)) {
+      if (scene.notebook?.key) count++;
+      if (Array.isArray(scene.choices)) {
+        for (const c of scene.choices) {
+          if (c.flag) count++;
+          if (c.notebook?.key) count++;
+          if (c.unlock) count++;
+        }
+      }
+      if (scene.links?.unlock) count++;
+    }
+    for (const conn of chapter.connections ?? []) count++;
+    if (count > 0) {
+      warnings.push(`Chapter ${num}: ${count} keys without chapter prefix (grandfathered)`);
+    }
+    return;
+  }
+
+  const prefix = namespacePrefix(num);
+  const check = (key, context) => {
+    if (!isValidNamespacedKey(key, num)) {
+      errors.push(`${context}: "${key}" must start with "${prefix}" or "global."`);
+    }
+  };
+
+  for (const [sceneId, scene] of Object.entries(chapter.scenes)) {
+    if (scene.notebook?.key) check(scene.notebook.key, `Scene "${sceneId}" notebook.key`);
+    if (Array.isArray(scene.choices)) {
+      for (const c of scene.choices) {
+        if (c.flag) check(c.flag, `Scene "${sceneId}" choice.flag`);
+        if (c.notebook?.key) check(c.notebook.key, `Scene "${sceneId}" choice.notebook.key`);
+        if (c.unlock) check(c.unlock, `Scene "${sceneId}" choice.unlock`);
+      }
+    }
+    if (scene.links?.unlock) check(scene.links.unlock, `Scene "${sceneId}" links.unlock`);
+  }
+
+  for (const conn of chapter.connections ?? []) {
+    check(conn.id, `Connection id`);
+  }
+
+  for (const loc of chapter.locations ?? []) {
+    check(loc.id, `Location id`);
+    if (loc.symbolKey) check(loc.symbolKey, `Location "${loc.id}" symbolKey`);
+  }
+}
+
 // ── Full validation pipeline ───────────────────────────────
 
-function validateChapter(chapter, filename) {
+export function validateChapter(chapter, filename) {
   const { scenes, startScene, title, titleCn, sceneCount } = chapter;
   const sceneKeys = Object.keys(scenes);
   const errors = [];
@@ -124,6 +189,85 @@ function validateChapter(chapter, filename) {
   brokenNext.forEach(({ from, target, type }) =>
     errors.push(`Scene "${from}" (${type}): next "${target}" does not exist`)
   );
+
+  // ── 1b. Namespace checks ──
+
+  validateNamespaces(chapter, errors, warnings);
+
+  // ── 1c. Cross-reference checks ──
+
+  const locationIds = new Set((chapter.locations ?? []).map((l) => l.id));
+  const validSymbolKeys = new Set(Object.keys(SYMBOL_GLYPHS));
+  const VALID_SHAPES = new Set(["circle", "diamond", "rect", "mountain"]);
+
+  if (chapter.startLocation && !locationIds.has(chapter.startLocation)) {
+    errors.push(`startLocation "${chapter.startLocation}" not found in locations[]`);
+  }
+
+  const notebookKeys = new Set();
+  for (const scene of Object.values(scenes)) {
+    if (scene.notebook?.key) notebookKeys.add(scene.notebook.key);
+    if (Array.isArray(scene.choices)) {
+      for (const c of scene.choices) {
+        if (c.notebook?.key) notebookKeys.add(c.notebook.key);
+      }
+    }
+  }
+
+  for (const [key, scene] of Object.entries(scenes)) {
+    if (scene.links?.visit && !locationIds.has(scene.links.visit)) {
+      errors.push(`Scene "${key}": links.visit "${scene.links.visit}" not found in locations[]`);
+    }
+    if (scene.links?.unlock && !validSymbolKeys.has(scene.links.unlock)) {
+      warnings.push(`Scene "${key}": links.unlock "${scene.links.unlock}" not in SYMBOL_GLYPHS`);
+    }
+    if (Array.isArray(scene.choices)) {
+      for (const c of scene.choices) {
+        if (c.unlock && !validSymbolKeys.has(c.unlock)) {
+          warnings.push(`Scene "${key}": choice.unlock "${c.unlock}" not in SYMBOL_GLYPHS`);
+        }
+      }
+    }
+
+    if (Array.isArray(scene.choices) && scene.choices.length > 0) {
+      const choiceFlags = scene.choices.filter((c) => c.flag).map((c) => c.flag);
+      const declaredFlags = new Set(scene.flags ?? []);
+      for (const f of choiceFlags) {
+        if (!declaredFlags.has(f)) {
+          warnings.push(`Scene "${key}": choice flag "${f}" not listed in scene.flags[]`);
+        }
+      }
+      for (const f of declaredFlags) {
+        if (!choiceFlags.includes(f)) {
+          warnings.push(`Scene "${key}": scene.flags includes "${f}" but no choice defines it`);
+        }
+      }
+    }
+  }
+
+  for (const loc of chapter.locations ?? []) {
+    if (loc.symbolKey && !validSymbolKeys.has(loc.symbolKey)) {
+      warnings.push(`Location "${loc.id}": symbolKey "${loc.symbolKey}" not in SYMBOL_GLYPHS`);
+    }
+    if (loc.shape && !VALID_SHAPES.has(loc.shape)) {
+      warnings.push(`Location "${loc.id}": unknown shape "${loc.shape}"`);
+    }
+  }
+
+  const connIdSet = new Set();
+  for (const conn of chapter.connections ?? []) {
+    if (connIdSet.has(conn.id)) {
+      errors.push(`Duplicate connection ID: "${conn.id}"`);
+    }
+    connIdSet.add(conn.id);
+    if (Array.isArray(conn.requires)) {
+      for (const req of conn.requires) {
+        if (!notebookKeys.has(req) && !validSymbolKeys.has(req)) {
+          warnings.push(`Connection "${conn.id}": requires "${req}" not found in chapter notebook keys or SYMBOL_GLYPHS`);
+        }
+      }
+    }
+  }
 
   // ── 2. Reachability ──
 
@@ -404,7 +548,12 @@ function renderMarkdown(reports) {
 
 // ── Run ────────────────────────────────────────────────────
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] &&
+  fileURLToPath(import.meta.url) === fileURLToPath(pathToFileURL(resolve(process.argv[1])).href);
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

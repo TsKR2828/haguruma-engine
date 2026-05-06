@@ -106,3 +106,31 @@
 理由：過早抽象化會拖慢 Ch2–Ch11 進度，且沒有第二部作品驗證的抽象容易過度設計。
 
 日期：2026-05-07
+
+---
+
+## D10 — Key Namespace 規則
+
+CH2+ 所有 key（notebook.key、choice.flag、connection.id、location.id、location.symbolKey、unlock）必須以 `chNN.` 為前綴（例如 `ch02.wife_letter`）。全域 key 以 `global.` 為前綴。
+
+CH1 key 不加前綴（grandfathered）。未來若需統一，透過 save migration 將舊 key 映射為 `ch01.xxx`，同時更新 chapter01.js 與 save version。
+
+理由：`notebook`、`choicesMade`、`connections` 跨章保留（D3），flat key 在 CH2 之後必然撞名。對 CH2+ 強制 namespace 可防止問題，同時不破壞現有存檔。
+
+日期：2026-05-06
+
+---
+
+## D11 — Save Cursor 策略（Next-Scene）
+
+存檔資料包含 `nextScene` 欄位——指向 restore 後應載入的下一個場景，而非正在顯示的場景。
+
+- 場景完成且有 `scene.next` 時，以 `nextScene = scene.next` 存檔
+- 做出選擇時，以 `nextScene = choice.next` 存檔
+- 章結算時，以 `nextScene = null` 存檔
+
+Restore 後 `loadScene(nextScene)` 載入新場景，fresh 套用效果。前一場景的效果已在存檔前套用完畢。
+
+理由：避免 reload 後重複套用 stat effects 和 effectFn。notebook 已有 key 去重、connections 已有 id 去重，但 nerve/insight/writing 是累加式的，重播會導致數值腐敗。Save version 從 v1 升級至 v2，含 v1→v2 migration。
+
+日期：2026-05-06

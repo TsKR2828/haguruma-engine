@@ -51,8 +51,8 @@ const HistorySection = memo(function HistorySection({ section, isCollapsed, onTo
   );
 });
 
-export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNextChapter, onAdvance }) {
-  const [gs, setGs] = useState(() => createChapterState(chapter, carryOver));
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance }) {
+  const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [phase, setPhase] = useState("loading");
@@ -73,8 +73,8 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
     setImpact({ type, label, amount, reason, _k: impactSeq.current });
   }, []);
 
-  const save = useCallback((state) => {
-    const ok = saveGame(state);
+  const save = useCallback((state, nextScene = null) => {
+    const ok = saveGame(state, nextScene);
     if (!ok) toast("loss", "存檔", 0, "儲存失敗，僅保留於記憶體");
   }, [toast]);
 
@@ -191,10 +191,10 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
       setPhase("choices");
     } else if (sc.next) {
       setPhase("continue");
-      save(next);
+      save(next, sc.next);
     } else if (sc.links?.showEnd) {
       setPhase("ending");
-      save(next);
+      save(next, null);
       if (onChapterEnd) onChapterEnd(next);
     }
   }, [toastEffects, checkConns, onChapterEnd]);
@@ -233,7 +233,7 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
 
       setGs(next);
       gsRef.current = next;
-      save(next);
+      save(next, choice.next ?? null);
 
       if (choice.next) loadScene(choice.next);
     },
@@ -246,7 +246,12 @@ export default function HagurumaEngine({ chapter, carryOver, onChapterEnd, hasNe
   }, [loadScene]);
 
   useEffect(() => {
-    loadScene(chapter.startScene);
+    if (initialState && !initialState.currentSceneId) {
+      setPhase("ending");
+      if (onChapterEnd) onChapterEnd(gsRef.current);
+      return;
+    }
+    loadScene(initialState ? initialState.currentSceneId : chapter.startScene);
   }, [loadScene]);
 
   const sections = useMemo(() => {

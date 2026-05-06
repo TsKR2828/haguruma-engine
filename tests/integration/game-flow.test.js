@@ -364,9 +364,10 @@ describe("Integration: game flow", () => {
   describe("存檔讀檔正確", () => {
     it("buildSaveData serializes all required fields", () => {
       state = { ...state, currentSceneId: "scene_choice", nerve: 8, insight: 3 };
-      const save = buildSaveData(state);
-      expect(save.v).toBe(1);
+      const save = buildSaveData(state, "scene_left");
+      expect(save.v).toBe(2);
       expect(save.scene).toBe("scene_choice");
+      expect(save.nextScene).toBe("scene_left");
       expect(save.nerve).toBe(8);
       expect(save.insight).toBe(3);
       expect(save.currentChapter).toBe(1);
@@ -374,9 +375,9 @@ describe("Integration: game flow", () => {
     });
 
     it("restoreState reconstructs state from save data", () => {
-      const save = buildSaveData(state);
+      const save = buildSaveData(state, "scene_merge");
       const restored = restoreState(save);
-      expect(restored.currentSceneId).toBe(state.currentSceneId);
+      expect(restored.currentSceneId).toBe("scene_merge");
       expect(restored.nerve).toBe(state.nerve);
       expect(restored.notebook).toEqual(state.notebook);
       expect(restored.choicesMade).toEqual(state.choicesMade);
@@ -395,9 +396,9 @@ describe("Integration: game flow", () => {
 
     it("importSave parses JSON string and restores state", () => {
       state = { ...state, currentSceneId: "scene_left", nerve: 6, insight: 4 };
-      const json = JSON.stringify(buildSaveData(state));
+      const json = JSON.stringify(buildSaveData(state, "scene_merge"));
       const restored = importSave(json);
-      expect(restored.currentSceneId).toBe("scene_left");
+      expect(restored.currentSceneId).toBe("scene_merge");
       expect(restored.nerve).toBe(6);
       expect(restored.insight).toBe(4);
     });
@@ -408,9 +409,10 @@ describe("Integration: game flow", () => {
       expect(importSave(null)).toBeNull();
     });
 
-    it("save version is included for future migration", () => {
+    it("save version is v2 with nextScene cursor", () => {
       const save = buildSaveData(state);
-      expect(save.v).toBe(1);
+      expect(save.v).toBe(2);
+      expect(save).toHaveProperty("nextScene");
     });
   });
 });

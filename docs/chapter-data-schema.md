@@ -118,10 +118,22 @@ text: (state) => TextBlock[]
   sub:       String,              // 副標題
   x:         Number,              // 雷達圖 x 座標（0-100）
   y:         Number,              // 雷達圖 y 座標（0-100）
-  shape:     "circle" | "diamond",// 節點形狀
+  shape:     "circle" | "diamond" | "rect" | "mountain", // 節點形狀
   symbolKey: String | undefined,  // 對應符號 key（與解鎖條件連動）
 }
 ```
+
+## Key Naming Convention
+
+所有 identifier key 須遵守章節 namespace 規則：
+
+- 章節內 key：`chNN.descriptive_name`（例如 `ch02.wife_accusation`）
+- 全域 key：`global.descriptive_name`（例如 `global.total_nerve_lost`）
+- 第一章 key 豁免（grandfathered，不需前綴）
+
+適用欄位：`notebook.key`、`choice.flag`、`connection.id`、`location.id`、`location.symbolKey`、`links.unlock`、`choice.unlock`。
+
+Validator 對 CH1 僅發出警告，對 CH2+ 違規視為 error。
 
 ## Connection
 
@@ -137,9 +149,19 @@ text: (state) => TextBlock[]
 
 ## 驗證規則
 
+**Error（阻斷）：**
 - `sceneCount` 必須等於 `Object.keys(scenes).length`
 - 每個場景的 `id` 必須等於其在 `scenes` 中的 key
 - 所有 `next` 引用（場景級和選項級）必須指向存在的場景 ID
-- `flags` 陣列應列出該場景所有選項的 `flag` 值
 - `startLocation` 必須存在於 `locations[].id` 中
-- `connections[].requires` 中的 key 必須對應有效的符號 ID
+- `links.visit` 必須存在於 `locations[].id` 中
+- `connection.id` 不可重複
+- CH2+ key 必須遵守 namespace 規則（見 Key Naming Convention）
+
+**Warning（警告）：**
+- `flags` 陣列應列出該場景所有選項的 `flag` 值（雙向檢查）
+- `links.unlock` / `choice.unlock` 應存在於 `SYMBOL_GLYPHS`
+- `locations.symbolKey` 應存在於 `SYMBOL_GLYPHS`
+- `connections[].requires` 應對應有效的 notebook key 或 symbol key
+- `location.shape` 應為支援的值（circle / diamond / rect / mountain）
+- CH1 key 無 namespace 前綴（grandfathered）

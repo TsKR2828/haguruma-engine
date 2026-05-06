@@ -297,13 +297,95 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 
 ---
 
-### 待修問題清單（Architecture Audit 產出）
+---
 
-#### 不建議拖到 Ch5 後
+#### Batch 5A — Save/Restore + Idempotency
 
-| # | 項目 | 說明 |
-|---|------|------|
-| D3 | save migration 實際實作 | 若 Ch2-Ch4 間新增 state 欄位需 v1→v2 |
+狀態：完成
+
+動機：
+
+App.jsx 只從 loadSave() 讀 currentChapter，restoreState() 未接入 HagurumaEngine，reload 後全部 state 歸零。且 reload 後重進同一場景會重複套用 effects。
+
+完成內容：
+
+- save.js v1→v2 migration：新增 nextScene 欄位（指向下一個未處理場景）
+- buildSaveData / saveGame 接受 nextScene 參數
+- restoreState 優先使用 nextScene（ending 時為 null）
+- HagurumaEngine 新增 initialState prop，可跳過 createChapterState
+- App.jsx 啟動時完整 restore（loadSave → restoreState → initialState）
+- 新增 tests/engine/save.test.js（8 個 v2 save 測試）
+- 更新 tests/integration/game-flow.test.js 存檔測試為 v2 格式
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（89/89）
+- npm run validate:chapters 通過（22/22）
+- 瀏覽器驗證：play → save → reload → resume 從正確場景繼續，stats 保持
+- nextScene cursor 策略避免了 effects 重複套用（D11）
+
+---
+
+#### Batch 5B — Key Namespace Convention
+
+狀態：完成
+
+動機：
+
+notebook.key、choicesMade flag、connection.id 跨章保留（D3），flat key 在 CH2 後必然撞名。
+
+完成內容：
+
+- validate-chapters.js 新增 validateNamespaces()：CH1 警告（grandfathered），CH2+ 強制 `chNN.` / `global.` 前綴
+- 導出 validateChapter / validateNamespaces 供測試 import（移除 shebang、guard main()）
+- docs/DECISIONS.md 新增 D10（Key Namespace Convention）
+- docs/chapter-data-schema.md 新增「Key Naming Convention」段落
+- 新增 tests/scripts/namespace.test.js（4 個測試）
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（89/89）
+- npm run validate:chapters 通過（0 errors, 1 warning: 43 grandfathered keys）
+
+---
+
+#### Batch 5C — Schema + Validator Sync
+
+狀態：完成
+
+動機：
+
+schema 文件 shape enum 與 CH1 資料不符（缺 "rect"/"mountain"），validator 缺少多項 cross-reference 檢查。
+
+完成內容：
+
+- validate-chapters.js 新增 9 項 cross-reference 檢查：
+  - startLocation 存在於 locations[]（error）
+  - links.visit 存在於 locations[]（error）
+  - links.unlock / choice.unlock 存在於 SYMBOL_GLYPHS（warning）
+  - locations.symbolKey 存在於 SYMBOL_GLYPHS（warning）
+  - connections.requires 為有效 notebook key 或 symbol key（warning）
+  - scene.flags 列出所有 choice flags（雙向 warning）
+  - connection.id 不重複（error）
+  - location.shape 為有效值（warning）
+- chapter-data-schema.md 修正 shape enum + 新增完整驗證規則清單
+- DECISIONS.md 新增 D11（Save Cursor Strategy）
+- 新增 tests/scripts/cross-ref.test.js（11 個測試，含 CH1 真實資料零 error 驗證）
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（89/89）
+- npm run validate:chapters 通過（CH1 零 error）
+- CH1 通過所有新 cross-reference 檢查
+
+---
+
+### 待修問題清單
+
+D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
 
 ---
 
@@ -311,7 +393,7 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 
 ---
 
-#### Batch 5 — Chapter 2 Spec
+#### Batch 6 — Chapter 2 Spec
 
 狀態：待排程
 
@@ -324,7 +406,7 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 - 章節主題
 - 場景列表
 - 選擇點
-- flags
+- flags（使用 ch02. namespace）
 - notebook symbols
 - connections
 - Nerve / Insight / Writing 變化
@@ -346,6 +428,9 @@ Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀�
 | 2026-05-07 | Batch 3.5D | fix: pre-Ch2 architecture fixes | done | save migration / schema / spacer / auto-save |
 | 2026-05-07 | Batch 3.5E | refactor+test: cleanup + integration tests | done | remove reducer / sync validator / save warning / 27 tests |
 | 2026-05-07 | Batch 4 | perf: optimize history fold rendering | done | React.memo + useMemo, no virtual list needed yet |
+| 2026-05-06 | Batch 5A | fix: save/restore + idempotency | done | nextScene cursor, initialState prop, v1→v2 migration |
+| 2026-05-06 | Batch 5B | feat: key namespace convention | done | CH2+ prefix enforcement, CH1 grandfathered |
+| 2026-05-06 | Batch 5C | fix: schema + validator sync | done | 9 cross-ref checks, shape enum fix, 11 tests |
 
 ---
 
