@@ -177,6 +177,75 @@
 
 ---
 
+#### Batch 3.5C — Scene History UX
+
+狀態：完成
+
+動機：
+
+對比 prototype，React 版缺少三項閱讀體驗功能。
+
+完成內容：
+
+- 已讀文字淡化（opacity 0.35，hover 恢復 0.55）
+- 摺頁收合/展開（history 按 fold 標記分組，▸/▾ 切換）
+- 閱讀位置優化（scrollIntoView block:"center" + 50vh 底部留白）
+- HagurumaEngine 新增 history[] + collapsed{} + blocksRef
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（39/39）
+- 瀏覽器驗證：opacity 0.35、fold toggle 正常、spacer 正確
+- 零 console error
+
+---
+
+#### Batch 3.5D — Pre-Ch2 Architecture Audit & Fixes
+
+狀態：完成
+
+動機：
+
+Ch2 前全面總檢。確認資料格式、狀態管理、存檔相容、閱讀體驗、擴充性不會在 Ch2-Ch11 期間需要通盤改。
+
+完成內容：
+
+- F1：save.js 加入版本檢查 + migration 框架（CURRENT_VERSION + migrate() chain）
+- F2：docs/chapter-data-schema.md 補齊 effectFn / pause / startLocation / condition / Location / Connection
+- F3：底部留白從 50vh 調為 35vh
+- F4：auto-advance 和 ending 場景也觸發 saveGame()（不再只有 choice 後才存）
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（39/39）
+- 瀏覽器驗證：spacer 252px (35vh)、save v:1 正確
+- 零 console error
+
+---
+
+### 待修問題清單（Architecture Audit 產出）
+
+#### Ch3 後再修（低優先）
+
+| # | 項目 | 說明 |
+|---|------|------|
+| L1 | 移除 state.js 未使用的 reducer | HagurumaEngine 直接 setState，reducer 為死碼 |
+| L2 | 加整合測試（章節流程、存讀檔） | Ch1-Ch2 可手動驗收，Ch3 後應自動化 |
+| L3 | validate-chapters.js 從 state.js 讀初始值 | 目前 hardcode nerve=10，應與 initialState 同步 |
+| L4 | save 失敗時 toast 通知用戶 | 極少觸發（quota exceeded） |
+
+#### 不建議拖到 Ch5 後
+
+| # | 項目 | 說明 |
+|---|------|------|
+| D1 | 長篇 history 效能優化 | Ch5+ 每章 40+ 場景可能卡頓，需 React.memo 或虛擬化 |
+| D2 | 整合測試覆蓋存讀檔 + 章節轉換 | 5 章以上手動驗收成本太高 |
+| D3 | save migration 實際實作 | 若 Ch2-Ch4 間新增 state 欄位需 v1→v2 |
+
+---
+
 ### 後續批次
 
 ---
@@ -199,8 +268,6 @@
 - connections
 - Nerve / Insight / Writing 變化
 - 驗收條件
-- 更新 docs/chapter-data-schema.md（補 locations / connections / startLocation 欄位）
-- 更新 scripts/validate-chapters.js（驗證新欄位）
 
 ---
 
@@ -213,7 +280,9 @@
 | 2026-05-06 | Batch 2B | feat: add browser engine adapters | done | audio / save / settings |
 | 2026-05-06 | Batch 3 | feat: connect React UI to chapter one engine | done | Ch1 playable end-to-end |
 | 2026-05-07 | Batch 3.5A | refactor: add chapter management | done | self-contained chapters + registry + props |
-| 2026-05-07 | Batch 3.5B | fix: framework audit fixes | pending commit | EndScreen / save / NotebookPanel / orphans |
+| 2026-05-07 | Batch 3.5B | fix: framework audit fixes | done | EndScreen / save / NotebookPanel / orphans |
+| 2026-05-07 | Batch 3.5C | feat: scene history UX | done | fading / fold toggle / scroll comfort |
+| 2026-05-07 | Batch 3.5D | fix: pre-Ch2 architecture fixes | done | save migration / schema / spacer / auto-save |
 
 ---
 
