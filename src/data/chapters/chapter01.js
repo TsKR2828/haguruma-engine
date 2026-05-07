@@ -14,6 +14,16 @@ export const CHAPTER_01 = {
   startLocation: "kasugai",
   sceneCount: 33,
 
+  portraits: {
+    barbershop_owner: "portraits/ch1/barbershop_owner.png",
+    female_student_a: "portraits/ch1/female_student_a.png",
+    female_student_b: "portraits/ch1/female_student_b.png",
+    older_female_student: "portraits/ch1/older_female_student.png",
+    t_kun: "portraits/ch1/t_kun.png",
+    sinologist: "portraits/ch1/sinologist.png",
+    niece: "portraits/ch1/niece.png",
+  },
+
   locations: [
     { id: "kasugai", label: "避暑地", sub: "鎌倉", x: 50, y: 60, shape: "mountain" },
     { id: "station", label: "停車場", sub: "東海道", x: 110, y: 142, shape: "rect", symbolKey: "raincoat_station" },
@@ -93,9 +103,9 @@ export const CHAPTER_01 = {
     auto_barber: {
       id: "auto_barber",
       text: [
-        { type: "dialogue", speaker: "理髮店主人", jp: "「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」", cn: "「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」" },
+        { type: "dialogue", speaker: "理髮店主人", speakerId: "barbershop_owner", jp: "「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」", cn: "「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」" },
         { type: "narration", content: "你看著對面冬日西曬的松山，隨口附和著。" },
-        { type: "dialogue", speaker: "理髮店主人", jp: "「尤も天気の善い日には出ないそうです。一番多いのは雨の降る日だって云うんですが。」", cn: "「不過天氣好的時候不會出現。最常出沒的是下雨天。」" },
+        { type: "dialogue", speaker: "理髮店主人", speakerId: "barbershop_owner", jp: "「尤も天気の善い日には出ないそうです。一番多いのは雨の降る日だって云うんですが。」", cn: "「不過天氣好的時候不會出現。最常出沒的是下雨天。」" },
       ],
       choices: [
         {
@@ -127,10 +137,10 @@ export const CHAPTER_01 = {
       text: (state) => {
         const base = [];
         if (state.choicesMade.joke_response) {
-          base.push({ type: "dialogue", speaker: "理髮店主人", jp: "「御常談で。……しかしレエン・コオトを着た幽霊だって云うんです。」", cn: "「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」" });
+          base.push({ type: "dialogue", speaker: "理髮店主人", speakerId: "barbershop_owner", jp: "「御常談で。……しかしレエン・コオトを着た幽霊だって云うんです。」", cn: "「您說笑了。……不過聽說是穿著雨衣的幽靈呢。」" });
         } else {
           base.push({ type: "narration", content: "理髮店主人見你沉默，又自顧自地說了下去。" });
-          base.push({ type: "dialogue", speaker: "理髮店主人", jp: "「しかしレエン・コオトを着た幽霊だって云うんです。」", cn: "「不過聽說是穿著雨衣的幽靈呢。」" });
+          base.push({ type: "dialogue", speaker: "理髮店主人", speakerId: "barbershop_owner", jp: "「しかしレエン・コオトを着た幽霊だって云うんです。」", cn: "「不過聽說是穿著雨衣的幽靈呢。」" });
         }
         base.push({ type: "narration", content: "汽車鳴著喇叭，橫靠在了某個停車場旁。你與理髮店主人告別，走進了停車場。" });
         base.push({ type: "narration", content: "果然——上行列車在兩三分鐘前剛剛開走了。" });
@@ -247,10 +257,10 @@ export const CHAPTER_01 = {
         { type: "break" },
         { type: "narration", content: "等到搭上下一班上行列車時，天色已經接近黃昏。你平常坐二等車廂，但因為某種緣故，這次坐了三等。" },
         { type: "narration", content: "車廂裡相當擁擠。你的前後全是去大磯之類地方遠足歸來的小學女學生。她們個個活潑，幾乎沒停過嘴。" },
-        { type: "dialogue", speaker: "女學生", jp: "「写真屋さん、ラヴ・シインって何？」", cn: "「照相館叔叔，Love scene 是什麼？」" },
+        { type: "dialogue", speaker: "女學生", speakerId: "female_student_a", jp: "「写真屋さん、ラヴ・シインって何？」", cn: "「照相館叔叔，Love scene 是什麼？」" },
         { type: "narration", content: "隨隊的「照相館叔叔」含混地搪塞過去了。但那個十四五歲的女學生還在追問。你注意到她鼻子有蓄膿症，忍不住微笑了一下。" },
         { type: "narration", content: "你旁邊坐著的十二三歲女學生則坐在年輕女老師的膝上，一手摟著她的脖子，一手撫著她的臉頰。" },
-        { type: "dialogue", speaker: "女學生", jp: "「可愛いわね、先生は。可愛い目をしていらっしゃるわね。」", cn: "「好可愛呢，老師。老師的眼睛真可愛。」" },
+        { type: "dialogue", speaker: "女學生", speakerId: "female_student_b", jp: "「可愛いわね、先生は。可愛い目をしていらっしゃるわね。」", cn: "「好可愛呢，老師。老師的眼睛真可愛。」" },
       ],
       choices: [
         {
@@ -281,7 +291,7 @@ export const CHAPTER_01 = {
       id: "train_mature_girl",
       text: [
         { type: "narration", content: "年紀較大的那個女學生路過你身邊時似乎踩了誰的腳——" },
-        { type: "dialogue", speaker: "年長的女學生", jp: "「御免なさいまし」", cn: "「非常抱歉」" },
+        { type: "dialogue", speaker: "年長的女學生", speakerId: "older_female_student", jp: "「御免なさいまし」", cn: "「非常抱歉」" },
         { type: "inner", content: "她比其他人更早熟——但正因如此，反而是她最像「女學生」。你嘴裡含著卷菸，對自己感受到的這個矛盾冷笑了一聲。" },
       ],
       choices: null,
@@ -301,7 +311,7 @@ export const CHAPTER_01 = {
         { type: "narration", content: "不知何時車廂亮了燈。列車終於停靠在某個郊外的停車場。你在寒風凜冽的月台上下車，越過天橋，等候省線電車。" },
         { type: "narration", content: "在那裡，你偶然遇到了在某公司任職的 T 君。" },
         { type: "narration", content: "你們在等電車的間隙聊了些不景氣之類的話題。T 君的粗壯手指上嵌著一枚與不景氣毫無關係的土耳其石戒指。" },
-        { type: "dialogue", speaker: "T 君", jp: "「これか？ これはハルピンへ商売に行っていた友だちの指環を買わされたんだよ。」", cn: "「這個？這是被一個去哈爾濱做生意的朋友硬塞的。那傢伙現在也走投無路了。」" },
+        { type: "dialogue", speaker: "T 君", speakerId: "t_kun", jp: "「これか？ これはハルピンへ商売に行っていた友だちの指環を買わされたんだよ。」", cn: "「這個？這是被一個去哈爾濱做生意的朋友硬塞的。那傢伙現在也走投無路了。」" },
         { type: "narration", content: "省線電車幸好不像火車那麼擠。你們並肩坐下，聊起了巴黎的事。T 君今年春天才從巴黎的分公司回到東京。卡約夫人的事、螃蟹料理的事、某位殿下出訪的事。" },
       ],
       choices: null,
@@ -318,8 +328,8 @@ export const CHAPTER_01 = {
         { type: "narration", content: "這時——一個穿雨衣的男人走過來，在你們對面坐下了。" },
         { type: "inner", content: "你感到一瞬間的不安。想把之前聽到的幽靈故事告訴 T 君。" },
         { type: "narration", content: "但 T 君搶先把手杖的握柄朝左轉了一下，臉仍朝前，壓低聲音跟你說——" },
-        { type: "dialogue", speaker: "T 君", jp: "「あすこに女が一人いるだろう？ 鼠色の毛糸のショールをした、……」", cn: "「那邊有個女人看到了嗎？灰色毛線披肩的……」" },
-        { type: "dialogue", speaker: "T 君", jp: "「あいつはこの夏は軽井沢にいたよ。ちょっと洒落た洋装などをしてね。」", cn: "「她這個夏天在輕井澤。穿得挺時髦的。」" },
+        { type: "dialogue", speaker: "T 君", speakerId: "t_kun", jp: "「あすこに女が一人いるだろう？ 鼠色の毛糸のショールをした、……」", cn: "「那邊有個女人看到了嗎？灰色毛線披肩的……」" },
+        { type: "dialogue", speaker: "T 君", speakerId: "t_kun", jp: "「あいつはこの夏は軽井沢にいたよ。ちょっと洒落た洋装などをしてね。」", cn: "「她這個夏天在輕井澤。穿得挺時髦的。」" },
         { type: "narration", content: "但眼前的她明顯衣著寒酸。你一邊跟 T 君說話，一邊偷偷打量她。她的眉間帶著某種瘋狂的氣息。包袱裡還露出了一塊像豹紋的海綿。" },
       ],
       choices: [
@@ -505,7 +515,7 @@ export const CHAPTER_01 = {
       id: "banquet_destroy",
       text: [
         { type: "narration", content: "漢學家露骨地露出了不快的表情。他不再看你的臉，像老虎低吼般截斷了你的話——" },
-        { type: "dialogue", speaker: "漢學家", jp: "「もし堯舜もいなかったとすれば、孔子は嘘をつかれたことになる。聖人の嘘をつかれる筈はない。」", cn: "「如果連堯舜都不存在，那孔子豈不是說了謊。聖人不可能說謊。」" },
+        { type: "dialogue", speaker: "漢學家", speakerId: "sinologist", jp: "「もし堯舜もいなかったとすれば、孔子は嘘をつかれたことになる。聖人の嘘をつかれる筈はない。」", cn: "「如果連堯舜都不存在，那孔子豈不是說了謊。聖人不可能說謊。」" },
         { type: "narration", content: "你當然沉默了。" },
       ],
       choices: null,
@@ -782,11 +792,11 @@ export const CHAPTER_01 = {
         { type: "narration", content: "——突然，床邊的電話響了。" },
         { type: "narration", content: "你驚得站起來，把聽筒貼到耳邊。" },
         { type: "dialogue", speaker: "你", jp: "「どなた？」", cn: "「哪位？」" },
-        { type: "dialogue", speaker: "姪女", jp: "「あたしです。あたし……」", cn: "「是我。是我……」" },
+        { type: "dialogue", speaker: "姪女", speakerId: "niece", jp: "「あたしです。あたし……」", cn: "「是我。是我……」" },
         { type: "narration", content: "是你姊姊的女兒。" },
-        { type: "dialogue", speaker: "姪女", jp: "「ええ、あの大へんなことが起ったんです。ですから、……大へんなことが起ったもんですから、今叔母さんにも電話をかけたんです。」", cn: "「是的，出大事了。所以……因為出了大事，我剛剛也打了電話給阿姨。」" },
+        { type: "dialogue", speaker: "姪女", speakerId: "niece", jp: "「ええ、あの大へんなことが起ったんです。ですから、……大へんなことが起ったもんですから、今叔母さんにも電話をかけたんです。」", cn: "「是的，出大事了。所以……因為出了大事，我剛剛也打了電話給阿姨。」" },
         { type: "dialogue", speaker: "你", jp: "「大へんなこと？」", cn: "「大事？」" },
-        { type: "dialogue", speaker: "姪女", jp: "「ええ、ですからすぐに来て下さい。すぐにですよ。」", cn: "「是的，所以請馬上過來。馬上。」" },
+        { type: "dialogue", speaker: "姪女", speakerId: "niece", jp: "「ええ、ですからすぐに来て下さい。すぐにですよ。」", cn: "「是的，所以請馬上過來。馬上。」" },
         { type: "narration", content: "電話就此斷了。" },
         { type: "narration", content: "你掛上聽筒，反射性地按下了門鈴的按鈕。但你清楚地意識到自己的手在發抖。服務生遲遲不來。你感到的不是焦躁，而是痛苦。你反覆按著門鈴——" },
       ],

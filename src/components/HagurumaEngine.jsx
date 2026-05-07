@@ -52,7 +52,7 @@ const HistorySection = memo(function HistorySection({ section, isCollapsed, onTo
   );
 });
 
-export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange }) {
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange, onActiveBlockChange }) {
   const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -331,6 +331,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
             nerve={gs.nerve}
             onComplete={onTextComplete}
             onFlag={onFlag}
+            onActiveBlockChange={onActiveBlockChange}
           />
         )}
 

@@ -383,6 +383,43 @@ schema 文件 shape enum 與 CH1 資料不符（缺 "rect"/"mountain"），valid
 
 ---
 
+#### P2D — Character Portrait Wiring
+
+狀態：完成
+
+動機：
+
+左側欄底部已有 `.left-image-area`，但尚未接通角色立繪。需要在對話 block 顯示時動態切換對應角色的立繪圖片。
+
+完成內容：
+
+- chapter01.js 新增 `portraits` 對照表（7 位角色 → 圖片路徑）
+- chapter01.js 16 個 dialogue block 新增 `speakerId`（barbershop_owner, female_student_a/b, older_female_student, t_kun, sinologist, niece）
+- SceneText.jsx 新增 `onActiveBlockChange` callback（隨 doneCount 觸發）
+- HagurumaEngine.jsx 純 props pass-through（onActiveBlockChange 從 GameLayout 傳入 SceneText）
+- GameLayout.jsx 新增 `activePortraitId` state，dialogue+speakerId 時設定，非 dialogue 時清除
+- LeftSidebar.jsx 使用 `activePortraitId` + `chapter.portraits` 渲染立繪 `<img>`
+- public/portraits/ch1/ 放置 7 張 PNG 素材
+
+設計決策：
+
+- 兩個「女學生」共用 speaker 顯示名但使用不同 speakerId（female_student_a / female_student_b）
+- speaker "你" 和 "???" 的 dialogue 不設 speakerId，不顯示立繪
+- 不修改 engine core（src/engine/*）
+- 不使用 fade 動畫、不支援雙立繪、不支援表情變體
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（89/89）
+- npm run validate:chapters 通過（22/22 playthroughs）
+- 瀏覽器驗證：barbershop_owner / female_student_a / female_student_b / t_kun / niece 立繪正確顯示
+- 非 dialogue block 正確清除立繪
+- speaker "你" 的 dialogue 不觸發立繪
+- 零 console error
+
+---
+
 ### 待修問題清單
 
 D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
@@ -435,6 +472,7 @@ D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
 | 2026-05-07 | P2A | feat: restore three-column layout skeleton | done | GameLayout wrapper, .layout CSS |
 | 2026-05-07 | P2B | feat: add persistent right sidebar | done | RightSidebar (手帖/連結/行路) |
 | 2026-05-07 | P2C | feat: add left sidebar (chapter TOC + image area) | done | LeftSidebar, expand/collapse TOC, forward-compatible image display |
+| 2026-05-07 | P2D | feat: wire character portraits to dialogue | done | portraits lookup, speakerId on 16 blocks, callback chain SceneText→HagurumaEngine→GameLayout→LeftSidebar |
 
 ---
 

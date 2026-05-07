@@ -13,16 +13,25 @@ export default function GameLayout({
   onAdvance,
 }) {
   const [gs, setGs] = useState(null);
+  const [activePortraitId, setActivePortraitId] = useState(null);
   const scene = gs ? getSceneById(chapter, gs.currentSceneId) : null;
 
   const handleStateChange = useCallback((state) => {
     setGs(state);
   }, []);
 
+  const handleActiveBlockChange = useCallback((block) => {
+    if (block?.type === "dialogue" && block?.speakerId) {
+      setActivePortraitId(block.speakerId);
+    } else {
+      setActivePortraitId(null);
+    }
+  }, []);
+
   return (
     <div className="layout">
       <aside className="layout-left">
-        <LeftSidebar state={gs} chapter={chapter} scene={scene} />
+        <LeftSidebar state={gs} chapter={chapter} activePortraitId={activePortraitId} />
       </aside>
       <main className="layout-center">
         <HagurumaEngine
@@ -33,6 +42,7 @@ export default function GameLayout({
           hasNextChapter={hasNextChapter}
           onAdvance={onAdvance}
           onStateChange={handleStateChange}
+          onActiveBlockChange={handleActiveBlockChange}
         />
       </main>
       <aside className="layout-right">

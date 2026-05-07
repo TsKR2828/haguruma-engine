@@ -10,7 +10,7 @@ function rawText(block) {
   return block.content || "";
 }
 
-export default function SceneText({ blocks, nerve, onComplete }) {
+export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChange }) {
   const [doneCount, setDoneCount] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
   const [pausing, setPausing] = useState(false);
@@ -18,6 +18,10 @@ export default function SceneText({ blocks, nerve, onComplete }) {
   const endRef = useRef(null);
 
   const active = doneCount < blocks.length ? blocks[doneCount] : null;
+
+  useEffect(() => {
+    onActiveBlockChange?.(active);
+  }, [doneCount, blocks]);
 
   const advance = useCallback(() => {
     setDoneCount((d) => d + 1);
