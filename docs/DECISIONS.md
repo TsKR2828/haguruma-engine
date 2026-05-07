@@ -45,6 +45,10 @@
 
 日期：2026-05-07
 
+### D4 附錄 — 跨章預解鎖不經 symbols（2026-05-08）
+
+審查確認：CH2+ 若需「因 CH1 行為而預解鎖地點」，使用 `choicesMade` flag 做 scene condition，不新增 `globalSymbols` 或 carryOver symbols。理由：`choicesMade` 已跨章保留（D3），能滿足需求且零改動；`symbols` 的 key 空間綁定章節 locations map，跨章保留會汙染 namespace。若 CH3+ 出現大量跨章預解鎖需求，再重新評估。
+
 ---
 
 ## D5 — 保留 legacy prototype
