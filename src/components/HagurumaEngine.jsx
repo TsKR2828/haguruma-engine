@@ -11,6 +11,7 @@ import SceneText from "./SceneText";
 import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
+import GearDefs from "./GearDefs";
 
 const HistoryBlock = memo(function HistoryBlock({ block }) {
   if (block.type === "dialogue") {
@@ -240,6 +241,15 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
     [toastEffects, checkConns, loadScene],
   );
 
+  const onFlag = useCallback((flag) => {
+    const next = {
+      ...gsRef.current,
+      choicesMade: { ...gsRef.current.choicesMade, [flag]: true },
+    };
+    setGs(next);
+    gsRef.current = next;
+  }, []);
+
   const onContinue = useCallback(() => {
     const sc = sceneRef.current;
     if (sc?.next) loadScene(sc.next);
@@ -271,6 +281,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
   return (
     <div className="game-container">
+      <GearDefs />
       <Particles nerve={gs.nerve} />
       <ImpactToast impact={impact} />
 
@@ -315,6 +326,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
             blocks={blocks}
             nerve={gs.nerve}
             onComplete={onTextComplete}
+            onFlag={onFlag}
           />
         )}
 

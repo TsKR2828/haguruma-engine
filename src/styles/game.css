@@ -419,6 +419,136 @@
   to   { opacity: 1; }
 }
 
+/* ── Action block (micro-interaction) ── */
+
+.action-block {
+  margin: 14px 0;
+}
+
+.action-btn {
+  display: inline-block;
+  background: none;
+  border: 1px dashed var(--washi-border);
+  border-radius: 2px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--washi-accent-gold);
+  cursor: pointer;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  transition: background 0.2s, border-color 0.25s, color 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--washi-hover-bg);
+  border-color: var(--washi-accent-gold);
+  color: var(--washi-ink-body);
+}
+
+.action-block--done {
+  animation: hgr-fade-in 0.3s ease;
+}
+
+.action-prompt-done {
+  font-size: 13px;
+  color: var(--washi-ink-ghost);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.action-response {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--washi-ink-body);
+  line-height: 2;
+  animation: hgr-fade-in 0.5s ease;
+}
+
+/* ── Forced steps ── */
+
+.forced-steps {
+  margin: 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forced-step--done {
+  font-size: 13px;
+  color: var(--washi-ink-ghost);
+  font-style: italic;
+  padding: 6px 0;
+  opacity: 0.6;
+}
+
+.forced-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  animation: hgr-fade-in 0.3s ease;
+}
+
+.forced-btn {
+  position: relative;
+  z-index: 1;
+  background: var(--washi-bg-card);
+  border: 1px solid var(--washi-border);
+  border-radius: 2px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--washi-ink-body);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.6;
+  transition: background 0.2s, border-color 0.25s;
+}
+
+.forced-btn:hover {
+  background: var(--washi-hover-bg);
+  border-color: var(--washi-accent-gold);
+}
+
+.forced-btn--eroded {
+  clip-path: url(#gear-teeth-subtle);
+  border: none;
+  padding: 12px 20px;
+  background: var(--washi-bg-card);
+  box-shadow: inset 0 0 0 1px var(--washi-border);
+}
+
+.forced-btn--eroded-deep {
+  clip-path: url(#gear-teeth-heavy);
+  border: none;
+  padding: 14px 22px;
+  background: var(--washi-bg-card);
+  box-shadow: inset 0 0 0 1px var(--washi-accent-red);
+}
+
+/* ── Gear overlay ── */
+
+.gear-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  color: var(--washi-ink-ghost);
+}
+
+.gear-overlay-svg {
+  flex-shrink: 0;
+}
+
+@keyframes hgr-gear-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ── Title screen ── */
 
 .title-start-btn {
