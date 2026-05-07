@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import HagurumaEngine from "./components/HagurumaEngine";
+import GameLayout from "./components/GameLayout";
 import { getChapter } from "./data/chapterRegistry";
 import { loadSave, restoreState, clearSave } from "./engine/save";
 import "./styles/game.css";
@@ -34,7 +34,7 @@ export default function App() {
 
   if (playing && chapter) {
     return (
-      <HagurumaEngine
+      <GameLayout
         key={chapterNum}
         chapter={chapter}
         carryOver={carryOver}

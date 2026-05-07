@@ -11,6 +11,7 @@ import SceneText from "./SceneText";
 import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
+import GearDefs from "./GearDefs";
 
 const HistoryBlock = memo(function HistoryBlock({ block }) {
   if (block.type === "dialogue") {
@@ -51,7 +52,7 @@ const HistorySection = memo(function HistorySection({ section, isCollapsed, onTo
   );
 });
 
-export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance }) {
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange }) {
   const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -67,6 +68,10 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
   const impactSeq = useRef(0);
+
+  useEffect(() => {
+    onStateChange?.(gs);
+  }, [gs, onStateChange]);
 
   const toast = useCallback((type, label, amount, reason) => {
     impactSeq.current++;
@@ -240,6 +245,15 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
     [toastEffects, checkConns, loadScene],
   );
 
+  const onFlag = useCallback((flag) => {
+    const next = {
+      ...gsRef.current,
+      choicesMade: { ...gsRef.current.choicesMade, [flag]: true },
+    };
+    setGs(next);
+    gsRef.current = next;
+  }, []);
+
   const onContinue = useCallback(() => {
     const sc = sceneRef.current;
     if (sc?.next) loadScene(sc.next);
@@ -271,6 +285,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
   return (
     <div className="game-container">
+      <GearDefs />
       <Particles nerve={gs.nerve} />
       <ImpactToast impact={impact} />
 
@@ -315,6 +330,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
             blocks={blocks}
             nerve={gs.nerve}
             onComplete={onTextComplete}
+            onFlag={onFlag}
           />
         )}
 

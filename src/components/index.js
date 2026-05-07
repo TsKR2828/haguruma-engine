@@ -7,3 +7,8 @@ export { default as SceneText } from "./SceneText";
 export { default as ChoiceList } from "./ChoiceList";
 export { default as EndScreen } from "./EndScreen";
 export { default as NotebookPanel } from "./NotebookPanel";
+export { default as LeftSidebar } from "./LeftSidebar";
+export { default as ActionBlock } from "./ActionBlock";
+export { default as ForcedSteps } from "./ForcedSteps";
+export { default as GearOverlay } from "./GearOverlay";
+export { default as GearDefs } from "./GearDefs";
