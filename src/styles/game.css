@@ -172,6 +172,11 @@
   object-fit: contain;
   display: block;
   margin-top: auto;
+  margin-bottom: 0;
+  position: relative;
+  left: 12px;
+  transform: scale(1.2);
+  transform-origin: bottom center;
 }
 
 /* ── Right sidebar sections ── */

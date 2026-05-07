@@ -20,6 +20,7 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
   const active = doneCount < blocks.length ? blocks[doneCount] : null;
 
   useEffect(() => {
+    if (active?.type === "break") return;
     onActiveBlockChange?.(active);
   }, [doneCount, blocks]);
 
@@ -54,6 +55,7 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
 
     if (speed === 0 || charIdx >= text.length) {
       setCharIdx(text.length);
+      if (active.type === "dialogue") return;
       const delay = active.type === "system" ? 350 : 60;
       const t = setTimeout(advance, delay);
       return () => clearTimeout(t);
@@ -66,7 +68,11 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
   function handleClick() {
     if (pausing || !active) return;
     const text = rawText(active);
-    if (charIdx < text.length) setCharIdx(text.length);
+    if (charIdx < text.length) {
+      setCharIdx(text.length);
+    } else if (active.type === "dialogue") {
+      advance();
+    }
   }
 
   useEffect(() => {
