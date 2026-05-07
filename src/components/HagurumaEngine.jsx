@@ -52,7 +52,7 @@ const HistorySection = memo(function HistorySection({ section, isCollapsed, onTo
   );
 });
 
-export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance }) {
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange }) {
   const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -68,6 +68,10 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
   const impactSeq = useRef(0);
+
+  useEffect(() => {
+    onStateChange?.(gs);
+  }, [gs, onStateChange]);
 
   const toast = useCallback((type, label, amount, reason) => {
     impactSeq.current++;
