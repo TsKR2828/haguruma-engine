@@ -420,6 +420,42 @@ schema 文件 shape enum 與 CH1 資料不符（缺 "rect"/"mountain"），valid
 
 ---
 
+---
+
+## 2026-05-08
+
+### 已完成
+
+#### Dialogue Format Standardization
+
+狀態：完成
+
+動機：
+
+CH1 dialogue block 有 4 處缺少 `speakerId` 欄位（speaker 為「你」或「???」的台詞）。為讓未來 Akasha Script Editor 可直接讀寫劇本資料，所有 dialogue block 須統一為五欄位格式：`type / speaker / speakerId / jp / cn`。
+
+完成內容：
+
+- chapter01.js：4 處 dialogue block 補上 speakerId
+  - speaker「你」× 3 → `speakerId: "protagonist"`
+  - speaker「???」× 1 → `speakerId: null`（身份未揭露）
+- docs/chapter-data-schema.md：TextBlock dialogue 定義新增 `speakerId: String | null`，附欄位語義說明
+
+CH1 全部 19 個 dialogue block 現在都有完整五欄位。
+
+修改檔案：
+
+- src/data/chapters/chapter01.js
+- docs/chapter-data-schema.md
+
+驗收結果：
+
+- npm run build 通過
+- npm run test 通過（89/89）
+- npm run validate:chapters 通過（22/22 playthroughs）
+
+---
+
 ### 待修問題清單
 
 D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。

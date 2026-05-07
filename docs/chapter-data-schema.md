@@ -42,7 +42,10 @@
 ```js
 { type: "narration", content: String }
 { type: "inner",     content: String }           // 內心獨白
-{ type: "dialogue",  speaker: String, jp: String, cn: String }
+{ type: "dialogue",  speaker: String, speakerId: String | null, jp: String, cn: String }
+  // speaker:   畫面顯示名稱（如「T 君」「你」「???」）
+  // speakerId: 程式辨識用 ID（立繪 key、角色資料卡 key；無角色時為 null）
+  // jp / cn:   雙語劇本文本（日文原文 / 中文譯文）
 { type: "system",    content: String }           // 章節標題等
 { type: "break" }                                // 視覺分隔
 { type: "pause", duration: Number }              // 停頓（毫秒，預設 1000）
