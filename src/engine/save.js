@@ -1,9 +1,19 @@
-const SAVE_KEY = "haguruma_save_v1";
-const CURRENT_VERSION = 2;
+import { initialState } from "./state.js";
+
+const SAVE_KEY = "haguruma_save";
+const LEGACY_SAVE_KEY = "haguruma_save_v1";
+const CURRENT_VERSION = 3;
 let _memorySave = null;
 
 const migrations = {
   1: (data) => ({ ...data, v: 2, nextScene: data.scene }),
+  2: (data) => ({
+    ...data,
+    v: 3,
+    connections: (data.connections || []).map((c) =>
+      typeof c === "string" ? { id: c } : c
+    ),
+  }),
 };
 
 function migrate(data) {
@@ -18,18 +28,12 @@ function migrate(data) {
 }
 
 export function buildSaveData(state, nextScene = null) {
+  const { currentSceneId, ...gameState } = state;
   return {
+    ...gameState,
     v: CURRENT_VERSION,
-    scene: state.currentSceneId,
+    scene: currentSceneId,
     nextScene,
-    nerve: state.nerve,
-    insight: state.insight,
-    writing: state.writing,
-    notebook: state.notebook,
-    choicesMade: state.choicesMade,
-    journey: state.journey,
-    connections: state.connections,
-    currentChapter: state.currentChapter,
     savedAt: Date.now(),
   };
 }
@@ -48,15 +52,17 @@ export function saveGame(state, nextScene = null) {
 }
 
 export function loadSave() {
-  let data = null;
-  try { data = localStorage.getItem(SAVE_KEY); } catch (_) {}
-  if (!data) { try { data = sessionStorage.getItem(SAVE_KEY); } catch (_) {} }
-  if (!data) data = _memorySave;
-  if (!data) return null;
-  try {
-    const parsed = JSON.parse(data);
-    return migrate(parsed);
-  } catch (_) { return null; }
+  const sources = [];
+  try { sources.push(localStorage.getItem(SAVE_KEY)); } catch (_) {}
+  try { sources.push(localStorage.getItem(LEGACY_SAVE_KEY)); } catch (_) {}
+  try { sources.push(sessionStorage.getItem(SAVE_KEY)); } catch (_) {}
+  try { sources.push(sessionStorage.getItem(LEGACY_SAVE_KEY)); } catch (_) {}
+  sources.push(_memorySave);
+  for (const data of sources) {
+    if (!data) continue;
+    try { return migrate(JSON.parse(data)); } catch (_) {}
+  }
+  return null;
 }
 
 export function hasSave() {
@@ -67,20 +73,21 @@ export function hasSave() {
 export function clearSave() {
   _memorySave = null;
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
+  try { localStorage.removeItem(LEGACY_SAVE_KEY); } catch (_) {}
   try { sessionStorage.removeItem(SAVE_KEY); } catch (_) {}
+  try { sessionStorage.removeItem(LEGACY_SAVE_KEY); } catch (_) {}
 }
 
 export function restoreState(saved) {
+  const { v, scene, nextScene, savedAt, ...rest } = saved;
+  // Filter out null/undefined so initialState defaults take effect
+  const clean = Object.fromEntries(
+    Object.entries(rest).filter(([_, val]) => val != null)
+  );
   return {
-    currentSceneId: saved.nextScene !== undefined ? saved.nextScene : saved.scene,
-    currentChapter: saved.currentChapter || 1,
-    nerve: saved.nerve,
-    insight: saved.insight,
-    writing: saved.writing,
-    notebook: saved.notebook || [],
-    choicesMade: saved.choicesMade || {},
-    journey: saved.journey || { current: null, visited: [], symbols: {} },
-    connections: saved.connections || [],
+    ...initialState,
+    ...clean,
+    currentSceneId: nextScene !== undefined ? nextScene : scene,
   };
 }
 

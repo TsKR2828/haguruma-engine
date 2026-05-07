@@ -5,6 +5,11 @@ export const CHAPTERS = [
   { num: 4, title: "???", cn: "???" },
   { num: 5, title: "???", cn: "???" },
   { num: 6, title: "???", cn: "???" },
+  { num: 7, title: "???", cn: "???" },
+  { num: 8, title: "???", cn: "???" },
+  { num: 9, title: "???", cn: "???" },
+  { num: 10, title: "???", cn: "???" },
+  { num: 11, title: "???", cn: "???" },
 ];
 
-export const CH_NUM_KANJI = ["一", "二", "三", "四", "五", "六"];
+export const CH_NUM_KANJI = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一"];

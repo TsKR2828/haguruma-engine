@@ -23,6 +23,7 @@ async function main() {
   console.log(`Found ${files.length} chapter file(s): ${files.join(", ")}\n`);
 
   const reports = [];
+  const priorNotebookKeys = new Set();
 
   for (const file of files) {
     const url = pathToFileURL(resolve(CHAPTERS_DIR, file)).href;
@@ -33,9 +34,18 @@ async function main() {
       continue;
     }
     console.log(`Validating: ${chapter.title ?? file}`);
-    const report = validateChapter(chapter, file);
+    const report = validateChapter(chapter, file, priorNotebookKeys);
     reports.push(report);
     printSummary(report);
+
+    for (const scene of Object.values(chapter.scenes)) {
+      if (scene.notebook?.key) priorNotebookKeys.add(scene.notebook.key);
+      if (Array.isArray(scene.choices)) {
+        for (const c of scene.choices) {
+          if (c.notebook?.key) priorNotebookKeys.add(c.notebook.key);
+        }
+      }
+    }
   }
 
   const md = renderMarkdown(reports);
@@ -127,7 +137,7 @@ export function validateNamespaces(chapter, errors, warnings) {
 
 // ── Full validation pipeline ───────────────────────────────
 
-export function validateChapter(chapter, filename) {
+export function validateChapter(chapter, filename, priorNotebookKeys = new Set()) {
   const { scenes, startScene, title, titleCn, sceneCount } = chapter;
   const sceneKeys = Object.keys(scenes);
   const errors = [];
@@ -262,7 +272,10 @@ export function validateChapter(chapter, filename) {
     connIdSet.add(conn.id);
     if (Array.isArray(conn.requires)) {
       for (const req of conn.requires) {
-        if (!notebookKeys.has(req) && !validSymbolKeys.has(req)) {
+        if (notebookKeys.has(req) || validSymbolKeys.has(req)) continue;
+        if (priorNotebookKeys.has(req)) {
+          warnings.push(`Connection "${conn.id}": requires "${req}" satisfied via carryOver from earlier chapter`);
+        } else {
           warnings.push(`Connection "${conn.id}": requires "${req}" not found in chapter notebook keys or SYMBOL_GLYPHS`);
         }
       }

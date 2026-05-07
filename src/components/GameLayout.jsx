@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useLayoutEffect } from "react";
 import HagurumaEngine from "./HagurumaEngine";
 import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./RightSidebar";
@@ -13,8 +13,21 @@ export default function GameLayout({
   onAdvance,
 }) {
   const [gs, setGs] = useState(null);
-  const [activePortraitId, setActivePortraitId] = useState(null);
+  const [portraitId, setPortraitId] = useState(null);
+  const [portraitDim, setPortraitDim] = useState(false);
+  const prevSceneRef = useRef(null);
   const scene = gs ? getSceneById(chapter, gs.currentSceneId) : null;
+
+  useLayoutEffect(() => {
+    const sceneId = gs?.currentSceneId ?? null;
+    if (sceneId !== prevSceneRef.current) {
+      if (prevSceneRef.current !== null) {
+        setPortraitId(null);
+        setPortraitDim(false);
+      }
+      prevSceneRef.current = sceneId;
+    }
+  }, [gs?.currentSceneId]);
 
   const handleStateChange = useCallback((state) => {
     setGs(state);
@@ -22,16 +35,17 @@ export default function GameLayout({
 
   const handleActiveBlockChange = useCallback((block) => {
     if (block?.type === "dialogue" && block?.speakerId) {
-      setActivePortraitId(block.speakerId);
+      setPortraitId(block.speakerId);
+      setPortraitDim(false);
     } else {
-      setActivePortraitId(null);
+      setPortraitDim(true);
     }
   }, []);
 
   return (
     <div className="layout">
       <aside className="layout-left">
-        <LeftSidebar state={gs} chapter={chapter} activePortraitId={activePortraitId} />
+        <LeftSidebar state={gs} chapter={chapter} portraitId={portraitId} portraitDim={portraitDim} />
       </aside>
       <main className="layout-center">
         <HagurumaEngine

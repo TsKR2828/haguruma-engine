@@ -29,14 +29,9 @@ export function createChapterState(chapter, carryOver) {
   }
   return {
     ...initialState,
+    ...carryOver,
     currentChapter: chapter.chapter,
     currentSceneId: chapter.startScene,
-    nerve: carryOver.nerve,
-    insight: carryOver.insight,
-    writing: carryOver.writing,
-    notebook: carryOver.notebook,
-    choicesMade: carryOver.choicesMade,
-    connections: carryOver.connections,
     journey: {
       current: chapter.startLocation ?? null,
       visited: chapter.startLocation ? [chapter.startLocation] : [],

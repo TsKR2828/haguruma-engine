@@ -153,4 +153,25 @@ describe("cross-reference validation", () => {
     const report = validateChapter(CHAPTER_01, "chapter01.js");
     expect(report.errors).toHaveLength(0);
   });
+
+  it("connection.requires satisfied by priorNotebookKeys emits carryOver info instead of missing warning", () => {
+    const ch = makeChapter({
+      chapter: 2,
+      connections: [{ id: "ch02.cross_conn", requires: ["prior_key"], title: "T", insightGain: 1 }],
+    });
+    const prior = new Set(["prior_key"]);
+    const report = validateChapter(ch, "test.js", prior);
+    expect(report.warnings.some((w) => w.includes("carryOver") && w.includes("prior_key"))).toBe(true);
+    expect(report.warnings.some((w) => w.includes("not found"))).toBe(false);
+  });
+
+  it("connection.requires truly missing key still warns even with priorNotebookKeys", () => {
+    const ch = makeChapter({
+      chapter: 2,
+      connections: [{ id: "ch02.bad_conn", requires: ["nowhere_key"], title: "T", insightGain: 1 }],
+    });
+    const prior = new Set(["other_key"]);
+    const report = validateChapter(ch, "test.js", prior);
+    expect(report.warnings.some((w) => w.includes("not found") && w.includes("nowhere_key"))).toBe(true);
+  });
 });

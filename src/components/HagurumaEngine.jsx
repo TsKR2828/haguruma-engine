@@ -3,6 +3,7 @@ import { createChapterState } from "../engine/state";
 import { applyEffects } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
 import { resolveConnections, applyConnection } from "../engine/connections";
+import { upsertNotebook } from "../engine/notebook";
 import { saveGame } from "../engine/save";
 import Particles from "./Particles";
 import NerveBar from "./NerveBar";
@@ -61,6 +62,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   const [showNb, setShowNb] = useState(false);
   const [history, setHistory] = useState([]);
   const [collapsed, setCollapsed] = useState({});
+  const [endDismissed, setEndDismissed] = useState(false);
 
   const gsRef = useRef(gs);
   gsRef.current = gs;
@@ -166,11 +168,8 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
     let next = { ...gsRef.current };
 
-    if (
-      sc.notebook &&
-      !next.notebook.some((n) => n.key === sc.notebook.key)
-    ) {
-      next = { ...next, notebook: [...next.notebook, sc.notebook] };
+    if (sc.notebook) {
+      next = { ...next, notebook: upsertNotebook(next.notebook, sc.notebook) };
     }
 
     if (sc.effects) {
@@ -218,11 +217,8 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
         next = applyEffects(next, choice.effects);
         toastEffects(choice.effects);
       }
-      if (
-        choice.notebook &&
-        !next.notebook.some((n) => n.key === choice.notebook.key)
-      ) {
-        next = { ...next, notebook: [...next.notebook, choice.notebook] };
+      if (choice.notebook) {
+        next = { ...next, notebook: upsertNotebook(next.notebook, choice.notebook) };
       }
       if (choice.unlock) {
         next = {
@@ -355,13 +351,19 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
         <NotebookPanel state={gs} chapter={chapter} onClose={() => setShowNb(false)} />
       )}
 
-      {phase === "ending" && (
+      {phase === "ending" && !endDismissed && (
         <EndScreen
           state={gs}
           chapter={chapter}
           hasNextChapter={hasNextChapter}
           onAdvance={onAdvance}
+          onClose={() => setEndDismissed(true)}
         />
+      )}
+      {phase === "ending" && endDismissed && hasNextChapter && onAdvance && (
+        <div className="advance-fallback" onClick={onAdvance}>
+          次の章へ ▸
+        </div>
       )}
     </div>
   );

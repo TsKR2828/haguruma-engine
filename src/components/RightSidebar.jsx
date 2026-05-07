@@ -147,7 +147,6 @@ export default function RightSidebar({ state, chapter }) {
   if (!state) return null;
 
   const { notebook, connections, journey } = state;
-  const chapterConns = chapter?.connections ?? [];
   const locations = chapter?.locations ?? [];
 
   return (
@@ -177,19 +176,17 @@ export default function RightSidebar({ state, chapter }) {
             連結將在意象交會時自然顯現。
           </div>
         ) : (
-          connections.map((connId, i) => {
-            const conn = chapterConns.find((c) => c.id === connId);
-            if (!conn) return null;
-            return (
-              <div key={i} className="connection-card">
-                <div className="connection-card-icon">{conn.icon}</div>
-                <div className="connection-card-title">{conn.title}</div>
+          connections.map((conn, i) => (
+            <div key={i} className="connection-card">
+              <div className="connection-card-icon">{conn.icon || "✦"}</div>
+              <div className="connection-card-title">{conn.title || conn.id}</div>
+              {conn.subtitle && (
                 <div className="connection-card-subtitle">
                   ── {conn.subtitle} ──
                 </div>
-              </div>
-            );
-          })
+              )}
+            </div>
+          ))
         )}
       </section>
 
