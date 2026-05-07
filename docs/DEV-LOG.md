@@ -431,6 +431,10 @@ D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
 | 2026-05-06 | Batch 5A | fix: save/restore + idempotency | done | nextScene cursor, initialState prop, v1→v2 migration |
 | 2026-05-06 | Batch 5B | feat: key namespace convention | done | CH2+ prefix enforcement, CH1 grandfathered |
 | 2026-05-06 | Batch 5C | fix: schema + validator sync | done | 9 cross-ref checks, shape enum fix, 11 tests |
+| 2026-05-07 | P1 | fix: remove incorrect SidePanel integration | done | cherry-pick from exciting-villani |
+| 2026-05-07 | P2A | feat: restore three-column layout skeleton | done | GameLayout wrapper, .layout CSS |
+| 2026-05-07 | P2B | feat: add persistent right sidebar | done | RightSidebar (手帖/連結/行路) |
+| 2026-05-07 | P2C | feat: add left sidebar (chapter TOC + image area) | done | LeftSidebar, expand/collapse TOC, forward-compatible image display |
 
 ---
 

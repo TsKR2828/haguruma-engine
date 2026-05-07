@@ -66,10 +66,112 @@
   box-shadow: 0 0 24px rgba(60,50,35,0.10), 0 0 6px rgba(60,50,35,0.05);
 }
 
-.layout-placeholder {
-  color: var(--washi-ink-ghost);
+/* ── Left sidebar: Chapter TOC ── */
+
+.left-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ch-header {
+  cursor: pointer;
+  color: var(--washi-ink-body);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--washi-border);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.ch-header:hover {
+  color: var(--washi-ink-deep);
+}
+
+.ch-arrow {
+  font-size: 9px;
+  transition: transform 0.3s;
+  color: var(--washi-ink-muted);
+}
+
+.ch-header.expanded .ch-arrow {
+  transform: rotate(180deg);
+  color: var(--washi-ink-deep);
+}
+
+.ch-warning {
+  color: var(--washi-ink-muted);
   font-size: 13px;
+  line-height: 1.85;
   font-style: italic;
+  padding: 6px 4px;
+  letter-spacing: 0.04em;
+}
+
+.ch-item {
+  padding: 10px 10px 10px 14px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--washi-ink-ghost);
+  border-left: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.ch-item.unlocked {
+  color: var(--washi-ink-body);
+  border-left-color: var(--washi-border);
+}
+
+.ch-item.current {
+  color: var(--washi-ink-deep);
+  border-left-color: var(--washi-accent-gold);
+  background: rgba(201, 168, 106, 0.08);
+}
+
+.ch-item-num {
+  color: var(--washi-ink-body);
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.ch-item.current .ch-item-num {
+  color: var(--washi-accent-gold);
+}
+
+.ch-item-cn {
+  font-size: 10px;
+  color: var(--washi-ink-muted);
+}
+
+/* ── Left sidebar: Image Display ── */
+
+.left-image-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.left-scene-image {
+  width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.left-portrait {
+  width: 100%;
+  object-fit: contain;
+  display: block;
+  margin-top: auto;
 }
 
 /* ── Right sidebar sections ── */
