@@ -1,11 +1,50 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import HagurumaEngine from "./components/HagurumaEngine";
+import { getChapter } from "./data/chapterRegistry";
+import { loadSave, restoreState, clearSave } from "./engine/save";
 import "./styles/game.css";
 
 export default function App() {
   const [playing, setPlaying] = useState(false);
+  const [chapterNum, setChapterNum] = useState(() => {
+    const saved = loadSave();
+    return saved?.currentChapter ?? 1;
+  });
+  const [restoredState, setRestoredState] = useState(() => {
+    const saved = loadSave();
+    return saved ? restoreState(saved) : null;
+  });
+  const [carryOver, setCarryOver] = useState(null);
 
-  if (playing) return <HagurumaEngine />;
+  const chapter = getChapter(chapterNum);
+
+  const handleChapterEnd = useCallback((finalState) => {
+    const { currentSceneId, currentChapter, journey, ...persistent } = finalState;
+    setCarryOver(persistent);
+    setRestoredState(null);
+  }, []);
+
+  const advanceChapter = useCallback(() => {
+    const next = getChapter(chapterNum + 1);
+    if (next) {
+      setRestoredState(null);
+      setChapterNum(chapterNum + 1);
+    }
+  }, [chapterNum]);
+
+  if (playing && chapter) {
+    return (
+      <HagurumaEngine
+        key={chapterNum}
+        chapter={chapter}
+        carryOver={carryOver}
+        initialState={restoredState}
+        onChapterEnd={handleChapterEnd}
+        hasNextChapter={!!getChapter(chapterNum + 1)}
+        onAdvance={advanceChapter}
+      />
+    );
+  }
 
   return (
     <div className="app-shell">

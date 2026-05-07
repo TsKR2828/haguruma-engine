@@ -1,4 +1,4 @@
-export default function EndScreen({ state, chapter }) {
+export default function EndScreen({ state, chapter, hasNextChapter, onAdvance }) {
   return (
     <div className="end-overlay">
       <div className="end-card">
@@ -30,6 +30,11 @@ export default function EndScreen({ state, chapter }) {
             <span>{state.connections.length}</span>
           </div>
         </div>
+        {hasNextChapter && onAdvance && (
+          <button className="end-advance-btn" onClick={onAdvance}>
+            次の章へ ▸
+          </button>
+        )}
       </div>
     </div>
   );

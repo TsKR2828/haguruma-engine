@@ -1,10 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { initialState } from "../engine/state";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
+import { createChapterState } from "../engine/state";
 import { applyEffects } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
 import { resolveConnections, applyConnection } from "../engine/connections";
-import { CHAPTER_01 } from "../data/chapters/chapter01";
-import { CONNECTIONS } from "../data/connections";
+import { saveGame } from "../engine/save";
 import Particles from "./Particles";
 import NerveBar from "./NerveBar";
 import ImpactToast from "./ImpactToast";
@@ -13,25 +12,71 @@ import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
 
-const chapter = CHAPTER_01;
+const HistoryBlock = memo(function HistoryBlock({ block }) {
+  if (block.type === "dialogue") {
+    return (
+      <div className={`scene-block scene-block-dialogue scene-block-read`}>
+        {block.speaker && <div className="scene-block-speaker">{block.speaker}</div>}
+        <div className="scene-block-jp">{block.jp}</div>
+        {block.cn && <div className="scene-block-cn">{block.cn}</div>}
+      </div>
+    );
+  }
+  return (
+    <div className={`scene-block scene-block-${block.type} scene-block-read`}>
+      {block.content || ""}
+    </div>
+  );
+});
 
-export default function HagurumaEngine() {
-  const [gs, setGs] = useState({ ...initialState });
+const HistorySection = memo(function HistorySection({ section, isCollapsed, onToggle }) {
+  return (
+    <div className="scene-section">
+      {section.fold && (
+        <div className="fold-divider fold-clickable" onClick={onToggle}>
+          <span className="fold-arrow">{isCollapsed ? "▸" : "▾"}</span>
+          {section.fold}
+        </div>
+      )}
+      {!isCollapsed && (
+        <div className="scene-past">
+          {section.entries.flatMap((entry, ei) =>
+            entry.blocks
+              .filter((b) => b.type !== "break" && b.type !== "pause")
+              .map((b, bi) => <HistoryBlock key={`${ei}-${bi}`} block={b} />)
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance }) {
+  const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [phase, setPhase] = useState("loading");
   const [impact, setImpact] = useState(null);
   const [showNb, setShowNb] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [collapsed, setCollapsed] = useState({});
 
   const gsRef = useRef(gs);
   gsRef.current = gs;
   const sceneRef = useRef(null);
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
   const impactSeq = useRef(0);
 
   const toast = useCallback((type, label, amount, reason) => {
     impactSeq.current++;
     setImpact({ type, label, amount, reason, _k: impactSeq.current });
   }, []);
+
+  const save = useCallback((state, nextScene = null) => {
+    const ok = saveGame(state, nextScene);
+    if (!ok) toast("loss", "存檔", 0, "儲存失敗，僅保留於記憶體");
+  }, [toast]);
 
   const toastEffects = useCallback(
     (fx) => {
@@ -49,20 +94,31 @@ export default function HagurumaEngine() {
   const checkConns = useCallback(
     (st) => {
       let next = st;
-      const formed = resolveConnections(next, CONNECTIONS);
+      const conns = chapter.connections ?? [];
+      const formed = resolveConnections(next, conns);
       for (const conn of formed) {
         next = applyConnection(next, conn);
         toast("gain", "連結", conn.insightGain ?? 0, conn.title);
       }
       return next;
     },
-    [toast],
+    [toast, chapter],
   );
 
   const loadScene = useCallback(
     (sceneId) => {
       const sc = getSceneById(chapter, sceneId);
       if (!sc) return;
+
+      if (sceneRef.current && blocksRef.current.length > 0) {
+        const prevBlocks = blocksRef.current;
+        const prevFold = sceneRef.current.links?.fold || null;
+        const prevId = gsRef.current.currentSceneId;
+        setHistory((h) => [
+          ...h,
+          { sceneId: prevId, blocks: prevBlocks, fold: prevFold },
+        ]);
+      }
 
       let next = { ...gsRef.current, currentSceneId: sceneId };
 
@@ -96,7 +152,7 @@ export default function HagurumaEngine() {
       setBlocks(resolveText(sc, next));
       setPhase("text");
     },
-    [],
+    [chapter],
   );
 
   const onTextComplete = useCallback(() => {
@@ -135,10 +191,13 @@ export default function HagurumaEngine() {
       setPhase("choices");
     } else if (sc.next) {
       setPhase("continue");
+      save(next, sc.next);
     } else if (sc.links?.showEnd) {
       setPhase("ending");
+      save(next, null);
+      if (onChapterEnd) onChapterEnd(next);
     }
-  }, [toastEffects, checkConns]);
+  }, [toastEffects, checkConns, onChapterEnd]);
 
   const onChoice = useCallback(
     (choice) => {
@@ -174,6 +233,7 @@ export default function HagurumaEngine() {
 
       setGs(next);
       gsRef.current = next;
+      save(next, choice.next ?? null);
 
       if (choice.next) loadScene(choice.next);
     },
@@ -186,8 +246,28 @@ export default function HagurumaEngine() {
   }, [loadScene]);
 
   useEffect(() => {
-    loadScene(chapter.startScene);
+    if (initialState && !initialState.currentSceneId) {
+      setPhase("ending");
+      if (onChapterEnd) onChapterEnd(gsRef.current);
+      return;
+    }
+    loadScene(initialState ? initialState.currentSceneId : chapter.startScene);
   }, [loadScene]);
+
+  const sections = useMemo(() => {
+    const result = [];
+    let cur = { fold: null, entries: [] };
+    for (const entry of history) {
+      if (entry.fold) {
+        if (cur.entries.length > 0) result.push(cur);
+        cur = { fold: entry.fold, entries: [entry] };
+      } else {
+        cur.entries.push(entry);
+      }
+    }
+    if (cur.entries.length > 0) result.push(cur);
+    return result;
+  }, [history]);
 
   return (
     <div className="game-container">
@@ -216,6 +296,15 @@ export default function HagurumaEngine() {
       </header>
 
       <main className="game-content">
+        {sections.map((sec, si) => (
+          <HistorySection
+            key={si}
+            section={sec}
+            isCollapsed={collapsed[si] ?? (si !== sections.length - 1)}
+            onToggle={() => setCollapsed((c) => ({ ...c, [si]: !(c[si] ?? (si !== sections.length - 1)) }))}
+          />
+        ))}
+
         {scene?.links?.fold && (
           <div className="fold-divider">{scene.links.fold}</div>
         )}
@@ -241,14 +330,21 @@ export default function HagurumaEngine() {
             ▾ 點擊繼續
           </div>
         )}
+
+        <div className="game-scroll-spacer" />
       </main>
 
       {showNb && (
-        <NotebookPanel state={gs} onClose={() => setShowNb(false)} />
+        <NotebookPanel state={gs} chapter={chapter} onClose={() => setShowNb(false)} />
       )}
 
       {phase === "ending" && (
-        <EndScreen state={gs} chapter={chapter} />
+        <EndScreen
+          state={gs}
+          chapter={chapter}
+          hasNextChapter={hasNextChapter}
+          onAdvance={onAdvance}
+        />
       )}
     </div>
   );

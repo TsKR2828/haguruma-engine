@@ -70,13 +70,15 @@ haguruma-engine/
     │   ├── save.js                 三層存檔系統
     │   └── settings.js             使用者設定
     ├── data/                   場景與章節資料
-    │   ├── chapters/chapter01.js   第一章 33 場景
-    │   ├── connections.js          連結規則（5 條）
+    │   ├── chapters/chapter01.js   第一章 33 場景（自含 connections + locations）
+    │   ├── chapterRegistry.js      章節註冊表
     │   └── symbols.js              符號字形對應表
     └── utils/                  工具函式
 ```
 
 ## 啟動方式
+
+> **注意：** `index.html` 和 `dist/index.html` 都**不能**直接雙擊開啟（file:// 下路徑解析錯誤，頁面會空白）。必須透過下列方式啟動。
 
 ### React 版（第一章可遊玩）
 
@@ -88,6 +90,7 @@ npm run dev
 瀏覽器開啟 `http://localhost:5173`，點擊「開始遊玩」即可進入第一章。
 
 > React 版第一章已完成遷移，可從開頭一路遊玩到結算畫面。第二章以後尚未遷移。
+> Build 後需用 `npm run preview` 預覽，或將 `dist/` 部署至 web server 根目錄。
 
 ### Legacy Prototype（可遊玩 — 第一章完整版）
 

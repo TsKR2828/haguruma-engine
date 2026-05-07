@@ -74,8 +74,12 @@
 
 .game-content {
   flex: 1;
-  padding: 28px 32px 80px;
+  padding: 28px 32px 0;
   overflow-y: auto;
+}
+
+.game-scroll-spacer {
+  height: 35vh;
 }
 
 /* ── Text blocks ── */
@@ -190,6 +194,23 @@
   50% { opacity: 0.8; }
 }
 
+/* ── Past scene text (faded) ── */
+
+.scene-past .scene-block {
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+
+.scene-past:hover .scene-block {
+  opacity: 0.55;
+}
+
+.scene-block-read {
+  margin-bottom: 14px;
+  line-height: 2;
+  font-size: 15px;
+}
+
 /* ── Fold divider ── */
 
 .fold-divider {
@@ -201,6 +222,21 @@
   border-top: 1px solid var(--washi-divider);
   margin-bottom: 4px;
   opacity: 0.7;
+}
+
+.fold-clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.fold-clickable:hover {
+  opacity: 1;
+}
+
+.fold-arrow {
+  margin-right: 6px;
+  font-size: 9px;
 }
 
 /* ── Notebook overlay ── */
@@ -355,6 +391,27 @@
 .end-stat-row span:first-child {
   color: var(--washi-ink-ghost);
   letter-spacing: 0.06em;
+}
+
+.end-advance-btn {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+  color: var(--washi-accent-red);
+  border: 1px solid var(--washi-accent-red);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.end-advance-btn:hover {
+  background: var(--washi-accent-red);
+  color: var(--washi-bg-card);
 }
 
 @keyframes hgr-fade-in {

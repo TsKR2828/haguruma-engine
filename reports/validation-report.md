@@ -1,6 +1,6 @@
 # Chapter Validation Report
 
-> Generated: 2026-05-05 18:59:26
+> Generated: 2026-05-06 09:35:34
 
 ---
 
@@ -17,6 +17,10 @@ File: `chapter01.js`
 | 缺失 scene id | 無 |
 | 無法抵達場景 | 無 |
 | 死結 | 無 |
+
+### Warnings
+
+- ⚠️ Chapter 1: 43 keys without chapter prefix (grandfathered)
 
 ### Flags 使用統計
 

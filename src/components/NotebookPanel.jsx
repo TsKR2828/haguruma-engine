@@ -1,8 +1,7 @@
-import { CONNECTIONS } from "../data/connections";
 import { SYMBOL_GLYPHS } from "../data/symbols";
 import StatRadar from "./StatRadar";
 
-export default function NotebookPanel({ state, onClose }) {
+export default function NotebookPanel({ state, chapter, onClose }) {
   const { notebook, connections, nerve, insight, writing } = state;
 
   return (
@@ -22,7 +21,7 @@ export default function NotebookPanel({ state, onClose }) {
         {notebook.map((entry, i) => (
           <div key={i} className="notebook-entry">
             <span className="notebook-symbol">
-              {SYMBOL_GLYPHS[entry.key] || "◇"}
+              {SYMBOL_GLYPHS[entry.key]?.glyph || "◇"}
             </span>
             <span className="notebook-desc">{entry.desc}</span>
           </div>
@@ -32,7 +31,7 @@ export default function NotebookPanel({ state, onClose }) {
           <>
             <div className="notebook-section-title">連結</div>
             {connections.map((connId, i) => {
-              const conn = CONNECTIONS.find((c) => c.id === connId);
+              const conn = (chapter?.connections ?? []).find((c) => c.id === connId);
               return (
                 <div key={i} className="notebook-entry notebook-connection">
                   <span className="notebook-symbol">{conn?.icon || "✦"}</span>
