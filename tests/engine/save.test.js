@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buildSaveData, restoreState, importSave, loadSave } from "../../src/engine/save.js";
+import { buildSaveData, restoreState, importSave, loadSave, saveGame } from "../../src/engine/save.js";
 
 describe("save v3: connection objects", () => {
   const baseState = {
@@ -120,6 +120,26 @@ describe("save v3: connection objects", () => {
     expect(restored.connections).toEqual([]);
     expect(restored.journey).toEqual({ current: null, visited: [], symbols: {} });
     expect(restored.currentChapter).toBe(1);
+  });
+});
+
+describe("saveGame never writes to legacy key", () => {
+  it("only writes to SAVE_KEY, not LEGACY_SAVE_KEY", () => {
+    const written = {};
+    const makeMock = () => ({
+      getItem: vi.fn(() => null),
+      setItem: vi.fn((k, v) => { written[k] = v; }),
+      removeItem: vi.fn(),
+    });
+    vi.stubGlobal("localStorage", makeMock());
+    vi.stubGlobal("sessionStorage", makeMock());
+
+    saveGame({ currentSceneId: "s1", nerve: 10, insight: 0, writing: 0, notebook: [], choicesMade: {}, journey: { current: null, visited: [], symbols: {} }, connections: [], currentChapter: 1 }, "s2");
+
+    const keys = Object.keys(written);
+    expect(keys).toContain("haguruma_save");
+    expect(keys).not.toContain("haguruma_save_v1");
+    vi.unstubAllGlobals();
   });
 });
 
