@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import HagurumaEngine from "./HagurumaEngine";
+import RightSidebar from "./RightSidebar";
 
 export default function GameLayout({
   chapter,
@@ -32,7 +33,7 @@ export default function GameLayout({
         />
       </main>
       <aside className="layout-right">
-        <div className="layout-placeholder">右欄 placeholder</div>
+        <RightSidebar state={gs} chapter={chapter} />
       </aside>
     </div>
   );
