@@ -468,22 +468,131 @@ D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
 
 #### Batch 6 — Chapter 2 Spec
 
-狀態：待排程
+狀態：完成
+
+完成內容：
+
+- docs/chapter02-spec.md 初稿 → 基於青空文庫原文全面改寫
+- 從 https://www.aozora.gr.jp/cards/000879/files/42377_34745.html 提取二「復讐」原文
+- ~24 場景、8 選擇點、4 connections（含 2 跨章）、7 notebook 條目
+- 原文 text blocks 含實際日文對話（給仕、姊、妻、書中引用）＋中文翻譯
+- nerve/insight/writing 曲線設計
+- 5 個開放問題待月月確認
+
+---
+
+## 2026-05-16
+
+### 已完成
+
+#### Codex Audit Fixes — 4 bugs
+
+狀態：完成
+
+動機：
+
+Codex 審計發現 4 個 bug：EndScreen dismiss 後無法前進、v2 migration 的 connection 永久卡住、save fallback 短路、cross-chapter validation 誤報。
+
+完成內容：
+
+- Fix 1：HagurumaEngine EndScreen dismiss 後新增 `.advance-fallback` 浮動按鈕
+- Fix 2：connections.js skip 條件改為 `c.id === conn.id && c.title`，允許 v2 migrated 的 id-only entry 通過 upgrade branch
+- Fix 3：save.js loadSave() 從 short-circuit 改為 loop-over-sources，每個 source 獨立 try/catch
+- Fix 4：validate-chapters.js 新增 `priorNotebookKeys` 累積，connection requires 三路判斷（本章/前章 carryOver/真正缺失）
+
+驗收結果：
+
+- npm test 通過
+- npm run build 通過
+- 零 console error
+
+---
+
+#### Component Tests + Save Key Test
+
+狀態：完成
+
+完成內容：
+
+- tests/components/EndScreen.test.jsx — 5 個 smoke tests
+- tests/components/NotebookPanel.test.jsx — 5 個 smoke tests
+- tests/engine/save.test.js — 新增 2 個測試（corrupted key fallback、legacy key isolation）
+- tests/engine/connections.test.js — 新增 3 個測試（skip logic、metadata upgrade）
+- tests/scripts/cross-ref.test.js — 新增 2 個測試（carryOver info、truly missing warning）
+- 安裝 @testing-library/react、@testing-library/jest-dom、jsdom
+
+驗收結果：
+
+- 125/125 tests 通過
+- 12 test files
+
+---
+
+#### D4 Appendix + gameConfig Schema Draft
+
+狀態：完成
+
+完成內容：
+
+- docs/DECISIONS.md D4 附錄：確認跨章預解鎖用 choicesMade flag，不新增 globalSymbols
+- src/config/gameConfig.js：設定檔 schema placeholder（stats/ui/saveKey/corrupt/theme），不被任何 runtime 模組 import
+
+---
+
+#### Batch 7 — Chapter 3–6 Specs
+
+狀態：完成
+
+動機：
+
+月月要求一次寫完 CH3–CH6 spec，只寫文本不做程式異動。
+
+完成內容：
+
+- 從青空文庫提取三「夜」、四「まだ？」、五「赤光」、六「飛行機」全文
+- docs/chapter03-spec.md — ~18 場景、7 選擇點、4 connections
+  - 核心意象：書中之針、寿陵余子、鏡中膏藥、齒輪增殖、夢中復讐之神、凌晨三點半
+- docs/chapter04-spec.md — ~16 場景、7 選擇點、4 connections
+  - 核心意象：紙屑=薔薇、母子親和力、Mérimée 鐵意志、硫黄幻嗅、Mole→la mort、鏡中微笑
+- docs/chapter05-spec.md — ~24 場景、8 選擇點、5 connections
+  - 核心意象：畏光、屋根裏信仰問答、一角獸蘋果、赤光池塘、le diable est mort、裝訂錯誤、深夜寫作
+- docs/chapter06-spec.md — ~26 場景、8 選擇點、5 connections（最終章）
+  - 核心意象：雨衣首尾呼應、半黑狗四次、飛行機、鞦韆架=絞首台、齒輪最終加速、妻子預感、中斷
+
+全 spec 均含：原文 text blocks（日文＋中文）、跨章 flag 依賴、connections（含跨章）、nerve/insight/writing 曲線、notebook 條目、portraits、開放問題。
+
+發現：CLAUDE.md 記載「原著 11 章 51 節」有誤，青空文庫原文只有 6 章。已修正 CLAUDE.md。
+
+驗收結果：
+
+- 零程式碼異動
+- 4 個 spec 文件共 1470 行
+
+---
+
+#### CLAUDE.md 修正
+
+狀態：完成
+
+完成內容：
+
+- 修正「原著 11 章 51 節」→「原著 6 章（レエン・コオト／復讐／夜／まだ？／赤光／飛行機）」
+- 更新測試數量 39 → 125
+- 權威文件新增 chapter spec 參照
+
+---
+
+### 後續批次
+
+---
+
+#### B2 — Chapter 2 Implementation
+
+狀態：待排程（blocked on 月月 review CH2 spec 開放問題）
 
 目標：
 
-先寫 Ch2「復讐」章節規格，不直接生成正式 scene JSON。
-
-內容包含：
-
-- 章節主題
-- 場景列表
-- 選擇點
-- flags（使用 ch02. namespace）
-- notebook symbols
-- connections
-- Nerve / Insight / Writing 變化
-- 驗收條件
+根據 chapter02-spec.md 實作 src/data/chapters/chapter02.js
 
 ---
 
@@ -509,6 +618,13 @@ D3 save migration 已於 Batch 5A 實作（v1→v2）。清單項目已清除。
 | 2026-05-07 | P2B | feat: add persistent right sidebar | done | RightSidebar (手帖/連結/行路) |
 | 2026-05-07 | P2C | feat: add left sidebar (chapter TOC + image area) | done | LeftSidebar, expand/collapse TOC, forward-compatible image display |
 | 2026-05-07 | P2D | feat: wire character portraits to dialogue | done | portraits lookup, speakerId on 16 blocks, callback chain SceneText→HagurumaEngine→GameLayout→LeftSidebar |
+| 2026-05-08 | Dialogue | fix: standardize chapter 1 dialogue block schema | done | 4 dialogue blocks +speakerId |
+| 2026-05-16 | Audit Fix | fix: save fallback, connection metadata upgrade, EndScreen dismiss, cross-chapter validation | done | 4 Codex audit bugs |
+| 2026-05-16 | A2+A3 | test: component smoke tests + save key isolation | done | EndScreen, NotebookPanel, save, connections, cross-ref |
+| 2026-05-16 | D1+D2 | docs: D4 appendix + gameConfig schema draft | done | DECISIONS.md, gameConfig.js |
+| 2026-05-16 | B1 | docs: CH2 spec draft → rewrite with Aozora Bunko text | done | chapter02-spec.md |
+| 2026-05-16 | B1+ | docs: CH3–CH6 specs with Aozora Bunko text | done | chapter03–06-spec.md, 1470 lines |
+| 2026-05-16 | Fix | docs: fix CLAUDE.md chapter count 11→6, test count 39→125 | done | CLAUDE.md + DEV-LOG.md |
 
 ---
 
