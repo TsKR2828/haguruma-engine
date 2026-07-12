@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { corruptText } from "../engine/corrupt";
+import { blockRawText, isDualBlock, addedClass } from "../utils/textBlock";
+import TextBlockBody from "./TextBlockBody";
 
 const SPEED = { narration: 18, inner: 25, dialogue: 20, system: 0 };
 
-function rawText(block) {
-  if (block.type === "dialogue") {
-    return [block.jp, block.cn].filter(Boolean).join("\n");
-  }
-  return block.content || "";
-}
+const rawText = blockRawText;
 
 export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChange }) {
   const [doneCount, setDoneCount] = useState(0);
@@ -86,6 +83,9 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
       (block.type === "narration" || block.type === "inner") && nerve <= 5;
     const display = corrupt ? corruptText(shown, nerve) : shown;
     const typing = isActive && charIdx < text.length;
+    const dual = isDualBlock(block);
+    const cursorCls = !dual && typing ? " typing-cursor" : "";
+    const added = addedClass(block);
 
     switch (block.type) {
       case "break":
@@ -96,36 +96,22 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
             {display}
           </div>
         );
-      case "dialogue": {
-        const lines = display.split("\n");
+      case "dialogue":
         return (
-          <div key={idx} className="scene-block scene-block-dialogue">
-            {block.speaker && (
-              <div className="scene-block-speaker">{block.speaker}</div>
-            )}
-            <div className="scene-block-jp">{lines[0] || ""}</div>
-            {lines[1] !== undefined && (
-              <div className="scene-block-cn">{lines[1]}</div>
-            )}
+          <div key={idx} className={`scene-block scene-block-dialogue${added}`}>
+            <TextBlockBody block={block} display={display} />
           </div>
         );
-      }
       case "inner":
         return (
-          <div
-            key={idx}
-            className={`scene-block scene-block-inner${typing ? " typing-cursor" : ""}`}
-          >
-            {display}
+          <div key={idx} className={`scene-block scene-block-inner${cursorCls}${added}`}>
+            <TextBlockBody block={block} display={display} />
           </div>
         );
       default:
         return (
-          <div
-            key={idx}
-            className={`scene-block scene-block-narration${typing ? " typing-cursor" : ""}`}
-          >
-            {display}
+          <div key={idx} className={`scene-block scene-block-narration${cursorCls}${added}`}>
+            <TextBlockBody block={block} display={display} />
           </div>
         );
     }

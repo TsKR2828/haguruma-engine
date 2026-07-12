@@ -293,6 +293,16 @@
   letter-spacing: 0.04em;
 }
 
+.block-added-legend {
+  display: block;
+  color: var(--added-ink);
+  font-size: 11px;
+  text-align: center;
+  letter-spacing: 0.05em;
+  padding: 10px 0 4px;
+  opacity: 0.85;
+}
+
 @media (max-width: 1100px) {
   .layout-left, .layout-right { display: none; }
 }
@@ -409,6 +419,27 @@
   color: var(--washi-ink-muted);
   font-size: 14px;
   line-height: 1.9;
+}
+
+/* ── Added (non-source) content — origin marking ── */
+
+.block-added {
+  border-left: 2px solid var(--added-accent);
+  padding-left: 0.6em;
+}
+
+.block-added,
+.block-added * {
+  color: var(--added-ink);
+}
+
+.block-added::before {
+  content: "補";
+  font-size: 0.65em;
+  color: var(--added-accent);
+  vertical-align: super;
+  margin-right: 0.35em;
+  opacity: 0.8;
 }
 
 .scene-block-system {
@@ -900,4 +931,27 @@
 .title-start-btn:hover {
   background: var(--washi-accent-red);
   color: var(--washi-bg-card);
+}
+
+/* Bug 7: secondary "新的開始" button — visually subordinate to
+   title-start-btn (muted color, no fill on hover, smaller). */
+.title-newgame-btn {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--washi-text-dim, #999);
+  border: 1px solid var(--washi-text-dim, #999);
+  border-radius: 3px;
+  padding: 7px 20px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+  transition: opacity 0.2s;
+  margin-top: 12px;
+  margin-left: 12px;
+  opacity: 0.7;
+}
+
+.title-newgame-btn:hover {
+  opacity: 1;
 }

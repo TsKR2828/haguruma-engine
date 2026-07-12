@@ -10,7 +10,8 @@
     "legacy": "npx serve -l 3456 -s .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate:chapters": "node scripts/validate-chapters.js"
+    "validate:chapters": "node scripts/validate-chapters.js",
+    "validate:fidelity": "node scripts/validate-fidelity.js"
   },
   "dependencies": {
     "react": "^18.3.1",

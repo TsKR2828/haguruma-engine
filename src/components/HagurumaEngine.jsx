@@ -13,20 +13,15 @@ import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
 import GearDefs from "./GearDefs";
+import TextBlockBody from "./TextBlockBody";
+import { blockRawText, addedClass } from "../utils/textBlock";
 
-const HistoryBlock = memo(function HistoryBlock({ block }) {
-  if (block.type === "dialogue") {
-    return (
-      <div className={`scene-block scene-block-dialogue scene-block-read`}>
-        {block.speaker && <div className="scene-block-speaker">{block.speaker}</div>}
-        <div className="scene-block-jp">{block.jp}</div>
-        {block.cn && <div className="scene-block-cn">{block.cn}</div>}
-      </div>
-    );
-  }
+export const HistoryBlock = memo(function HistoryBlock({ block }) {
+  const display = blockRawText(block);
+  const added = addedClass(block);
   return (
-    <div className={`scene-block scene-block-${block.type} scene-block-read`}>
-      {block.content || ""}
+    <div className={`scene-block scene-block-${block.type} scene-block-read${added}`}>
+      <TextBlockBody block={block} display={display} />
     </div>
   );
 });
@@ -58,7 +53,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [phase, setPhase] = useState("loading");
-  const [impact, setImpact] = useState(null);
+  const [impacts, setImpacts] = useState([]);
   const [showNb, setShowNb] = useState(false);
   const [history, setHistory] = useState([]);
   const [collapsed, setCollapsed] = useState({});
@@ -77,7 +72,12 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
   const toast = useCallback((type, label, amount, reason) => {
     impactSeq.current++;
-    setImpact({ type, label, amount, reason, _k: impactSeq.current });
+    const id = impactSeq.current;
+    setImpacts((cur) => [...cur, { id, type, label, amount, reason }]);
+  }, []);
+
+  const dismissImpact = useCallback((id) => {
+    setImpacts((cur) => cur.filter((i) => i.id !== id));
   }, []);
 
   const save = useCallback((state, nextScene = null) => {
@@ -88,11 +88,14 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   const toastEffects = useCallback(
     (fx) => {
       if (!fx) return;
+      // Bug 4 fix: these must all fire independently (not if/else if) so a
+      // compound effect (e.g. nerve loss + insight gain in one scene) shows
+      // every stat change instead of only the first one.
       if (fx.nerve)
         toast("loss", "神經", Math.abs(fx.nerve.amount), fx.nerve.reason);
-      else if (fx.insight)
+      if (fx.insight)
         toast("gain", "洞察", fx.insight.amount, fx.insight.reason);
-      else if (fx.writing)
+      if (fx.writing)
         toast("gain", "執筆", fx.writing.amount, fx.writing.reason);
     },
     [toast],
@@ -205,6 +208,18 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
   const onChoice = useCallback(
     (choice) => {
+      // Bug 1 (engine defense): a choice with no "next" is a data bug — the
+      // only legitimate case is a scene explicitly marked links.showEnd
+      // (mirrors the ending path in onTextComplete). Never silently write
+      // nextScene:null into the save for anything else, and never advance.
+      if (!choice.next && !sceneRef.current?.links?.showEnd) {
+        console.error(
+          `[haguruma] choice "${choice.text ?? "?"}" in scene "${sceneRef.current?.id}" has no "next" — ignoring selection`,
+          choice,
+        );
+        return;
+      }
+
       let next = { ...gsRef.current };
 
       if (choice.flag) {
@@ -283,7 +298,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
     <div className="game-container">
       <GearDefs />
       <Particles nerve={gs.nerve} />
-      <ImpactToast impact={impact} />
+      <ImpactToast impacts={impacts} onDismiss={dismissImpact} />
 
       <header className="game-header">
         <span className="game-chapter-label">{chapter.titleCn}</span>

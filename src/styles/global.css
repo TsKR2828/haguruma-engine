@@ -21,6 +21,9 @@
   --washi-hover-bg:     #F0EBE1;
   --washi-active-bg:    #E8E0D0;
   --washi-selection:    rgba(201, 168, 106, 0.2);
+
+  --added-ink:    #6f9fae;
+  --added-accent: #4a8296;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

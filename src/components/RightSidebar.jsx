@@ -194,6 +194,8 @@ export default function RightSidebar({ state, chapter }) {
         <div className="right-section-header">行路</div>
         <JourneyMap locations={locations} journey={journey} />
       </section>
+
+      <span className="block-added-legend">補＝非原文的添補內容</span>
     </>
   );
 }
