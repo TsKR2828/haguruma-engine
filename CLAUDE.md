@@ -3,8 +3,8 @@
 ## 專案概要
 
 芥川龍之介《歯車》互動文學引擎。React + Vite，資料驅動架構。
-原著 6 章（レエン・コオト／復讐／夜／まだ？／赤光／飛行機），目前完成第一章（33 場景）。
-CH2–CH6 spec 已完成（docs/chapter0X-spec.md），待實作。
+原著 6 章（レエン・コオト／復讐／夜／まだ？／赤光／飛行機），目前完成第一章（33 場景）與第二章（34 場景，依 docs/ch2-source-map.md 重切完工，取代含幻覺內容的舊版）。
+CH3–CH6 spec 已完成（docs/chapter0X-spec.md），待實作。
 
 ## 技術棧
 
@@ -79,6 +79,7 @@ export const CHAPTER_XX = {
 8. engine core 是純函式，不可引入瀏覽器依賴。
 9. 重大設計決策記錄到 `docs/DECISIONS.md`。
 10. 遊戲文本由使用者（月月）提供，agent 負責技術實作。
+11. `origin:"source"` block 的 `jp` 欄位一律逐字取自 `reference/aozora/haguruma_original.txt`，禁止改寫（表記現代化、刪句、句讀改動皆不可）。
 
 ## 驗收流程
 
@@ -86,9 +87,10 @@ export const CHAPTER_XX = {
 1. `npm run build` 通過
 2. `npm test` 通過
 3. `npm run validate:chapters` 通過
-4. 瀏覽器 preview 可遊玩
-5. prototype.html 仍可獨立運行
-6. 零 console error
+4. `npm run validate:fidelity` 通過
+5. 瀏覽器 preview 可遊玩
+6. prototype.html 仍可獨立運行
+7. 零 console error
 
 ## 權威文件
 
@@ -98,3 +100,4 @@ export const CHAPTER_XX = {
 - `docs/chapter-data-schema.md` — 場景 schema 定義
 - `docs/DECISIONS.md` — 設計決策紀錄
 - `docs/chapter0X-spec.md` — 各章場景規格書（基於青空文庫原文）
+- `docs/origin-marking-spec.md` — 原文標記（origin marking）＋忠實度驗證規格

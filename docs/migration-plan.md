@@ -341,7 +341,7 @@ haguruma-engine/
 ### Batch 3 驗證（關鍵）
 
 - [ ] 從 prologue 到 auto_ending 的全選第一選項路線可跑通
-- [ ] 最終 nerve === 6, insight === 11, writing === 2（與 README 驗收結果一致）
+- [ ] 最終 nerve === 6, insight === 11, writing === 2（與 README 驗收結果一致；注：此為 **prototype 版數據 2026-05-05**，React 版洞察為 **13**，見 DEV-LOG Batch 3）
 - [ ] 手帖 7 筆（raincoat ×4, gear, worm, wing）
 - [ ] 連結 5/5 全部形成
 - [ ] 11 個選擇點全部正常觸發

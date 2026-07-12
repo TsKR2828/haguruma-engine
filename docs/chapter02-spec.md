@@ -1,5 +1,9 @@
 # 第二章「復讐」 Chapter Spec
 
+> ⚠ 已被 docs/ch2-source-map.md 取代（原 spec 含幻覺內容）。
+> 原因：捏造姊姊台詞／養子／震災／Polikushka 錯誤情節，詳見 reports/full-audit-2026-07-11.md §1c。
+> 本檔內文保留不動，僅供歷史對照；施工以 docs/ch2-source-map.md 為唯一來源。
+
 > 基於青空文庫原文的場景分割。文本欄位為原文段落對照，待劇本編輯器精修格式。
 > Source: 芥川龍之介《歯車》二「復讐」
 > 青空文庫 https://www.aozora.gr.jp/cards/000879/files/42377_34745.html

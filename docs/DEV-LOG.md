@@ -596,6 +596,146 @@ Codex 審計發現 4 個 bug：EndScreen dismiss 後無法前進、v2 migration 
 
 ---
 
+## 2026-07-12
+
+### 已完成
+
+#### F1-b — 原文標記（origin marking）Schema＋渲染＋Validator＋文件同步
+
+狀態：完成
+
+規格來源：`docs/origin-marking-spec.md` §1 §2 §3 §6。
+
+完成內容：
+
+- TextBlock v2 schema（`origin: "source" | "added"`）：`docs/chapter-data-schema.md`、`SCENES_FORMAT.md`（新增「八、原文與添補」章節）、`CLAUDE.md` 同步
+- 新增 `src/utils/textBlock.js`（純函式：`isDualBlock` / `joinDual` / `blockRawText` / `addedClass`）與 `src/components/TextBlockBody.jsx`（共用渲染子件），供 `SceneText.jsx` 與 `HagurumaEngine.jsx` 的 `HistoryBlock` 共用，確保打字階段與歷史區樣式一致
+- 順手修 Bug 3：`[jp, cn].filter(Boolean).join("\n")` 在 `jp` 為空字串時會把 `cn` 誤判成日文樣式，改為固定雙槽 `joinDual`
+- CSS：`global.css` 新增 `--added-ink` / `--added-accent`；`game.css` 新增 `.block-added`（左側色條＋「補」角標）與 `.block-added-legend`
+- `RightSidebar.jsx` 底部加圖例：「補＝非原文的添補內容」
+- `scripts/validate-chapters.js` 新增 `validateOrigin`：narration/inner/dialogue 缺 `origin`（CH1／CH2 grandfathered warning，CH3+ error）、`origin:"source"` 缺 `jp` error（所有章）、`origin` 值非法 error（所有章）
+- Vitest 新測試：`tests/components/HistoryBlock.test.jsx`、`tests/components/SceneText.test.jsx`、`tests/components/RightSidebar.test.jsx`、`tests/scripts/origin.test.js`
+- 未修改 chapter01/02 劇情文字；不 commit / 不 push（全部留 unstaged）
+
+與規格字面的一處偏離（已刻意記錄）：spec §3 寫「CH2+ error」，但現行 chapter02.js 尚無任何 `origin` 欄位（與 CH1 同為 legacy），若照字面對 CH2 發 error 會直接打破 `npm run validate:chapters`。改為新增獨立的 `ORIGIN_EXEMPT_CHAPTERS = [1, 2]`（不影響既有 `EXEMPT_CHAPTERS` 的 namespace 檢查），CH2 origin 缺失暫列 warning，CH3+ 才是 error；待 CH2 補標 origin 後可將 2 移出清單。
+
+驗收結果：
+
+- `npm run build` 通過
+- `npm test` 通過（172 tests，含新增 25 個測試）
+- `npm run validate:chapters` 通過（CH1 2 條 warning、CH2 1 條 warning，0 error）
+
+備註：
+
+- `CLAUDE.md` 驗收流程新增第 4 步 `npm run validate:fidelity` 通過——該 script 屬 F1-c（`scripts/validate-fidelity.js`），本批尚未落地，文件先按規格 §6 同步，待 F1-c 完成後才會是可執行步驟
+- F1-a（底本轉換）已先行完成，`reference/aozora/haguruma_original.txt` 已存在
+
+---
+
+#### F2-3 — CH1 原文回填（後 17 場景＋新增場景）＋附帶修正
+
+狀態：完成
+
+規格來源：`docs/ch1-source-map.md` §1（auto_banquet～auto_ending）、§2（附帶修正）。前 17 場景（prologue～auto_hotel_arrive，F2-1／F2-2）進場前已完工，本批未動。
+
+完成內容：
+
+- `auto_banquet`：n1/inner/n2/d1/n3 轉 `origin:"source"`，inner「破壞慾」標 `origin:"added"`
+- `banquet_destroy`：新增堯舜/春秋段 source narration（插最前）；d1 堯舜台詞逐字修正——噓（原文實際字形 U+5653，非規格文件註記的 U+5652，已以底本檔為準核對逐字節相符）＋句尾 `ない」` 無句点
+- `banquet_calm`：全部標 `origin:"added"`
+- `auto_banquet_worm` / `worm_trace`：全部轉 source / 標 added
+- `auto_hotel_night`：n1～n3 轉 source；choice A 的 `next` 改指向新場景 `hotel_coat_hide`
+- **新增場景 `hotel_coat_hide`**（`sceneCount: 33 → 34`）：單一 source narration（B:L89 衣裳戸棚句），`next: "auto_hotel_mirror"`
+- `hotel_coat_stare`：n1 標 added，n2 轉 source（與 `hotel_coat_hide` 同句，cn 補回「急忙」語感）
+- `auto_hotel_mirror`：全部 6 個 block 轉 source
+- `auto_raincoat_3`：n1/inner 轉 source；choice A 文字改為不劇透版「雨衣。又是雨衣。——這是第幾次了？」（原文字避免替讀者數次數）
+- `raincoat_link`：動態函式結構維持，兩分支 4 個 block 全標 `origin:"added"`
+- `auto_allright_corridor`：n1/n2/inner 轉 source；`d「All right.」` 標 `origin:"added"`（沿用既有 §0-6 例外）
+- `allright_puzzle`：全部標 added
+- `auto_room_writing`：n1 拆兩 source block、n2/n3/inner 轉 source；inner 的 `All right sir` 修正為無逗號（原「All right, sir」→ 逐字比對底本改回 `All right sir`）
+- `auto_phone`：全部轉 source；新增被刪的「何だい？　どうかしたのかい？」source dialogue；L109/L113 逐字修正句読點（`もんですから。`／句尾 `です」`／`ですよ」`，皆刪除既有多餘讀點與句点）
+- `auto_allright_resolve`：動態函式結構維持，兩分支重排——pondered 分支單一 source block；非 pondered 分支「同一 source block ＋ 既有解釋句」，解釋句改標 `origin:"added"`；n1/n2 轉 source
+- `auto_ending`：n1/n2 轉 source，system 不動
+- §2 附帶修正：chapter01.js 檔頭 URL `42377_15163.html` → `42377_34745.html` ＋加註底本路徑；`docs/DECISIONS.md` 追加決策（原規格標「D11」，因 D11 已被 Save Cursor 策略佔用，改編為 **D12** 並在條目內註記此偏離）；README.md:141「第二至十一章」→「第二至六章」
+- 不 commit／不 push（全部留 unstaged）；不動 chapter02.js
+
+驗收結果：
+
+- `npm run validate:fidelity` 通過：**0 error**（CH1／CH2 皆零 warning 以外的 error）；**CH1 coverage: 99.8%（4916/4924 字元）**
+- `npm run validate:chapters` 通過：CH1 場景數 34、選擇點 11、ending 1，22/22 playthroughs 抵達結局，0 error（1 條既有 grandfathered key-namespace warning）
+- `npm test` 通過：172/172
+
+CH1 coverage 剩餘 0.2%（8 字元）未覆蓋，經逐字元比對定位為底本章節切分標記行「【第1章】　　　　　一　レエン・コオト」本身（章節 marker + 標題行），屬底本轉換用的結構標記，非敘事正文，內容已由 `prologue` 的兩個 `system` block（「第一章　レエン・コオト」／「——雨衣——」）對應呈現，故未再轉為 source block。CH1 全部敘事正文（地の文＋台詞）已 100% 回填。
+
+---
+
+#### Batch F3 — CH2「復讐」重切（前置動作 + 場景重寫 + F3-3 收尾）
+
+狀態：完成
+
+規格來源：`docs/ch2-source-map.md`（唯一施工圖來源；全域政策沿用 `docs/ch1-source-map.md` §0）。動機：舊 `chapter02.js`／`docs/chapter02-spec.md` 含幻覺內容（捏造姊姊台詞／養子／震災／Polikushka 錯誤情節），見 `reports/full-audit-2026-07-11.md` §1c，全部作廢不得沿用。
+
+完成內容：
+
+- **前置動作**（§0）：舊 `chapter02.js` 複製封存為 `legacy/chapter02_deprecated_v1.js`（檔頭加註作廢說明，僅供 schema 參考）；`docs/chapter02-spec.md` 檔頭加註「已被 ch2-source-map.md 取代」（內文保留不動，供歷史對照）；`src/data/symbols.js` CH2 區依 §3 key 清單重整（新增 fire／rat／slipper 三個 symbol 類別）
+- **場景重寫**（§1–§3）：`chapter02.js` 依施工圖整檔重寫，全部 jp block 逐字取自底本 `reference/aozora/haguruma_original.txt`（B:L126–L216），cn 為新譯或沿用舊版未被審查點名的譯文；34 場景（含分支/added 場景）、8 選擇點、12 notebook keys、5 條 connections（含跨章 `ch02.raincoat_returns`，requires 內的 `raincoat_death` 是 CH1 grandfathered key）
+- **F3-3 收尾**：
+  - `tests/scripts/cross-ref.test.js` 新增 2 個測試：① `CHAPTER_02` 搭配從 `CHAPTER_01` 動態收集的 `priorNotebookKeys` 跑 `validateChapter` 應零 error；② 用真實 `resolveConnections` + 真實 `CHAPTER_02.connections` 驗證跨章 connection `ch02.raincoat_returns` 在 notebook 同時含 CH1 的 `raincoat_death` 與 CH2 的 `ch02.raincoat_hotel` 時可實際觸發，缺少 CH1 key 時不觸發（測試數 202 → 204）
+  - 文件同步：本條目、README 開發狀態 CH2 打勾（含場景數/選擇點/coverage）＋專案結構樹（`ch2-source-map.md`、`legacy/chapter02_deprecated_v1.js`）＋啟動方式段落、`CLAUDE.md` 專案概要 CH2 WIP 敘述改為完工敘述
+
+驗收結果（§4 驗收項逐一核對）：
+
+- `npm run validate:fidelity`：**0 error**；CH2 coverage **99.9%（4483/4486 字元）**（≥ 99% 達標；CH1 coverage 99.8% 同批未變動）
+- `npm run validate:chapters`：CH2 場景數 34、選擇點 8、ending 1，**22/22 playthroughs 抵達結局**，0 error；跨章 connection `ch02.raincoat_returns` 已由新增的 cross-ref 真實資料測試確認可觸發
+- `npm test`：**204/204 通過**（23 test files）
+- `npm run build`：通過
+
+備註：
+
+- CH2 coverage 剩餘 0.1%（3 字元，經逐字元比對定位為底本切分標記緊接的「二復讐」章號+標題殘字）未覆蓋，同 CH1 模式，屬底本章節切分用的結構標記，非敘事正文，已由 `ch2_prologue` 的兩個 `system` block（「第二章　復讐」／「——復仇——」）對應呈現
+- 不 commit／不 push（全部留 unstaged）；未動 `chapter01.js`
+
+---
+
+#### Batch F4 Lane B — 文件清理（11 章殘留 + README/migration-plan 現況同步）
+
+狀態：完成
+
+規格來源：`docs/batch-f4-bugs-docs.md` Lane B、`reports/full-audit-2026-07-11.md` §3/§6。純文字修訂，不碰程式。
+
+動機：
+
+Batch 7（2026-05-16）已發現原著實為 6 章（非 CLAUDE.md 舊載的「11 章 51 節」）並修正了 CLAUDE.md，但同一筆誤仍殘留在 `ENGINE_SPEC.md` / `CHAPTER_GUIDE.md` / `docs/DECISIONS.md` / `docs/chapter06-spec.md` 共 8 處；`README.md` 開發現況（第一章遷移敘述、驗收數字、開發狀態 checklist、專案結構樹）也落後於 F1（origin marking）/ F2（CH1 原文回填）之後的實際進度。
+
+完成內容：
+
+- 「11 章」殘留清理（8 處，README:141 已於 F2-3 先行修正不計入）：
+  - `ENGINE_SPEC.md:13`「歯車原著共 11 章 51 節」→「歯車原著共 6 章」
+  - `ENGINE_SPEC.md:438`「到第十一章『敗北』」→「到第六章『飛行機』」
+  - `ENGINE_SPEC.md:1089`「全 11 章完成」→「全 6 章完成」
+  - `CHAPTER_GUIDE.md:11`「全文分 11 章」→「全文分 6 章」
+  - `CHAPTER_GUIDE.md:192`「## 第四至十一章 — 待寫」→「## 第四至六章 — 待寫」（施工圖字面寫「第三至六章」，但 CH2/CH3 在本檔上方已各有獨立「待寫」小節，改為「第三至六章」會與既有 CH3 小節重複；核對實際文件結構後改採與 ENGINE_SPEC「v0.3 — 第四至六章」一致的「第四至六章」，已在 Lane B 交付說明中註記此偏離）
+  - `docs/DECISIONS.md` D1、D9：在原句「11 章 51 節」／「11 章」後加註〔更正 2026-07-12：原著實為 6 章〕，不改寫決策原文
+  - `docs/chapter06-spec.md:419`：開放問題「原著只有六章」標記刪除線＋補「已解決（2026-07-12）」說明
+- `README.md` 現況同步（依 `docs/DEV-LOG.md` F1-b / F2-3 條目核實後撰寫）：
+  - 第一章遷移說明改為含原文回填現況（origin marking 100% 覆蓋敘事正文、`validate:fidelity` 通過），CH2 註明為框架驗證 WIP（11/~24 場景），CH3–CH6 註明僅有 spec 尚未實作
+  - 開發狀態 checklist 新增 5 項已完成工作：章節管理機制、角色立繪、origin 標記＋fidelity 工具、CH2–CH6 spec、測試數 125→172
+  - 第一章驗收表加註：表中數字為 **prototype 版數據（2026-05-05）**，React 版洞察實為 13（見 Batch 3），場景數含 F2-3 新增場景為 34
+  - 專案結構樹補齊 `scripts/`（3 個工具）、`tests/`（4 個子目錄）、`docs/` 新檔（DECISIONS / DEV-LOG / schema / chapter02–06-spec / ch1-source-map / origin-marking-spec）、`reference/aozora/`（底本原始檔，標註不可刪除）
+- `docs/migration-plan.md:344`：驗收數字同步加註 prototype 版數據來源說明
+- `docs/DEV-LOG.md`：本條目
+
+驗收結果：
+
+- `npm test` 通過（172/172，未變動程式）
+- `npm run build` 通過
+- `npm run validate:chapters` 通過
+- `npm run validate:fidelity` 通過
+- `grep -nE "十一章|11 章|11章" README.md ENGINE_SPEC.md CHAPTER_GUIDE.md docs/DECISIONS.md docs/migration-plan.md` 零命中（DECISIONS 兩處加註更正行本身不含此三種格式的殘留寫法，未被 grep 命中）
+- 不 commit／不 push（全部留 unstaged）；未動 `src/data/chapters/*.js`、`legacy/`、`reference/aozora/` 內容本身（僅在 README 補述其存在）
+
+---
+
 ## Commit Log
 
 | Date | Batch | Commit | Status | Notes |
@@ -625,6 +765,9 @@ Codex 審計發現 4 個 bug：EndScreen dismiss 後無法前進、v2 migration 
 | 2026-05-16 | B1 | docs: CH2 spec draft → rewrite with Aozora Bunko text | done | chapter02-spec.md |
 | 2026-05-16 | B1+ | docs: CH3–CH6 specs with Aozora Bunko text | done | chapter03–06-spec.md, 1470 lines |
 | 2026-05-16 | Fix | docs: fix CLAUDE.md chapter count 11→6, test count 39→125 | done | CLAUDE.md + DEV-LOG.md |
+| 2026-07-12 | F1-b | feat: origin marking schema + rendering + validator + docs | unstaged | TextBlock v2 origin field, block-added styling, validateOrigin, 25 new tests |
+| 2026-07-12 | F3 | feat: rewrite CH2 chapter02.js from ch2-source-map.md, retire hallucinated v1 | unstaged | 34 scenes, 8 choices, 12 notebook keys, 5 connections, coverage 99.9%, +2 cross-chapter connection tests |
+| 2026-07-12 | F4 Lane B | docs: clean up 11-chapter residue + sync README/migration-plan to F1/F2 state | unstaged | ENGINE_SPEC/CHAPTER_GUIDE/DECISIONS/chapter06-spec 11章殘留清理, README checklist+structure tree sync |
 
 ---
 

@@ -35,17 +35,41 @@ haguruma-engine/
 ├── vite.config.js          Vite 設定
 ├── prototype.html          可遊玩原型（第一章完整版）
 ├── legacy/
-│   └── prototype-ch1.html      prototype 備份副本
+│   ├── prototype-ch1.html      prototype 備份副本
+│   └── chapter02_deprecated_v1.js  CH2 舊版（含幻覺內容，已作廢，僅供 schema 參考）
 ├── ENGINE_SPEC.md          引擎技術規格書
 ├── SCENES_FORMAT.md        場景資料寫作指南
 ├── CHAPTER_GUIDE.md        各章劇本設計筆記
+├── scripts/                驗證與建置工具
+│   ├── validate-chapters.js    章節資料驗收器（結構 + 通關模擬 + cross-ref + namespace）
+│   ├── validate-fidelity.js    原文忠實度驗證器（origin:"source" 逐字比對底本）
+│   └── build-aozora-text.js    底本 HTML → 純文字轉換工具
+├── tests/                  Vitest 測試（204 tests / 23 files）
+│   ├── engine/                 引擎純函式測試
+│   ├── components/             React 元件 smoke tests
+│   ├── scripts/                validator 測試（cross-ref / namespace / origin）
+│   └── integration/            端到端遊戲流程測試
 ├── docs/
-│   └── migration-plan.md       遷移計畫
+│   ├── migration-plan.md       遷移計畫
+│   ├── DECISIONS.md            設計決策紀錄
+│   ├── DEV-LOG.md              各批次工作日誌
+│   ├── chapter-data-schema.md  場景資料 schema 定義
+│   ├── chapter02-spec.md       第二章「復讐」舊規格書（⚠ 已被 ch2-source-map.md 取代，僅供歷史對照）
+│   ├── chapter03-spec.md       第三章「夜」規格書
+│   ├── chapter04-spec.md       第四章「まだ？」規格書
+│   ├── chapter05-spec.md       第五章「赤光」規格書
+│   ├── chapter06-spec.md       第六章「飛行機」規格書
+│   ├── ch1-source-map.md       第一章原文回填對照表
+│   ├── ch2-source-map.md       第二章重切施工圖（正典來源，Batch F3）
+│   └── origin-marking-spec.md  原文標記（origin marking）＋忠實度驗證規格
 ├── reference/              原始原型與參考規格
 │   ├── haguruma_ch1.jsx        歯車 React 原型（第一章）
 │   ├── last-letter-game.html   CoC 引擎 v27（最後一封信）
 │   ├── coc-game-spec.md        CoC 文字冒險設計規格
-│   └── GAME_DEV_PLAN.md        脈輪覺醒開發計畫（封存）
+│   ├── GAME_DEV_PLAN.md        脈輪覺醒開發計畫（封存）
+│   └── aozora/                 青空文庫底本（原文回填的權威來源，不可刪除）
+│       ├── 42377_34745_raw.html    底本原始 HTML
+│       └── haguruma_original.txt   底本純文字（origin:"source" 逐字比對用）
 └── src/
     ├── main.jsx                React 入口
     ├── App.jsx                 根元件
@@ -89,7 +113,7 @@ npm run dev
 
 瀏覽器開啟 `http://localhost:5173`，點擊「開始遊玩」即可進入第一章。
 
-> React 版第一章已完成遷移，可從開頭一路遊玩到結算畫面。第二章以後尚未遷移。
+> React 版第一章、第二章皆已完成遷移＋原文回填（`origin:"source"` 標記涵蓋全部敘事正文，`npm run validate:fidelity` 驗證通過），可從開頭一路遊玩到結算畫面。第二章依 `docs/ch2-source-map.md`（Batch F3）重切完工，共 34 場景、8 選擇點，取代含幻覺內容的舊版（`docs/chapter02-spec.md` 已標示作廢，作廢版存檔於 `legacy/chapter02_deprecated_v1.js`）。第三至六章僅有 spec 文件（`docs/chapter0X-spec.md`），尚未實作為可玩資料。
 > Build 後需用 `npm run preview` 預覽，或將 `dist/` 部署至 web server 根目錄。
 
 ### Legacy Prototype（可遊玩 — 第一章完整版）
@@ -138,11 +162,19 @@ npx serve -l 3456 -s .
 - [x] React 元件整合（Particles / StatRadar / NerveBar / ImpactToast 經 CustomEvent 橋接）
 - [x] 設定面板（打字速度 / 自動推進 / 音量，存 localStorage）
 - [x] 音效基礎架構（Web Audio API：playAmbient / playSfx / stopAmbient，場景 audio 欄位）
-- [ ] 第二至十一章
+- [x] 章節管理機制（`chapterRegistry.js` 章節註冊表、章節自含式資料結構、跨章 carryOver state）
+- [x] 角色立繪（`portraits` 對照表 + `speakerId` 欄位 + LeftSidebar 動態切換，CH1 7 位角色）
+- [x] 原文標記（origin marking）＋忠實度驗證工具（`origin:"source"|"added"` 欄位、`.block-added` 樣式、`npm run validate:fidelity`；CH1 敘事正文 100% 回填）
+- [x] CH2–CH6 章節規格書（`docs/chapter0X-spec.md`，基於青空文庫原文全面改寫）
+- [x] 第二章「復讐」重切完工（`docs/ch2-source-map.md` Batch F3：34 場景、8 選擇點、12 notebook keys、5 條 connections；`origin:"source"` 全面標記，CH2 coverage 99.9%；取代含幻覺內容的舊版 `chapter02-spec.md`／舊 `chapter02.js`，作廢版存檔於 `legacy/chapter02_deprecated_v1.js`）
+- [x] 測試覆蓋擴增（125 → 204 tests，23 test files，含 component smoke tests / origin marking / cross-ref / F4 bug 修復回歸 / CH2 跨章 connection 觸發測試）
+- [ ] 第三至六章實作（僅有 spec，尚未寫成 `chapterXX.js`）
 
 ## 第一章驗收結果
 
 以「全選第一選項」路線自動測試通過（2026-05-05）：
+
+> 注：以下為 **prototype 版數據（2026-05-05）**；React 版洞察 13（見 DEV-LOG Batch 3），場景數含 F2-3 新增場景為 34。
 
 | 項目 | 結果 |
 |------|------|

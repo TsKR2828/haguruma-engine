@@ -70,29 +70,42 @@ ch1_s06_auto_cafe             咖啡廳（自動）
 
 ## 三、文本塊（TextBlock）類型
 
+> narration / inner / dialogue 三型都需要 `origin: "source" | "added"` 欄位——見「八、原文與添補」。以下範例分別示範兩種寫法。
+
 ### 3.1 narration — 敘述
 
 主要的敘事文字。灰白色，正常字體。
 
+原文逐字收錄（`origin:"source"`，日文一行、中文一行）：
+
 ```javascript
-{ type: "narration", content: "冬日。你提著一只皮箱，為了出席某位友人的結婚披露宴..." }
+{ type: "narration", origin: "source", jp: "冬の日である。", cn: "冬日。" }
+```
+
+添補的過場敘述（`origin:"added"`，僅中文，套添補色＋「補」角標）：
+
+```javascript
+{ type: "narration", origin: "added", content: "你提著一只皮箱，為了出席某位友人的結婚披露宴，從避暑地叫了一輛汽車趕往東海道的某個停車場。" }
 ```
 
 ### 3.2 inner — 內心獨白
 
-主角的思緒。紫色，斜體。
+主角的思緒。紫色，斜體（`origin:"added"` 時斜體覆蓋為添補色）。
 
 ```javascript
-{ type: "inner", content: "你想起了剛才聽到的幽靈故事。不過只是苦笑了一下。" }
+{ type: "inner", origin: "added", content: "你想起了剛才聽到的幽靈故事。不過只是苦笑了一下。" }
 ```
+
+原文中的內心獨白同樣可以是 `origin:"source"`（日文一行、中文一行，寫法同 narration）。
 
 ### 3.3 dialogue — 對話
 
-日中雙語。暖金色。上面是日文原文，下面是中文翻譯。
+日中雙語。暖金色。上面是日文原文，下面是中文翻譯。原文台詞用 `origin:"source"`：
 
 ```javascript
 {
   type: "dialogue",
+  origin: "source",
   speaker: "理髮店主人",
   jp: "「妙なこともありますね。××さんの屋敷には昼間でも幽霊が出るって云うんですが。」",
   cn: "「也有奇怪的事呢。聽說 ×× 先生的宅邸，白天也有幽靈出沒。」",
@@ -102,8 +115,10 @@ ch1_s06_auto_cafe             咖啡廳（自動）
 如果某句只有中文（例如主角自言自語的翻譯），可以省略 `jp`：
 
 ```javascript
-{ type: "dialogue", speaker: "你", jp: "", cn: "\"All right.\"" }
+{ type: "dialogue", origin: "source", speaker: "你", jp: "", cn: "\"All right.\"" }
 ```
+
+`origin:"added"` 的 dialogue 原則上禁止使用——見「八、原文與添補」寫作規則。
 
 ### 3.4 system — 系統提示
 
@@ -345,6 +360,34 @@ ch1_ending: {
 3. **觀察 vs 忽略**——歯車的核心選擇模式：你選擇看見，就要承受看見的代價
 4. **匯合回主線**——分支不要太長，3 個場景內必須回到主線
 5. **flag 命名清晰**——`observed_raincoat_1`、`joke_response`、`traced_worm`
+
+---
+
+## 八、原文與添補
+
+規格定案於 `docs/origin-marking-spec.md`（施工地圖，遇疑義以該檔為準）。核心動機：專案要求「原文一字不漏＋新增內容以顏色區分」，`origin` 欄位就是這個機制。
+
+- **原文（source）**：芥川《歯車》青空文庫底本的逐字文本。基準檔：`reference/aozora/haguruma_original.txt`。
+- **添補（added）**：任何非原文內容——過場敘述、擴寫的內心獨白、橋接句、互動指令文本。
+- **譯文（cn）**：原文的中文翻譯。譯文「代表」原文，不算添補；添補內容的中文就是添補。
+
+### 8.1 寫作規則
+
+1. **選項改編自原文台詞時，原文不得因互動化而消失**：主角的原文台詞若被做成 `choice.text`（可搭配 `choice.sourceJp` 保留原句），選中後的下一場景**必須**以 `origin:"source"` 的 dialogue block（speaker「你"僕"」）完整收錄該句原文。
+2. **不替芥川筆下人物編台詞**：`origin:"added"` 的 dialogue 原則上禁止；如過場確有必要銜接對話語境，改用 `origin:"added"` 的 narration 轉述，不要虛構人物的原創台詞。
+3. **`jp` 欄位禁止改寫**：一律逐字取自 `reference/aozora/haguruma_original.txt`——禁止表記現代化（例：ハルビン≠ハルピン、雨のふる日≠雨の降る日）、禁止刪句、禁止句讀改動。`origin:"source"` 但 `jp` 缺失或為空字串，validator 視為 error。
+
+### 8.2 顏色語意
+
+| 狀態 | 樣式 |
+|------|------|
+| `origin:"source"`（原文） | 依文類原本的顏色（narration 灰白／inner 紫斜體／dialogue 暖金），日文一行在上、中文一行在下，無 speaker 時省略標籤 |
+| `origin:"added"`（添補） | 外層加 `block-added`：淺蔥色文字（`--added-ink` / `--added-accent`）、左側 2px 色條、內容前綴「補」字小角標（`::before`）。**顏色以「是否為原文」優先於「文類」**——inner 原有的紫色斜體在 added 時被添補色覆蓋 |
+| 缺 `origin`（legacy，CH1／CH2） | 渲染照舊，不套添補樣式；validator 發 warning，待日後補標 |
+
+打字階段（`SceneText`）與歷史區（`HagurumaEngine` 的 `HistoryBlock`）套用同一份判斷邏輯（`src/utils/textBlock.js` + `src/components/TextBlockBody.jsx`），同一個 block 進歷史區後外觀不變。
+
+畫面右側資訊欄底部有固定圖例：`補＝非原文的添補內容`，供玩家對照色彩含意。
 
 ---
 
