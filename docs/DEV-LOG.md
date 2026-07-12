@@ -736,6 +736,38 @@ Batch 7（2026-05-16）已發現原著實為 6 章（非 CLAUDE.md 舊載的「1
 
 ---
 
+#### Batch F5 Lane R — 選項回溯
+
+狀態：完成
+
+規格來源：`docs/batch-f5-ux.md` §Lane R（最後施工，動 `HagurumaEngine`；與已完工的 Lane E 潤飾模式共存，未動 `editMode` 相關邏輯）。
+
+完成內容：
+
+- 新檔 `src/engine/rewind.js`：純邏輯 + I/O，比照 `save.js`/`textOverlay.js` 的 try/catch 防禦慣例。
+  - 快照棧（`sessionStorage` key `haguruma_rewind_v1`，單一 slot `{chapter, entries}`）：`pushSnapshot`（`structuredClone` 深拷貝 state，60 筆 FIFO）、`markTopChosen`（棧頂填入 `{index, text}`）、`truncateToCheckpoint`（截斷至選定點並重置該點 chosen）。換章清空靠儲存格式本身達成——`loadRewindStack(chapterNum)` 讀到的 `chapter` 與目前章節不同即視為空棧，下一次 push 自然用新章節覆寫掉舊資料，不需要額外的清空呼叫。
+  - 已見標記（`localStorage` key `haguruma_choice_seen_v1`，`${chapter}:${sceneId}:${choiceIndex}` 為原始資料索引）：`markChoiceSeen`/`isChoiceSeen`，獨立於快照棧，回溯截斷不影響已見狀態（跨回溯持久）。
+- `HagurumaEngine.jsx`：
+  - `onTextComplete` 進入有 choices 的場景時 push 快照（`historyLen` 一併記錄，供回溯時把 scrollback 截回快照當時長度，避免「未來」場景歷史殘留）。
+  - `onChoice` 新增 `originalIndex` 參數，選擇時標記已見＋把回溯棧棧頂 `chosen` 填入。
+  - header 新增「⟲ 回溯」按鈕（不受 `import.meta.env.DEV` 限制——這是給玩家的正式功能，不是 Lane E 的開發者工具）；`handleRewindSelect` 走 confirm → 截斷棧 → `cloneState` 恢復 state → 直接設定 scene/blocks/phase（不經過 `loadScene`，因為 journey 等副作用已包含在快照 state 裡）→ `save()` 寫存檔。
+  - choices render block 算出每個選項的資料原始索引（沿用既有 `withIdx`），組出 `seen` 旗標陣列傳給 `ChoiceList`。
+- `ChoiceList.jsx`：`onSelect(choice, i)` 多帶一個 display index 參數（供呼叫端換算原始索引）；`seen[i]` 為真時在選項文字尾端渲染淡色 `✓`（`.choice-seen-mark`）。
+- 新檔 `src/components/RewindPanel.jsx`：比照 `NotebookPanel` 的 overlay + slide-in 面板樣式，列出本章已選擇點（新→舊，`chosen` 為 null 的棧頂——即玩家目前正卡住的那個選擇畫面——不列入，因為沒有「當時所選的選項文字」可顯示）。
+- CSS：`game.css` 新增 `.rewind-toggle` / `.rewind-overlay` / `.rewind-panel` / `.rewind-header` / `.rewind-close` / `.rewind-empty` / `.rewind-entry*` / `.choice-seen-mark`，沿用既有 washi 色系變數，不新增變數。
+- 新測試：`tests/engine/rewind.test.js`（cloneState 深拷貝隔離、sessionStorage I/O、換章清空、pushSnapshot FIFO、markTopChosen、truncateToCheckpoint、已見標記持久與防禦性 try/catch）、`tests/components/HagurumaEngine.rewind.test.jsx`（端對端：空面板狀態、面板列出 checkpoint、confirm 恢復後 state 正確且已見 ✓ 持久、confirm 取消不改動任何東西）。
+- 未動 Lane E 的 `editMode`/`textOverlay`/`EditPanel` 相關邏輯；`jp` 欄位全程未被觸碰。
+
+驗收結果：
+
+- `npm test` 通過（273/273，新增 30 個測試：19 個 `rewind.test.js` + 11 個 `HagurumaEngine.rewind.test.jsx`）
+- `npm run build` 通過
+- `npm run validate:chapters` 通過（CH1/CH2 皆 0 error）
+- `npm run validate:fidelity` 通過（CH1 99.8%、CH2 99.9%，0 error / 0 warning）
+- 不 commit／不 push（全部留 unstaged）
+
+---
+
 ## Commit Log
 
 | Date | Batch | Commit | Status | Notes |
@@ -768,6 +800,7 @@ Batch 7（2026-05-16）已發現原著實為 6 章（非 CLAUDE.md 舊載的「1
 | 2026-07-12 | F1-b | feat: origin marking schema + rendering + validator + docs | unstaged | TextBlock v2 origin field, block-added styling, validateOrigin, 25 new tests |
 | 2026-07-12 | F3 | feat: rewrite CH2 chapter02.js from ch2-source-map.md, retire hallucinated v1 | unstaged | 34 scenes, 8 choices, 12 notebook keys, 5 connections, coverage 99.9%, +2 cross-chapter connection tests |
 | 2026-07-12 | F4 Lane B | docs: clean up 11-chapter residue + sync README/migration-plan to F1/F2 state | unstaged | ENGINE_SPEC/CHAPTER_GUIDE/DECISIONS/chapter06-spec 11章殘留清理, README checklist+structure tree sync |
+| 2026-07-12 | F5 Lane R | feat: choice rewind (snapshot stack + seen marks) | unstaged | rewind.js snapshot stack, ⟲ 回溯 panel, ChoiceList ✓ marks, 30 new tests, coexists with Lane E editMode |
 
 ---
 

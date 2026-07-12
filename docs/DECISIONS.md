@@ -149,4 +149,6 @@ Restore 後 `loadScene(nextScene)` 載入新場景，fresh 套用效果。前一
 
 備註：`docs/ch1-source-map.md` §2 原標記此決策為「D11」，惟 D11 已先被 Save Cursor 策略佔用（2026-05-06），故本決策改編為 D12，內容不變。
 
+**2026-07-12 月月裁定：cn 改第一人稱『我』。原二人稱方案作廢。**（Batch F5 Lane 人稱施工：chapter01.js、chapter02.js 的 `cn`／added block `content`／choice `text`／notebook `desc`／dialogue 主角 `speaker: "你"` 全數轉譯為第一人稱「我」；其他角色對白中稱呼主角的「你」屬合法第二人稱稱謂，保留不動。`jp` 欄位不動，fidelity 驗證不受影響。）
+
 日期：2026-07-12

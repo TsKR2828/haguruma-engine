@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CHAPTERS, CH_NUM_KANJI } from "../data/chapters";
 
-export default function LeftSidebar({ state, chapter, portraitId, portraitDim }) {
+export default function LeftSidebar({ state, chapter, roster, activeId }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!state) return null;
@@ -54,12 +54,19 @@ export default function LeftSidebar({ state, chapter, portraitId, portraitDim })
       </div>
 
       <div className="left-image-area">
-        {portraitId && chapter.portraits?.[portraitId] && (
-          <img
-            className={`left-portrait${portraitDim ? " dim" : ""}`}
-            src={`${import.meta.env.BASE_URL}${chapter.portraits[portraitId]}`}
-            alt=""
-          />
+        {roster?.length > 0 && (
+          <div className="left-roster">
+            {roster.map((id) =>
+              chapter.portraits?.[id] ? (
+                <img
+                  key={id}
+                  className={`left-portrait${id === activeId ? "" : " dim"}`}
+                  src={`${import.meta.env.BASE_URL}${chapter.portraits[id]}`}
+                  alt=""
+                />
+              ) : null,
+            )}
+          </div>
         )}
       </div>
     </div>
