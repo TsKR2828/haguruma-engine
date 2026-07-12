@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import GameLayout from "./components/GameLayout";
 import { getChapter } from "./data/chapterRegistry";
-import { loadSave, restoreState, clearSave } from "./engine/save";
+import { createChapterState } from "./engine/state";
+import { loadSave, restoreState, clearSave, hasSave, saveGame } from "./engine/save";
 import "./styles/game.css";
 
 export default function App() {
@@ -15,6 +16,10 @@ export default function App() {
     return saved ? restoreState(saved) : null;
   });
   const [carryOver, setCarryOver] = useState(null);
+  // Bug 7: whether a save exists at title-screen time, so we can offer
+  // "繼續遊玩" (resume) vs "新的開始" (start over) instead of only ever
+  // "開始遊玩".
+  const [hasExistingSave, setHasExistingSave] = useState(() => hasSave());
 
   const chapter = getChapter(chapterNum);
 
@@ -27,10 +32,26 @@ export default function App() {
   const advanceChapter = useCallback(() => {
     const next = getChapter(chapterNum + 1);
     if (next) {
+      // Bug 6: persist the new chapter's start state immediately on
+      // advance — previously the save only updated on the next scene
+      // transition inside that chapter, so closing the tab right after
+      // "次の章へ" reverted progress back to the finished chapter.
+      const freshState = createChapterState(next, carryOver);
+      saveGame(freshState, next.startScene);
       setRestoredState(null);
       setChapterNum(chapterNum + 1);
     }
-  }, [chapterNum]);
+  }, [chapterNum, carryOver]);
+
+  const handleNewGame = useCallback(() => {
+    if (!window.confirm("確定要開始新遊戲嗎？現有進度將會被清除。")) return;
+    clearSave();
+    setCarryOver(null);
+    setRestoredState(null);
+    setChapterNum(1);
+    setHasExistingSave(false);
+    setPlaying(true);
+  }, []);
 
   if (playing && chapter) {
     return (
@@ -63,13 +84,27 @@ export default function App() {
             className="title-start-btn"
             onClick={() => setPlaying(true)}
           >
-            開始遊玩
+            {hasExistingSave ? "繼續遊玩" : "開始遊玩"}
           </button>
+          {hasExistingSave && (
+            <button
+              className="title-newgame-btn"
+              onClick={handleNewGame}
+            >
+              新的開始
+            </button>
+          )}
         </div>
 
-        <a className="shell-legacy-link" href="/prototype.html" style={{ marginTop: 20 }}>
-          遊玩 Legacy Prototype（第一章）
-        </a>
+        {import.meta.env.DEV && (
+          <a
+            className="shell-legacy-link"
+            href={import.meta.env.BASE_URL + "prototype.html"}
+            style={{ marginTop: 20 }}
+          >
+            遊玩 Legacy Prototype（第一章）
+          </a>
+        )}
       </main>
 
       <footer className="shell-footer">

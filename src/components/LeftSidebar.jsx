@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CHAPTERS, CH_NUM_KANJI } from "../data/chapters";
 
-export default function LeftSidebar({ state, chapter, scene }) {
+export default function LeftSidebar({ state, chapter, portraitId, portraitDim }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!state) return null;
@@ -54,11 +54,12 @@ export default function LeftSidebar({ state, chapter, scene }) {
       </div>
 
       <div className="left-image-area">
-        {scene?.image && (
-          <img className="left-scene-image" src={scene.image} alt="" />
-        )}
-        {scene?.portrait && !scene?.image && (
-          <img className="left-portrait" src={scene.portrait} alt="" />
+        {portraitId && chapter.portraits?.[portraitId] && (
+          <img
+            className={`left-portrait${portraitDim ? " dim" : ""}`}
+            src={`${import.meta.env.BASE_URL}${chapter.portraits[portraitId]}`}
+            alt=""
+          />
         )}
       </div>
     </div>

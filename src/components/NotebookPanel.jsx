@@ -30,18 +30,15 @@ export default function NotebookPanel({ state, chapter, onClose }) {
         {connections.length > 0 && (
           <>
             <div className="notebook-section-title">連結</div>
-            {connections.map((connId, i) => {
-              const conn = (chapter?.connections ?? []).find((c) => c.id === connId);
-              return (
-                <div key={i} className="notebook-entry notebook-connection">
-                  <span className="notebook-symbol">{conn?.icon || "✦"}</span>
-                  <span className="notebook-desc">
-                    {conn?.title || connId}
-                    {conn?.subtitle ? ` — ${conn.subtitle}` : ""}
-                  </span>
-                </div>
-              );
-            })}
+            {connections.map((conn, i) => (
+              <div key={i} className="notebook-entry notebook-connection">
+                <span className="notebook-symbol">{conn.icon || "✦"}</span>
+                <span className="notebook-desc">
+                  {conn.title || conn.id}
+                  {conn.subtitle ? ` — ${conn.subtitle}` : ""}
+                </span>
+              </div>
+            ))}
           </>
         )}
 

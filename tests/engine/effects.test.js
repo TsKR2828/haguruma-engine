@@ -82,6 +82,21 @@ describe("applyEffects", () => {
     expect(result.nerve).toBe(0);
   });
 
+  it("clamps nerve at 10 (upper bound, Bug 9)", () => {
+    const s = { ...base(), nerve: 9 };
+    const result = applyEffects(s, {
+      nerve: { amount: 5, reason: "x" },
+    });
+    expect(result.nerve).toBe(10);
+  });
+
+  it("clamps nerve at 10 even when already at max", () => {
+    const result = applyEffects(base(), {
+      nerve: { amount: 3, reason: "x" },
+    });
+    expect(result.nerve).toBe(10);
+  });
+
   it("does not mutate original state", () => {
     const s = base();
     applyEffects(s, { nerve: { amount: -3, reason: "x" } });

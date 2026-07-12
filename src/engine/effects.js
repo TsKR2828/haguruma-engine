@@ -17,7 +17,8 @@ export function applyEffects(state, effects) {
   if (!effects) return state;
   let next = state;
   if (effects.nerve) {
-    next = { ...next, nerve: Math.max(0, next.nerve + effects.nerve.amount) };
+    // 10 = 現行寫死上限（同 initialState.nerve）；等 gameConfig 泛化再參數化。
+    next = { ...next, nerve: Math.min(10, Math.max(0, next.nerve + effects.nerve.amount)) };
   }
   if (effects.insight) {
     next = { ...next, insight: next.insight + effects.insight.amount };

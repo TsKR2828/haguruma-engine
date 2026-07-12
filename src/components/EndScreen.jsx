@@ -1,7 +1,10 @@
-export default function EndScreen({ state, chapter, hasNextChapter, onAdvance }) {
+export default function EndScreen({ state, chapter, hasNextChapter, onAdvance, onClose }) {
   return (
     <div className="end-overlay">
       <div className="end-card">
+        {onClose && (
+          <button className="end-close" onClick={onClose} aria-label="關閉">×</button>
+        )}
         <div className="end-title">
           第{chapter.chapter}章　終
         </div>

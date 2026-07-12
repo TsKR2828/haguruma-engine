@@ -308,7 +308,8 @@ describe("Integration: game flow", () => {
       expect(formed[0].id).toBe("conn_ab");
 
       state = applyConnection(state, formed[0]);
-      expect(state.connections).toContain("conn_ab");
+      expect(state.connections.map((c) => c.id)).toContain("conn_ab");
+      expect(state.connections[0].title).toBe("A與B之連結");
       expect(state.insight).toBe(2);
     });
   });
@@ -347,7 +348,7 @@ describe("Integration: game flow", () => {
       expect(state.insight).toBe(2);
       expect(state.notebook.length).toBe(2);
       expect(state.choicesMade.chose_left).toBe(true);
-      expect(state.connections).toContain("conn_ab");
+      expect(state.connections.map((c) => c.id)).toContain("conn_ab");
     });
 
     it("carryOver excludes transient state for next chapter", () => {
@@ -365,7 +366,7 @@ describe("Integration: game flow", () => {
     it("buildSaveData serializes all required fields", () => {
       state = { ...state, currentSceneId: "scene_choice", nerve: 8, insight: 3 };
       const save = buildSaveData(state, "scene_left");
-      expect(save.v).toBe(2);
+      expect(save.v).toBe(3);
       expect(save.scene).toBe("scene_choice");
       expect(save.nextScene).toBe("scene_left");
       expect(save.nerve).toBe(8);
@@ -411,7 +412,7 @@ describe("Integration: game flow", () => {
 
     it("save version is v2 with nextScene cursor", () => {
       const save = buildSaveData(state);
-      expect(save.v).toBe(2);
+      expect(save.v).toBe(3);
       expect(save).toHaveProperty("nextScene");
     });
   });

@@ -1,6 +1,7 @@
 let _ctx = null;
 let _ambientSource = null;
 let _ambientGain = null;
+let _ambientGeneration = 0;
 const _cache = {};
 
 let _ambientVol = 0.6;
@@ -29,9 +30,14 @@ async function fetchBuffer(url) {
 
 export async function playAmbient(url, { loop = true, fadeIn = 1.5 } = {}) {
   if (!url) return;
+  // Bug 10 fix: guard against concurrent playAmbient() calls racing — if a
+  // newer call starts while an older one is still awaiting fetch/decode, the
+  // older call must not clobber the newer one when it finally resolves.
+  const myGeneration = ++_ambientGeneration;
   const ac = ctx();
   const buffer = await fetchBuffer(url);
   if (!buffer) return;
+  if (myGeneration !== _ambientGeneration) return; // superseded — discard
 
   if (_ambientSource) stopAmbient(1.0);
 

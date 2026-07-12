@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { initialState } from "../src/engine/state.js";
 import { SYMBOL_GLYPHS } from "../src/data/symbols.js";
+import { collectFlagsAndNotebook, unionBlocks } from "./validate-fidelity.js";
 
 const CHAPTERS_DIR = resolve("src/data/chapters");
 const REPORTS_DIR = resolve("reports");
@@ -23,6 +24,7 @@ async function main() {
   console.log(`Found ${files.length} chapter file(s): ${files.join(", ")}\n`);
 
   const reports = [];
+  const priorNotebookKeys = new Set();
 
   for (const file of files) {
     const url = pathToFileURL(resolve(CHAPTERS_DIR, file)).href;
@@ -33,9 +35,18 @@ async function main() {
       continue;
     }
     console.log(`Validating: ${chapter.title ?? file}`);
-    const report = validateChapter(chapter, file);
+    const report = validateChapter(chapter, file, priorNotebookKeys);
     reports.push(report);
     printSummary(report);
+
+    for (const scene of Object.values(chapter.scenes)) {
+      if (scene.notebook?.key) priorNotebookKeys.add(scene.notebook.key);
+      if (Array.isArray(scene.choices)) {
+        for (const c of scene.choices) {
+          if (c.notebook?.key) priorNotebookKeys.add(c.notebook.key);
+        }
+      }
+    }
   }
 
   const md = renderMarkdown(reports);
@@ -125,9 +136,84 @@ export function validateNamespaces(chapter, errors, warnings) {
   }
 }
 
+// ── Origin validation (TextBlock v2, docs/origin-marking-spec.md §3) ──
+
+const ORIGIN_TYPES = new Set(["narration", "inner", "dialogue"]);
+const VALID_ORIGINS = new Set(["source", "added"]);
+
+// CH1 predates the origin field entirely (grandfathered, same as
+// EXEMPT_CHAPTERS for namespaces). CH2 was authored before this spec
+// landed too and also has zero origin coverage — until it's backfilled,
+// treating it as hard-error would break validate:chapters on unrelated
+// legacy content, so it is grandfathered here as well (warning only).
+// This list is intentionally separate from EXEMPT_CHAPTERS: that one
+// governs namespace prefixes and CH2 already complies there. CH3+ get
+// a hard error for missing origin.
+const ORIGIN_EXEMPT_CHAPTERS = [1, 2];
+
+function defaultTextState() {
+  return {
+    nerve: initialState.nerve,
+    insight: initialState.insight,
+    writing: initialState.writing,
+    notebook: [],
+    choicesMade: {},
+  };
+}
+
+// Structural check only: dynamic `text: (state) => [...]` scenes are
+// resolved once against a default/empty state. Exhaustive branch
+// coverage (every choicesMade/notebook combination) is out of scope
+// here — that's what validate:fidelity (F1-c) does.
+function collectBlocks(scene) {
+  if (typeof scene.text === "function") {
+    try {
+      const result = scene.text(defaultTextState());
+      return Array.isArray(result) ? result : [];
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(scene.text) ? scene.text : [];
+}
+
+export function validateOrigin(chapter, errors, warnings) {
+  const num = chapter.chapter;
+  const exempt = ORIGIN_EXEMPT_CHAPTERS.includes(num);
+  let missingCount = 0;
+
+  for (const [sceneId, scene] of Object.entries(chapter.scenes)) {
+    for (const block of collectBlocks(scene)) {
+      if (!ORIGIN_TYPES.has(block.type)) continue;
+
+      if (block.origin === undefined) {
+        if (exempt) {
+          missingCount++;
+        } else {
+          errors.push(`Scene "${sceneId}": ${block.type} block is missing "origin" field`);
+        }
+        continue;
+      }
+
+      if (!VALID_ORIGINS.has(block.origin)) {
+        errors.push(`Scene "${sceneId}": ${block.type} block has invalid origin "${block.origin}" (must be "source" or "added")`);
+        continue;
+      }
+
+      if (block.origin === "source" && !block.jp) {
+        errors.push(`Scene "${sceneId}": origin:"source" ${block.type} block is missing jp (or jp is empty)`);
+      }
+    }
+  }
+
+  if (exempt && missingCount > 0) {
+    warnings.push(`Chapter ${num}: ${missingCount} narration/inner/dialogue block(s) without "origin" (grandfathered, pending origin backfill)`);
+  }
+}
+
 // ── Full validation pipeline ───────────────────────────────
 
-export function validateChapter(chapter, filename) {
+export function validateChapter(chapter, filename, priorNotebookKeys = new Set()) {
   const { scenes, startScene, title, titleCn, sceneCount } = chapter;
   const sceneKeys = Object.keys(scenes);
   const errors = [];
@@ -140,6 +226,7 @@ export function validateChapter(chapter, filename) {
   const missingText = [];
   const badChoices = [];
   const brokenNext = [];
+  const missingChoiceNext = [];
   const idSet = new Set();
   const duplicateIds = [];
 
@@ -166,7 +253,9 @@ export function validateChapter(chapter, filename) {
 
     if (Array.isArray(scene.choices)) {
       for (const c of scene.choices) {
-        if (c.next && !scenes[c.next]) {
+        if (!c.next) {
+          missingChoiceNext.push({ from: key, text: c.text ?? "?" });
+        } else if (!scenes[c.next]) {
           brokenNext.push({ from: key, target: c.next, type: "choice" });
         }
       }
@@ -189,10 +278,17 @@ export function validateChapter(chapter, filename) {
   brokenNext.forEach(({ from, target, type }) =>
     errors.push(`Scene "${from}" (${type}): next "${target}" does not exist`)
   );
+  missingChoiceNext.forEach(({ from, text }) =>
+    errors.push(`Scene "${from}": choice "${text}" is missing "next" (every choice must point to a scene)`)
+  );
 
   // ── 1b. Namespace checks ──
 
   validateNamespaces(chapter, errors, warnings);
+
+  // ── 1b2. Origin checks (TextBlock v2) ──
+
+  validateOrigin(chapter, errors, warnings);
 
   // ── 1c. Cross-reference checks ──
 
@@ -262,7 +358,10 @@ export function validateChapter(chapter, filename) {
     connIdSet.add(conn.id);
     if (Array.isArray(conn.requires)) {
       for (const req of conn.requires) {
-        if (!notebookKeys.has(req) && !validSymbolKeys.has(req)) {
+        if (notebookKeys.has(req) || validSymbolKeys.has(req)) continue;
+        if (priorNotebookKeys.has(req)) {
+          warnings.push(`Connection "${conn.id}": requires "${req}" satisfied via carryOver from earlier chapter`);
+        } else {
           warnings.push(`Connection "${conn.id}": requires "${req}" not found in chapter notebook keys or SYMBOL_GLYPHS`);
         }
       }
@@ -350,6 +449,16 @@ export function validateChapter(chapter, filename) {
     playthroughs.filter((p) => p.reachedEnding).map((p) => p.endScene)
   );
 
+  // Bug 1(a): a playthrough that never reached a valid ending is a real
+  // structural problem (e.g. a choice with a missing/broken "next"), not
+  // just a warning-level curiosity — count it as a hard error.
+  for (const p of playthroughs) {
+    if (!p.success) {
+      const where = p.error ?? `stopped at scene "${p.endScene}" without reaching an ending`;
+      errors.push(`Playthrough "${p.name}" failed: ${where}`);
+    }
+  }
+
   return {
     filename,
     title: title ?? "?",
@@ -370,7 +479,7 @@ export function validateChapter(chapter, filename) {
 
 // ── Playthrough simulation ─────────────────────────────────
 
-function simulate(chapter, strategy, rng) {
+export function simulate(chapter, strategy, rng) {
   const { scenes, startScene } = chapter;
   const state = {
     nerve: initialState.nerve,
@@ -378,6 +487,18 @@ function simulate(chapter, strategy, rng) {
     writing: initialState.writing,
     notebook: [],
     choicesMade: {},
+  };
+
+  // Bug 11(b): two-state probe for dynamic `text` functions, same approach
+  // as validate-fidelity.js — call once against the "nothing achieved yet"
+  // state and once against the "everything in this chapter achieved" state,
+  // wrapped in try/catch so a runtime crash in a scene's text() is reported
+  // as a validation error instead of silently never being exercised.
+  const { flags: allFlags, notebook: allNotebook } = collectFlagsAndNotebook(chapter);
+  const textProbeState1 = { choicesMade: {}, notebook: [] };
+  const textProbeState2 = {
+    choicesMade: Object.fromEntries(allFlags.map((f) => [f, true])),
+    notebook: allNotebook,
   };
 
   let current = startScene;
@@ -392,6 +513,19 @@ function simulate(chapter, strategy, rng) {
     }
 
     visited.push(current);
+
+    try {
+      unionBlocks(scene.text, textProbeState1, textProbeState2);
+    } catch (e) {
+      return {
+        success: false,
+        error: `text() crashed in scene "${current}": ${e.message}`,
+        visited,
+        state,
+        choices,
+      };
+    }
+
     applyEffects(state, scene.effects);
     if (typeof scene.effectFn === "function") {
       applyEffects(state, scene.effectFn(state));
@@ -399,11 +533,28 @@ function simulate(chapter, strategy, rng) {
     if (scene.notebook) state.notebook.push(scene.notebook);
 
     const isEnding = scene.links?.showEnd === true;
-    const hasChoices = Array.isArray(scene.choices) && scene.choices.length > 0;
+    const rawChoices = Array.isArray(scene.choices) ? scene.choices : [];
+    // Bug 11(a): only choices whose condition (if any) is satisfied by the
+    // current simulated state are actually selectable — mirrors
+    // engine/scenes.js resolveChoices().
+    const available = rawChoices.filter(
+      (c) => typeof c.condition !== "function" || c.condition(state)
+    );
+    const hasChoices = rawChoices.length > 0;
+
+    if (hasChoices && available.length === 0) {
+      return {
+        success: false,
+        error: `scene "${current}": all choices filtered out by unmet condition(s)`,
+        visited,
+        state,
+        choices,
+      };
+    }
 
     if (hasChoices) {
-      const idx = pickChoice(scene.choices, strategy, rng);
-      const choice = scene.choices[idx];
+      const idx = pickChoice(available, strategy, rng);
+      const choice = available[idx];
       choices.push({ scene: current, picked: idx, text: choice.text });
 
       if (choice.flag) state.choicesMade[choice.flag] = true;
@@ -436,7 +587,10 @@ function pickChoice(choices, strategy, rng) {
 
 function applyEffects(state, effects) {
   if (!effects) return;
-  if (effects.nerve) state.nerve += effects.nerve.amount;
+  // Bug 11(c): match engine/effects.js applyEffects clamping exactly
+  // (nerve is bounded [0, 10]) so the simulator can't diverge from the
+  // real engine's numbers.
+  if (effects.nerve) state.nerve = Math.min(10, Math.max(0, state.nerve + effects.nerve.amount));
   if (effects.insight) state.insight += effects.insight.amount;
   if (effects.writing) state.writing += effects.writing.amount;
 }
