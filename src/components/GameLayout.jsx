@@ -3,6 +3,7 @@ import HagurumaEngine from "./HagurumaEngine";
 import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./RightSidebar";
 import { getSceneById } from "../engine/scenes";
+import { nextActiveId, nextRoster, resetRoster } from "../engine/portraitRoster";
 
 export default function GameLayout({
   chapter,
@@ -13,8 +14,8 @@ export default function GameLayout({
   onAdvance,
 }) {
   const [gs, setGs] = useState(null);
-  const [portraitId, setPortraitId] = useState(null);
-  const [portraitDim, setPortraitDim] = useState(false);
+  const [roster, setRoster] = useState([]);
+  const [activeId, setActiveId] = useState(null);
   const prevSceneRef = useRef(null);
   const scene = gs ? getSceneById(chapter, gs.currentSceneId) : null;
 
@@ -22,8 +23,9 @@ export default function GameLayout({
     const sceneId = gs?.currentSceneId ?? null;
     if (sceneId !== prevSceneRef.current) {
       if (prevSceneRef.current !== null) {
-        setPortraitId(null);
-        setPortraitDim(false);
+        const reset = resetRoster();
+        setRoster(reset.roster);
+        setActiveId(reset.activeId);
       }
       prevSceneRef.current = sceneId;
     }
@@ -33,19 +35,18 @@ export default function GameLayout({
     setGs(state);
   }, []);
 
-  const handleActiveBlockChange = useCallback((block) => {
-    if (block?.type === "dialogue" && block?.speakerId) {
-      setPortraitId(block.speakerId);
-      setPortraitDim(false);
-    } else {
-      setPortraitDim(true);
-    }
-  }, []);
+  const handleActiveBlockChange = useCallback(
+    (block) => {
+      setActiveId(nextActiveId(block, chapter?.portraits));
+      setRoster((prev) => nextRoster(prev, block, chapter?.portraits));
+    },
+    [chapter],
+  );
 
   return (
     <div className="layout">
       <aside className="layout-left">
-        <LeftSidebar state={gs} chapter={chapter} portraitId={portraitId} portraitDim={portraitDim} />
+        <LeftSidebar state={gs} chapter={chapter} roster={roster} activeId={activeId} />
       </aside>
       <main className="layout-center">
         <HagurumaEngine

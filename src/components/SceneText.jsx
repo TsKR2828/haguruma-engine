@@ -7,7 +7,15 @@ const SPEED = { narration: 18, inner: 25, dialogue: 20, system: 0 };
 
 const rawText = blockRawText;
 
-export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChange }) {
+export default function SceneText({
+  blocks,
+  nerve,
+  onComplete,
+  onActiveBlockChange,
+  editMode = false,
+  editLocked = false,
+  onEditBlock,
+}) {
   const [doneCount, setDoneCount] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
   const [pausing, setPausing] = useState(false);
@@ -87,6 +95,28 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
     const cursorCls = !dual && typing ? " typing-cursor" : "";
     const added = addedClass(block);
 
+    // 編輯器潤飾模式（DEV only，見 docs/batch-f5-ux.md §Lane E-3）：
+    // narration/inner/dialogue 在 editMode 下可 hover+點擊開編輯面板；
+    // 動態場景（editLocked）停用點擊、改顯示 🔒 tooltip。
+    // `import.meta.env.DEV &&` 前綴讓 production build 把整條 editable 折成
+    // 常數 false，esbuild 才能把底下的 CSS class／tooltip 字面字串一起消掉。
+    const editable =
+      import.meta.env.DEV && editMode && (block.type === "dialogue" || block.type === "inner" || block.type === "narration");
+    const editCls = editable ? (editLocked ? " edit-locked" : " edit-hoverable") : "";
+    const editExtraProps = editable
+      ? editLocked
+        ? { title: "動態場景請直接改檔" }
+        : {
+            onClick: (e) => {
+              e.stopPropagation();
+              onEditBlock?.(block, idx);
+            },
+          }
+      : {};
+    const lockBadge = editable && editLocked ? (
+      <span className="edit-lock-badge" aria-hidden="true">🔒</span>
+    ) : null;
+
     switch (block.type) {
       case "break":
         return <div key={idx} className="scene-block-break" />;
@@ -98,19 +128,22 @@ export default function SceneText({ blocks, nerve, onComplete, onActiveBlockChan
         );
       case "dialogue":
         return (
-          <div key={idx} className={`scene-block scene-block-dialogue${added}`}>
+          <div key={idx} className={`scene-block scene-block-dialogue${added}${editCls}`} {...editExtraProps}>
+            {lockBadge}
             <TextBlockBody block={block} display={display} />
           </div>
         );
       case "inner":
         return (
-          <div key={idx} className={`scene-block scene-block-inner${cursorCls}${added}`}>
+          <div key={idx} className={`scene-block scene-block-inner${cursorCls}${added}${editCls}`} {...editExtraProps}>
+            {lockBadge}
             <TextBlockBody block={block} display={display} />
           </div>
         );
       default:
         return (
-          <div key={idx} className={`scene-block scene-block-narration${cursorCls}${added}`}>
+          <div key={idx} className={`scene-block scene-block-narration${cursorCls}${added}${editCls}`} {...editExtraProps}>
+            {lockBadge}
             <TextBlockBody block={block} display={display} />
           </div>
         );
