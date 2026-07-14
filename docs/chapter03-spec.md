@@ -4,6 +4,10 @@
 > Source: 芥川龍之介《歯車》三「夜」
 > 青空文庫 https://www.aozora.gr.jp/cards/000879/files/42377_34745.html
 > 原著為公有領域（著作権消滅）
+>
+> **場景切分以 `docs/ch3-source-map.md` 為準**（本檔僅供 cn 引文參考；引文抽查全真，
+> 但場景 ID、選擇分支、connections、locations 已在該施工圖重新切分，與本檔不完全一致）。
+> `src/data/chapters/chapter03.js` 依施工圖實作，2026-07-12 起以施工圖為唯一來源。
 
 ---
 
