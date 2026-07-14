@@ -32,8 +32,8 @@ export default function StatRadar({ stats, displayMax = 30 }) {
   const fillColor = safeScheme
     ? "rgba(200, 196, 184, 0.18)"
     : "rgba(139, 64, 64, 0.22)";
-  const strokeColor = safeScheme ? "#6b6860" : "#8b4040";
-  const dotColor = safeScheme ? "#c8c4b8" : "#8b4040";
+  const strokeColor = safeScheme ? "var(--stat-safe, #6b6860)" : "var(--stat-danger, #8b4040)";
+  const dotColor = safeScheme ? "var(--stat-safe-text, #c8c4b8)" : "var(--stat-danger, #8b4040)";
 
   return (
     <svg viewBox="0 0 200 200" style={{ width: "100%", maxWidth: 220 }}>
@@ -58,11 +58,11 @@ export default function StatRadar({ stats, displayMax = 30 }) {
               r="3" fill={dotColor}
             />
             <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
-              fill="#6b6860" fontSize="10" fontFamily="'Noto Serif TC', serif">
+              fill="var(--stat-safe, #6b6860)" fontSize="10" fontFamily="'Noto Serif TC', serif">
               {s.label}
             </text>
             <text x={lx} y={ly + 13} textAnchor="middle" dominantBaseline="central"
-              fill={isDrain && danger ? "#8b4040" : "#c8c4b8"} fontSize="11"
+              fill={isDrain && danger ? "var(--stat-danger, #8b4040)" : "var(--stat-safe-text, #c8c4b8)"} fontSize="11"
               fontFamily="'Noto Serif TC', serif">
               {isDrain ? `${s.value}/${s.max}` : s.value}
             </text>

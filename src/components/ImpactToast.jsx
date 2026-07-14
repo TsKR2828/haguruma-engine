@@ -35,8 +35,8 @@ function ToastItem({ impact, duration, onDone }) {
 
   const isLoss = impact.type === "loss";
   const bg = isLoss ? "rgba(40, 10, 10, 0.92)" : "rgba(20, 30, 20, 0.92)";
-  const border = isLoss ? "#8b4040" : "#6b8a4a";
-  const textColor = isLoss ? "#d4a89a" : "#b8c89a";
+  const border = isLoss ? "var(--stat-danger, #8b4040)" : "var(--toast-gain-border, #6b8a4a)";
+  const textColor = isLoss ? "var(--stat-danger-text, #d4a89a)" : "var(--toast-gain-text, #b8c89a)";
   const sign = isLoss ? "−" : "+";
 
   return (

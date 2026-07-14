@@ -41,7 +41,7 @@ function JourneyMap({ locations, journey }) {
       xmlns="http://www.w3.org/2000/svg"
       style={{ width: "100%", height: "auto", display: "block" }}
     >
-      <rect width={W} height={H} fill="#FAF7F2" />
+      <rect width={W} height={H} fill="var(--washi-bg-main, #FAF7F2)" />
       <rect width={W} height={H} opacity="0.3">
         <animate
           attributeName="opacity"
@@ -52,7 +52,7 @@ function JourneyMap({ locations, journey }) {
       </rect>
       <path
         d={path}
-        stroke="#8B7E6E"
+        stroke="var(--washi-ink-muted, #8B7E6E)"
         strokeWidth="1"
         fill="none"
         strokeDasharray="2,3"
@@ -63,16 +63,16 @@ function JourneyMap({ locations, journey }) {
         const isCurrent = status === "current";
         const isVisited = status === "visited";
         const fillColor = isCurrent
-          ? "#C9A86A"
+          ? "var(--washi-accent-gold, #C9A86A)"
           : isVisited
-            ? "#8B7E6E"
-            : "#DDD6C6";
-        const strokeColor = isCurrent ? "#4A3F33" : "#C8BFA8";
+            ? "var(--washi-ink-muted, #8B7E6E)"
+            : "var(--washi-border-light, #DDD6C6)";
+        const strokeColor = isCurrent ? "var(--washi-ink-body, #4A3F33)" : "var(--washi-border, #C8BFA8)";
         const labelColor = isCurrent
-          ? "#2C2418"
+          ? "var(--washi-ink-deep, #2C2418)"
           : isVisited
-            ? "#4A3F33"
-            : "#B5AA98";
+            ? "var(--washi-ink-body, #4A3F33)"
+            : "var(--washi-ink-ghost, #B5AA98)";
         const labelText = status === "unseen" ? "?" : loc.label;
         const sw = isCurrent ? 1.2 : 0.8;
 
@@ -84,7 +84,7 @@ function JourneyMap({ locations, journey }) {
                 cy={loc.y}
                 r="5"
                 fill="none"
-                stroke="#C9A86A"
+                stroke="var(--washi-accent-gold, #C9A86A)"
                 opacity="0.5"
               >
                 <animate

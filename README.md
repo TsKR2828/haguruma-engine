@@ -157,7 +157,7 @@ npx serve -l 3456 -s .
 
 ## 技術棧
 
-- **React 版（第一章已遷移）：** Vite 6 + React 18（JSX）
+- **React 版（全六章）：** Vite 6 + React 18（JSX）
 - **Legacy prototype：** Vanilla JS + HTML（資料驅動場景渲染，單檔原型）
 - Vanilla CSS + CSS Variables（和紙色系）
 - SVG Filter（feTurbulence 雜訊、feDisplacementMap 地圖扭曲）

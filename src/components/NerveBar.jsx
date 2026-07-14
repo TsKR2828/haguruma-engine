@@ -21,13 +21,13 @@ export default function NerveBar({ nerve, value, book = BOOK }) {
   const isCritical = ratio <= 0.2;
 
   const barColor = isCritical
-    ? "linear-gradient(90deg, #8b4040, #5e2a2a)"
+    ? "linear-gradient(90deg, var(--stat-danger, #8b4040), var(--stat-danger-deep, #5e2a2a))"
     : isDanger
-      ? "linear-gradient(90deg, #8b4040, #a05050)"
-      : "linear-gradient(90deg, #6b6860, #c8c4b8)";
+      ? "linear-gradient(90deg, var(--stat-danger, #8b4040), var(--stat-danger-mid, #a05050))"
+      : "linear-gradient(90deg, var(--stat-safe, #6b6860), var(--stat-safe-text, #c8c4b8))";
 
-  const labelColor = isDanger ? "#8b4040" : "#6b6860";
-  const valueColor = isDanger ? "#d4a89a" : "#c8c4b8";
+  const labelColor = isDanger ? "var(--stat-danger, #8b4040)" : "var(--stat-safe, #6b6860)";
+  const valueColor = isDanger ? "var(--stat-danger-text, #d4a89a)" : "var(--stat-safe-text, #c8c4b8)";
 
   return (
     <div style={{ margin: "10px 0" }}>
@@ -45,7 +45,7 @@ export default function NerveBar({ nerve, value, book = BOOK }) {
         background: "rgba(30, 30, 36, 0.8)",
         borderRadius: 3,
         overflow: "hidden",
-        border: `1px solid ${isDanger ? "rgba(139,64,64,0.3)" : "#1e1e24"}`,
+        border: `1px solid ${isDanger ? "rgba(139,64,64,0.3)" : "var(--stat-track-border, #1e1e24)"}`,
       }}>
         <div style={{
           width: `${pct}%`,

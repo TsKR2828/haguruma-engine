@@ -24,6 +24,17 @@
 
   --added-ink:    #6f9fae;
   --added-accent: #4a8296;
+
+  /* Stat-widget palette (NerveBar / StatRadar / ImpactToast — dark overlay UI) */
+  --stat-danger:       #8b4040;
+  --stat-danger-deep:  #5e2a2a;
+  --stat-danger-mid:   #a05050;
+  --stat-danger-text:  #d4a89a;
+  --stat-safe:         #6b6860;
+  --stat-safe-text:    #c8c4b8;
+  --stat-track-border: #1e1e24;
+  --toast-gain-border: #6b8a4a;
+  --toast-gain-text:   #b8c89a;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
