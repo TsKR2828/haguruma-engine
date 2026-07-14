@@ -88,3 +88,112 @@ describe("SceneText", () => {
     expect(historical.querySelector(".scene-block-cn").textContent).toBe('"All right."');
   });
 });
+
+// Batch F6: 文中互動（action / forced）。規格：docs/batch-f6-inline-actions.md §2.1 §5。
+describe("SceneText — action/forced inline interactions (Batch F6)", () => {
+  it("pauses at an action block: subsequent block does not render until clicked", async () => {
+    const blocks = [
+      { type: "action", origin: "added", prompt: "站起來。" },
+      { type: "narration", content: "接下來的敘述。" },
+    ];
+    const { container } = render(<SceneText blocks={blocks} nerve={10} />);
+    await waitFor(() => {
+      expect(container.querySelector(".action-btn")?.textContent).toBe("站起來。");
+    });
+    // Give any stray timers a chance to fire — must NOT have auto-advanced.
+    await new Promise((r) => setTimeout(r, 100));
+    expect(container.querySelector(".scene-block-narration")).toBeNull();
+  });
+
+  it("clicking the scene area (not the button) does not bypass the action block", async () => {
+    const blocks = [
+      { type: "action", origin: "added", prompt: "站起來。" },
+      { type: "narration", content: "接下來的敘述。" },
+    ];
+    const { container } = render(<SceneText blocks={blocks} nerve={10} />);
+    await waitFor(() => expect(container.querySelector(".action-btn")).toBeTruthy());
+    fireEvent.click(container.firstChild);
+    expect(container.querySelector(".scene-block-narration")).toBeNull();
+    expect(container.querySelector(".action-btn")).toBeTruthy();
+  });
+
+  it("clicking the action button advances to the next block", async () => {
+    const blocks = [
+      { type: "action", origin: "added", prompt: "站起來。" },
+      { type: "narration", content: "接下來的敘述。" },
+    ];
+    const { container } = render(<SceneText blocks={blocks} nerve={10} />);
+    const btn = await waitFor(() => {
+      const el = container.querySelector(".action-btn");
+      if (!el) throw new Error("not yet");
+      return el;
+    });
+    fireEvent.click(btn);
+    await waitFor(() => {
+      expect(container.querySelector(".scene-block-narration")).toBeTruthy();
+    });
+    // The completed action block renders read-only ✓ prompt in the past area.
+    expect(container.querySelector(".action-prompt-done")?.textContent).toBe("✓ 站起來。");
+  });
+
+  it("action onAction fires onFlag and onBlockEffects then advances", async () => {
+    const flags = [];
+    const effectsCalls = [];
+    const blocks = [
+      {
+        type: "action",
+        origin: "added",
+        prompt: "站起來。",
+        flag: "ch01.stood_up",
+        effects: { nerve: { amount: -1, reason: "test" } },
+      },
+      { type: "narration", content: "接下來。" },
+    ];
+    const { container } = render(
+      <SceneText
+        blocks={blocks}
+        nerve={10}
+        onFlag={(f) => flags.push(f)}
+        onBlockEffects={(fx) => effectsCalls.push(fx)}
+      />,
+    );
+    const btn = await waitFor(() => {
+      const el = container.querySelector(".action-btn");
+      if (!el) throw new Error("not yet");
+      return el;
+    });
+    fireEvent.click(btn);
+    await waitFor(() => expect(container.querySelector(".scene-block-narration")).toBeTruthy());
+    expect(flags).toEqual(["ch01.stood_up"]);
+    expect(effectsCalls).toHaveLength(1);
+    expect(effectsCalls[0]).toEqual({ nerve: { amount: -1, reason: "test" } });
+  });
+
+  it("forced steps must be clicked through in order; onComplete advances past it", async () => {
+    const blocks = [
+      { type: "forced", origin: "added", steps: ["一", "二"] },
+      { type: "narration", content: "之後。" },
+    ];
+    const { container } = render(<SceneText blocks={blocks} nerve={10} />);
+    await waitFor(() => expect(container.querySelectorAll(".forced-btn")).toHaveLength(1));
+
+    fireEvent.click(container.querySelector(".forced-btn"));
+    await waitFor(() => expect(container.querySelectorAll(".forced-step--done")).toHaveLength(1));
+    expect(container.querySelector(".scene-block-narration")).toBeNull();
+
+    fireEvent.click(container.querySelector(".forced-btn"));
+    await waitFor(
+      () => {
+        expect(container.querySelector(".scene-block-narration")).toBeTruthy();
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it("origin:added action/forced blocks get the block-added class", async () => {
+    const blocks = [{ type: "action", origin: "added", prompt: "站起來。" }];
+    const { container } = render(<SceneText blocks={blocks} nerve={10} />);
+    await waitFor(() => expect(container.querySelector(".scene-block-action")).toBeTruthy());
+    expect(container.querySelector(".scene-block-action").className).toContain("block-added");
+  });
+});

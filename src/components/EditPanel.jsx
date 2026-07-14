@@ -22,6 +22,8 @@ export default function EditPanel({
           <div className="edit-panel-title">
             編輯{target.kind === "choice" ? "選項" : "文字"}
             {target.kind === "block" && target.dual ? "（原文雙語）" : ""}
+            {target.blockType === "action" ? "（互動：action）" : ""}
+            {target.blockType === "forced" ? "（互動：forced）" : ""}
           </div>
 
           {target.dual ? (
@@ -48,6 +50,39 @@ export default function EditPanel({
                 className="edit-panel-textarea"
                 value={target.fields.cn ?? ""}
                 onChange={(e) => onChangeField("cn", e.target.value)}
+              />
+            </>
+          ) : target.blockType === "action" ? (
+            <>
+              <label className="edit-panel-label" htmlFor="edit-panel-prompt">
+                prompt
+              </label>
+              <textarea
+                id="edit-panel-prompt"
+                className="edit-panel-textarea"
+                value={target.fields.prompt ?? ""}
+                onChange={(e) => onChangeField("prompt", e.target.value)}
+              />
+              <label className="edit-panel-label" htmlFor="edit-panel-response">
+                response（可留空）
+              </label>
+              <textarea
+                id="edit-panel-response"
+                className="edit-panel-textarea"
+                value={target.fields.response ?? ""}
+                onChange={(e) => onChangeField("response", e.target.value)}
+              />
+            </>
+          ) : target.blockType === "forced" ? (
+            <>
+              <label className="edit-panel-label" htmlFor="edit-panel-steps">
+                steps（每行一則）
+              </label>
+              <textarea
+                id="edit-panel-steps"
+                className="edit-panel-textarea"
+                value={target.fields.steps ?? ""}
+                onChange={(e) => onChangeField("steps", e.target.value)}
               />
             </>
           ) : (

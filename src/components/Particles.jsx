@@ -1,13 +1,16 @@
 import { useMemo } from "react";
+import { BOOK } from "../bookLoader";
 
 /**
  * Ambient floating particles — shifts from cold gray (high nerve) to blood-red (low nerve).
+ * 施工圖 §2 S2-2：變色比例讀 book.corruption.particleRatioOf（取代寫死的 /10）。
  * Props:
- *   nerve: number (0–10)
+ *   nerve: number
  *   count?: number (default 15)
+ *   corruption?: book.corruption（預設 haguruma，向後相容）
  */
-export default function Particles({ nerve = 10, count = 15 }) {
-  const ratio = nerve / 10;
+export default function Particles({ nerve = 10, count = 15, corruption = BOOK.corruption }) {
+  const ratio = nerve / (corruption?.particleRatioOf ?? 10);
 
   const baseColor = ratio > 0.5
     ? `rgba(200, 196, 184, ${0.08 + (1 - ratio) * 0.12})`   // cold gray

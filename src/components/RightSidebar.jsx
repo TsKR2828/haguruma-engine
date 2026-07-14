@@ -1,3 +1,4 @@
+import { BOOK } from "../bookLoader";
 import { SYMBOL_GLYPHS } from "../data/symbols";
 
 function locStatus(journey, locId) {
@@ -143,7 +144,7 @@ function JourneyMap({ locations, journey }) {
   );
 }
 
-export default function RightSidebar({ state, chapter }) {
+export default function RightSidebar({ state, chapter, book = BOOK }) {
   if (!state) return null;
 
   const { notebook, connections, journey } = state;
@@ -152,7 +153,7 @@ export default function RightSidebar({ state, chapter }) {
   return (
     <>
       <section className="right-section">
-        <div className="right-section-header">手帖</div>
+        <div className="right-section-header">{book.ui.notebookLabel}</div>
         {notebook.length === 0 ? (
           <div className="mini-nb-empty">尚無記錄。</div>
         ) : (
@@ -168,7 +169,7 @@ export default function RightSidebar({ state, chapter }) {
       </section>
 
       <section className="right-section">
-        <div className="right-section-header">連結</div>
+        <div className="right-section-header">{book.ui.connectionLabel}</div>
         {connections.length === 0 ? (
           <div className="conn-empty">
             尚未浮現。
@@ -195,7 +196,7 @@ export default function RightSidebar({ state, chapter }) {
         <JourneyMap locations={locations} journey={journey} />
       </section>
 
-      <span className="block-added-legend">補＝非原文的添補內容</span>
+      <span className="block-added-legend">{book.ui.addedLegend}</span>
     </>
   );
 }

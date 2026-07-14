@@ -20,11 +20,23 @@ describe("Bug 5: chapter directory is derived from chapterRegistry", () => {
     expect(ch1Entry.title).not.toBe("???");
   });
 
-  it("an unregistered chapter (within the 6-chapter ceiling) shows ??? placeholders", () => {
-    expect(getChapter(6)).toBeNull();
+  it("CH6 is now registered and shows its real title/cn, not a placeholder (全六章完成)", () => {
+    const ch6Real = getChapter(6);
+    expect(ch6Real).not.toBeNull();
     const ch6Entry = CHAPTERS.find((c) => c.num === 6);
-    expect(ch6Entry.title).toBe("???");
-    expect(ch6Entry.cn).toBe("???");
+    expect(ch6Entry.title).toBe(ch6Real.title);
+    expect(ch6Entry.cn).toBe(ch6Real.titleCn);
+    expect(ch6Entry.title).not.toBe("???");
+  });
+
+  it("an unregistered chapter beyond the 6-chapter ceiling would show ??? placeholders (mechanism check)", () => {
+    // No chapter 7 exists in the original work, so getChapter(7) returning
+    // null is expected and out of CHAPTERS' range (num > 6 never appears —
+    // see the "does not list a phantom chapter 7+" test below). This test
+    // documents the placeholder mechanism itself still exists in
+    // chapters.js, even though every chapter within the 1-6 ceiling is now
+    // registered.
+    expect(getChapter(7)).toBeNull();
   });
 
   it("does not list a phantom chapter 7+ (original book only has 6)", () => {

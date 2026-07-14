@@ -1,16 +1,17 @@
 import { useState, useCallback } from "react";
-import { corruptText } from "../engine/corrupt";
-import GearOverlay from "./GearOverlay";
+import { BOOK } from "../bookLoader";
+import { corruptTextFor } from "../engine/corrupt";
+import { getMotif } from "./motifs";
 
-function ForcedButton({ text, nerve, onClick, disabled }) {
-  const corrupt = nerve <= 2;
-  const display = corrupt ? corruptText(text, nerve) : text;
+function ForcedButton({ text, nerve, onClick, disabled, corruption, statMax, Overlay }) {
+  const corrupt = nerve <= corruption.forcedDeepAt;
+  const display = corrupt ? corruptTextFor(text, nerve, corruption.textCorruptAt, statMax) : text;
 
   let erosionClass = "";
-  if (nerve <= 2) erosionClass = "forced-btn--eroded-deep";
-  else if (nerve <= 4) erosionClass = "forced-btn--eroded";
+  if (nerve <= corruption.forcedDeepAt) erosionClass = "forced-btn--eroded-deep";
+  else if (nerve <= corruption.forcedErodeAt) erosionClass = "forced-btn--eroded";
 
-  const showGears = nerve <= 3;
+  const showGears = nerve <= corruption.gearOverlayAt;
   let gearProps = null;
   if (nerve <= 1) gearProps = { count: 3, speed: 8, opacity: 0.18, scale: 2.0, overflow: true };
   else if (nerve <= 2) gearProps = { count: 2, speed: 20, opacity: 0.10, scale: 1.5, overflow: false };
@@ -18,7 +19,7 @@ function ForcedButton({ text, nerve, onClick, disabled }) {
 
   return (
     <div className="forced-btn-wrapper">
-      {showGears && <GearOverlay {...gearProps} />}
+      {showGears && <Overlay {...gearProps} />}
       <button
         className={`forced-btn ${erosionClass}`}
         onClick={onClick}
@@ -30,8 +31,11 @@ function ForcedButton({ text, nerve, onClick, disabled }) {
   );
 }
 
-export default function ForcedSteps({ steps, nerve, onComplete }) {
+export default function ForcedSteps({ steps, nerve, onComplete, book = BOOK }) {
   const [doneIdx, setDoneIdx] = useState(-1);
+  const corruption = book.corruption;
+  const statMax = book.stats.find((s) => s.key === corruption.stat)?.max ?? 10;
+  const { Overlay } = getMotif(book.motif);
 
   const handleClick = useCallback(
     (idx) => {
@@ -61,6 +65,9 @@ export default function ForcedSteps({ steps, nerve, onComplete }) {
             nerve={nerve}
             onClick={() => handleClick(i)}
             disabled={false}
+            corruption={corruption}
+            statMax={statMax}
+            Overlay={Overlay}
           />
         );
       })}

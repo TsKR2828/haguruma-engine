@@ -15,8 +15,12 @@
 // 非瀏覽器環境不拋錯，只是靜默無法持久化）。
 // ═══════════════════════════════════════════════════════════
 
-const SESSION_KEY = "haguruma_rewind_v1";
-const SEEN_KEY = "haguruma_choice_seen_v1";
+import { BOOK } from "../bookLoader.js";
+
+// key 前綴由 book.id 派生（施工圖 §1 S1）。haguruma 的既有 key 名不變——
+// book.id === "haguruma" 使下面兩個常數與重構前逐字相同。
+const SESSION_KEY = `${BOOK.id}_rewind_v1`;
+const SEEN_KEY = `${BOOK.id}_choice_seen_v1`;
 const MAX_ENTRIES = 60;
 
 // ── 深拷貝 ──────────────────────────────────────────────────
