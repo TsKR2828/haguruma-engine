@@ -62,6 +62,22 @@
 { type: "pause", duration: Number }              // 停頓（毫秒，預設 1000），無 origin
 ```
 
+### 文中互動（action / forced，Batch F6）
+
+天生是添補內容，`origin` 必為 `"added"`。SceneText 打字流程遇到這兩型會暫停推進、渲染互動元件，等玩家點擊（`onAction`/`onComplete`）才繼續後續 block——「點擊繼續」在互動元件未完成前不得跳過它。
+
+```js
+// action：讀者必須點擊才繼續，可選一行點擊後浮現的回應
+{ type: "action", origin: "added", prompt: String,      // 指令文字（命令形，無主詞：「站起來。」）
+  response: String|undefined,                            // 點擊後浮現的一行回應（可省略）
+  flag: String|undefined, effects: Effects|undefined }   // 點擊時設 flag / 套 effects（走 ImpactToast）
+
+// forced：連續強制步驟，逐一點擊；nerve 低時按鈕侵蝕＋齒輪覆蓋（ForcedSteps 既有視覺）
+{ type: "forced", origin: "added", steps: String[] }
+```
+
+完成態（打字階段的「過去」區與歷史區一致）渲染 `✓ prompt`（＋response 縮排一行）／逐步 `✓ step`，樣式沿用 `.action-block--done` / `.forced-step--done`。
+
 **向後相容（legacy）**：缺 `origin` 的 block（現行 CH1／CH2 全部）視為 legacy——渲染照舊（不套添補樣式），validator 對 CH1／CH2 發 warning，對 CH3+ 發 error。渲染器只在 `origin === "added"` 時套用添補樣式（見下方「添補樣式」）。
 
 **寫作規則**（詳見 `SCENES_FORMAT.md`「原文與添補」章節）：
@@ -186,6 +202,8 @@ Validator 對 CH1 僅發出警告，對 CH2+ 違規視為 error。
 - CH3+ 的 narration/inner/dialogue block 缺 `origin` 欄位
 - `origin` 值不在 `["source", "added"]`
 - `origin:"source"` 的 block 缺 `jp` 或 `jp` 為空字串（所有章節，含 CH1／CH2）
+- `action` block 缺非空 `prompt`，或 `origin` 不為 `"added"`（所有章節）
+- `forced` block 缺非空 `steps[]`（陣列為空或含空字串元素），或 `origin` 不為 `"added"`（所有章節）
 
 **Warning（警告）：**
 - `flags` 陣列應列出該場景所有選項的 `flag` 值（雙向檢查）
