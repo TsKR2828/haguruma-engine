@@ -3,8 +3,7 @@
 ## 專案概要
 
 芥川龍之介《歯車》互動文學引擎。React + Vite，資料驅動架構。
-原著 6 章（レエン・コオト／復讐／夜／まだ？／赤光／飛行機），目前完成第一章（33 場景）與第二章（34 場景，依 docs/ch2-source-map.md 重切完工，取代含幻覺內容的舊版）。
-CH3–CH6 spec 已完成（docs/chapter0X-spec.md），待實作。
+原著 6 章（レエン・コオト／復讐／夜／まだ？／赤光／飛行機）**全部完成**：CH1（34 場景）、CH2（34 場景，docs/ch2-source-map.md）、CH3（38 場景，docs/ch3-source-map.md）、CH4（28 場景，docs/ch4-source-map.md）、CH5（39 場景，docs/ch5-source-map.md）、CH6（29 場景，docs/ch6-source-map.md）皆依各章施工圖重切完工，取代含幻覺內容的舊版，`origin:"source"` 標記涵蓋全部敘事正文，`npm run validate:fidelity` 全部通過。**《歯車》全卷六章完工。**
 
 ## 技術棧
 
@@ -40,7 +39,7 @@ legacy/              舊版檔案（prototype-ch1.html, 孤兒資料檔）
 ```bash
 npm run dev              # Vite dev server
 npm run build            # production build
-npm test                 # Vitest（125 tests）
+npm test                 # Vitest（323 tests）
 npm run validate:chapters  # 章節資料驗證
 npm run legacy           # 啟動 legacy prototype（port 3456）
 ```

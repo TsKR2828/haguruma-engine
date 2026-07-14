@@ -93,7 +93,7 @@
 
 ---
 
-## D9 — 先完成歯車，再抽通用引擎
+## D9 — 先完成歯車，再抽通用引擎【2026-07-14 完成，見下方完成標記】
 
 長期目標是將引擎泛化為「文學作品沉浸式閱讀平台」，可用於《地獄變》《罪與罰》等不同作品，只需替換文本和設定。
 
@@ -110,6 +110,20 @@
 理由：過早抽象化會拖慢 Ch2–Ch11 進度，且沒有第二部作品驗證的抽象容易過度設計。
 
 日期：2026-05-07
+
+**完成標記（2026-07-14，Batch F11 換書泛化，施工圖 `docs/batch-f11-generalize.md`）**：
+
+前提「全章文本穩定」已於 F10（CH6 完工，全卷六章）達成，D9 規劃的抽象化正式執行。逐項對照：
+
+- `nerve`/`insight`/`writing` 三軸名稱與初始值 → 改由 `BOOK.stats`（`src/books/haguruma/index.js`）生成，engine 層 `createInitialState(book)`/`applyEffectsFor(book, ...)` 收顯式 `book` 參數（S1）
+- `corruptText` 假設 nerve 上限 10 → `corruptTextFor(text, level, thresholdLevel, statMax)` 泛化為顯式參數，`SceneText` 從 `book.corruption`/`book.stats` 算出實際門檻與上限（S1/S2）
+- localStorage key 寫死 `"haguruma_*"` → `createSaveModule(book)` 讀 `book.saveKey` 生成 `SAVE_KEY`/`LEGACY_SAVE_KEY`；haguruma 綁定版逐字沿用舊 key 名，向後相容既有存檔（S1）
+- UI 層 `"神經"`/`"洞察"`/`"執筆"`/`"手帖"` 等標籤 → 集中到 `BOOK.ui`，`NerveBar`/`StatRadar`/`LeftSidebar`/`HagurumaEngine` 等元件改讀 `book.ui`/`book.stats`（含軸數動態＝`stats.length`），元件仍保留 `book = BOOK`（haguruma 綁定）預設參數以防呼叫端漏改（S2）
+- App 層標題／作者／引言寫死 → 讀 `BOOK.meta`（S2）
+- 工具層（`scripts/validate-chapters.js`／`scripts/validate-fidelity.js`）的 `SYMBOL_GLYPHS`／namespace-exempt／origin-exempt 章節清單／stat 欄位／底本路徑／章 marker → 全部改讀 `book.symbols`/`book.validator`/`book.stats`/`book.fidelity`，CLI 支援 `--book=<id>`（預設 haguruma，輸出格式逐字不變）（S3）
+- 換書可行性證明 → `tests/fixtures/book-smoke/`（雙軸 courage/memory、motif:"none"、獨立 saveKey/UI 標籤的迷你假書）＋ `tests/integration/book-smoke.test.js`（14 個測試：state/effects/corrupt/validator/元件渲染五個面向，src/engine、src/components 一行未改）（S4）
+
+換書點收斂為單一檔案 `src/bookLoader.js`（一行 `export { BOOK } from "./books/<id>/index.js"`）。四驗證與 F10 基準（`reports/pre-f11-baseline.txt`）逐項比對一致（見 DEV-LOG「F11」條目）。
 
 ---
 

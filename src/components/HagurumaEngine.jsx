@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { createChapterState } from "../engine/state";
-import { applyEffects } from "../engine/effects";
+import { BOOK } from "../bookLoader";
+import { createChapterStateFor } from "../engine/state";
+import { applyEffectsFor } from "../engine/effects";
 import { resolveText, resolveChoices, getSceneById } from "../engine/scenes";
 import { resolveConnections, applyConnection } from "../engine/connections";
 import { upsertNotebook } from "../engine/notebook";
-import { saveGame } from "../engine/save";
+import { createSaveModule } from "../engine/save";
+import { getMotif } from "./motifs";
 import Particles from "./Particles";
 import NerveBar from "./NerveBar";
 import ImpactToast from "./ImpactToast";
@@ -12,7 +14,6 @@ import SceneText from "./SceneText";
 import ChoiceList from "./ChoiceList";
 import NotebookPanel from "./NotebookPanel";
 import EndScreen from "./EndScreen";
-import GearDefs from "./GearDefs";
 import TextBlockBody from "./TextBlockBody";
 import EditPanel from "./EditPanel";
 import RewindPanel from "./RewindPanel";
@@ -50,7 +51,13 @@ export const HistoryBlock = memo(function HistoryBlock({ block, editMode = false
   const display = blockRawText(block);
   const added = addedClass(block);
   const editable =
-    import.meta.env.DEV && editMode && (block.type === "dialogue" || block.type === "inner" || block.type === "narration");
+    import.meta.env.DEV &&
+    editMode &&
+    (block.type === "dialogue" ||
+      block.type === "inner" ||
+      block.type === "narration" ||
+      block.type === "action" ||
+      block.type === "forced");
   const editCls = editable ? (locked ? " edit-locked" : " edit-hoverable") : "";
   const editExtraProps = editable
     ? locked
@@ -115,8 +122,12 @@ const HistorySection = memo(function HistorySection({
   );
 });
 
-export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange, onActiveBlockChange }) {
-  const [gs, setGs] = useState(() => initialState ?? createChapterState(chapter, carryOver));
+export default function HagurumaEngine({ chapter, carryOver, initialState, onChapterEnd, hasNextChapter, onAdvance, onStateChange, onActiveBlockChange, book = BOOK }) {
+  const [gs, setGs] = useState(() => initialState ?? createChapterStateFor(book, chapter, carryOver));
+  const saveModule = useMemo(() => createSaveModule(book), [book]);
+  const { Defs: MotifDefs } = useMemo(() => getMotif(book.motif), [book.motif]);
+  const drainStat = useMemo(() => book.stats.find((s) => s.kind === "drain") ?? book.stats[0], [book.stats]);
+  const otherStats = useMemo(() => book.stats.filter((s) => s !== drainStat), [book.stats, drainStat]);
   const [scene, setScene] = useState(null);
   const [blocks, setBlocks] = useState([]);
   const [phase, setPhase] = useState("loading");
@@ -159,9 +170,9 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
   }, []);
 
   const save = useCallback((state, nextScene = null) => {
-    const ok = saveGame(state, nextScene);
+    const ok = saveModule.saveGame(state, nextScene);
     if (!ok) toast("loss", "存檔", 0, "儲存失敗，僅保留於記憶體");
-  }, [toast]);
+  }, [toast, saveModule]);
 
   const toastEffects = useCallback(
     (fx) => {
@@ -169,14 +180,14 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
       // Bug 4 fix: these must all fire independently (not if/else if) so a
       // compound effect (e.g. nerve loss + insight gain in one scene) shows
       // every stat change instead of only the first one.
-      if (fx.nerve)
-        toast("loss", "神經", Math.abs(fx.nerve.amount), fx.nerve.reason);
-      if (fx.insight)
-        toast("gain", "洞察", fx.insight.amount, fx.insight.reason);
-      if (fx.writing)
-        toast("gain", "執筆", fx.writing.amount, fx.writing.reason);
+      for (const stat of book.stats) {
+        const e = fx[stat.key];
+        if (!e) continue;
+        if (stat.kind === "drain") toast("loss", stat.label, Math.abs(e.amount), e.reason);
+        else toast("gain", stat.label, e.amount, e.reason);
+      }
     },
-    [toast],
+    [toast, book],
   );
 
   const checkConns = useCallback(
@@ -186,11 +197,11 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
       const formed = resolveConnections(next, conns);
       for (const conn of formed) {
         next = applyConnection(next, conn);
-        toast("gain", "連結", conn.insightGain ?? 0, conn.title);
+        toast("gain", book.ui.connectionLabel, conn.insightGain ?? 0, conn.title);
       }
       return next;
     },
-    [toast, chapter],
+    [toast, chapter, book],
   );
 
   const loadScene = useCallback(
@@ -254,14 +265,14 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
     }
 
     if (sc.effects) {
-      next = applyEffects(next, sc.effects);
+      next = applyEffectsFor(book, next, sc.effects);
       toastEffects(sc.effects);
     }
 
     if (typeof sc.effectFn === "function") {
       const dyn = sc.effectFn(next);
       if (dyn) {
-        next = applyEffects(next, dyn);
+        next = applyEffectsFor(book, next, dyn);
         toastEffects(dyn);
       }
     }
@@ -328,7 +339,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
         };
       }
       if (choice.effects) {
-        next = applyEffects(next, choice.effects);
+        next = applyEffectsFor(book, next, choice.effects);
         toastEffects(choice.effects);
       }
       if (choice.notebook) {
@@ -364,6 +375,22 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
     gsRef.current = next;
   }, []);
 
+  // 文中互動（Batch F6）：action block 點擊時立即套 effects——跟 sc.effects
+  // （onTextComplete）走同一套 applyEffects＋toastEffects（ImpactToast 多則
+  // 堆疊），只是時機提前到互動當下而非整場文字打完。狀態進 gs，回溯快照
+  // （pushSnapshot 在有 choices 的場景才 push，且抓的是當時的 gsRef.current）
+  // 自然含在內，無需額外處理。
+  const onBlockEffects = useCallback(
+    (fx) => {
+      if (!fx) return;
+      const next = applyEffectsFor(book, gsRef.current, fx);
+      setGs(next);
+      gsRef.current = next;
+      toastEffects(fx);
+    },
+    [toastEffects],
+  );
+
   const onContinue = useCallback(() => {
     const sc = sceneRef.current;
     if (sc?.next) loadScene(sc.next);
@@ -394,13 +421,34 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
           const key = blockKey(chapter.chapter, sceneId, index);
           const existing = getOverlay(key);
           const dual = isDualBlock(rawBlock);
+          // action/forced（Batch F6）：不是 dual（jp/cn）也不是單一 content，
+          // 各自有專屬欄位形狀。forced.steps 是陣列，textarea 只能編字串，
+          // 存取時以換行接合／拆分（見下方 fields 讀取與 handleSaveEdit 寫回）。
+          const isAction = rawBlock.type === "action";
+          const isForced = rawBlock.type === "forced";
           const origFields = dual
             ? { jp: rawBlock.jp ?? "", cn: rawBlock.cn ?? "" }
-            : { content: rawBlock.content ?? "" };
+            : isAction
+              ? { prompt: rawBlock.prompt ?? "", response: rawBlock.response ?? "" }
+              : isForced
+                ? { steps: (rawBlock.steps ?? []).join("\n") }
+                : { content: rawBlock.content ?? "" };
           const orig = existing?.orig ?? origFields;
           const fields = dual
             ? { jp: existing?.jp ?? orig.jp ?? "", cn: existing?.cn ?? orig.cn ?? "" }
-            : { content: existing?.content ?? orig.content ?? "" };
+            : isAction
+              ? {
+                  prompt: existing?.prompt ?? orig.prompt ?? "",
+                  response: existing?.response ?? orig.response ?? "",
+                }
+              : isForced
+                ? {
+                    steps:
+                      existing?.steps !== undefined
+                        ? (Array.isArray(existing.steps) ? existing.steps.join("\n") : existing.steps)
+                        : (orig.steps ?? ""),
+                  }
+                : { content: existing?.content ?? orig.content ?? "" };
           setEditTarget({
             kind: "block",
             key,
@@ -408,6 +456,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
             sceneId,
             index,
             dual,
+            blockType: rawBlock.type,
             origin: rawBlock.origin,
             orig,
             fields,
@@ -455,6 +504,15 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
             const diff = {};
             for (const [k, v] of Object.entries(t.fields)) {
               if (v !== (t.orig?.[k] ?? "")) diff[k] = v;
+            }
+            // forced.steps（Batch F6）：textarea 存的是換行接合字串，寫回
+            // overlay 前拆回陣列——ForcedSteps 元件跟 validator 都預期 steps
+            // 是 String[]，不是接合過的單一字串。
+            if (t.blockType === "forced" && diff.steps !== undefined) {
+              diff.steps = diff.steps
+                .split("\n")
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0);
             }
             if (Object.keys(diff).length === 0) {
               removeOverlay(t.key);
@@ -622,27 +680,26 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
   return (
     <div className="game-container">
-      <GearDefs />
-      <Particles nerve={gs.nerve} />
+      <MotifDefs />
+      <Particles nerve={gs[drainStat.key]} corruption={book.corruption} />
       <ImpactToast impacts={impacts} onDismiss={dismissImpact} />
 
       <header className="game-header">
         <span className="game-chapter-label">{chapter.titleCn}</span>
         <div className="game-stats">
           <div className="game-nerve-wrap">
-            <NerveBar nerve={gs.nerve} />
+            <NerveBar value={gs[drainStat.key]} book={book} />
           </div>
-          <span className="game-stat">
-            洞察 <span className="game-stat-val">{gs.insight}</span>
-          </span>
-          <span className="game-stat">
-            執筆 <span className="game-stat-val">{gs.writing}</span>
-          </span>
+          {otherStats.map((s) => (
+            <span className="game-stat" key={s.key}>
+              {s.label} <span className="game-stat-val">{gs[s.key]}</span>
+            </span>
+          ))}
           <button
             className="notebook-toggle"
             onClick={() => setShowNb((v) => !v)}
           >
-            手帖 ({gs.notebook.length})
+            {book.ui.notebookLabel} ({gs.notebook.length})
           </button>
           <button
             className="rewind-toggle"
@@ -688,9 +745,11 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
           <SceneText
             key={gs.currentSceneId}
             blocks={blocksForRender}
-            nerve={gs.nerve}
+            nerve={gs[drainStat.key]}
+            book={book}
             onComplete={onTextComplete}
             onFlag={onFlag}
+            onBlockEffects={onBlockEffects}
             onActiveBlockChange={onActiveBlockChange}
             editMode={import.meta.env.DEV && editMode}
             editLocked={dynamicScene}
@@ -721,7 +780,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
 
         {phase === "continue" && (
           <div className="continue-prompt" onClick={onContinue}>
-            ▾ 點擊繼續
+            ▾ {book.ui.continueHint}
           </div>
         )}
 
@@ -729,7 +788,7 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
       </main>
 
       {showNb && (
-        <NotebookPanel state={gs} chapter={chapter} onClose={() => setShowNb(false)} />
+        <NotebookPanel state={gs} chapter={chapter} onClose={() => setShowNb(false)} book={book} />
       )}
 
       {showRewind && (
@@ -747,11 +806,12 @@ export default function HagurumaEngine({ chapter, carryOver, initialState, onCha
           hasNextChapter={hasNextChapter}
           onAdvance={onAdvance}
           onClose={() => setEndDismissed(true)}
+          book={book}
         />
       )}
       {phase === "ending" && endDismissed && hasNextChapter && onAdvance && (
         <div className="advance-fallback" onClick={onAdvance}>
-          次の章へ ▸
+          {book.ui.nextChapterLabel} ▸
         </div>
       )}
 

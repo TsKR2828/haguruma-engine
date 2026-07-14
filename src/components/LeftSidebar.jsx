@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { CHAPTERS, CH_NUM_KANJI } from "../data/chapters";
+import { useState, Fragment } from "react";
+import { BOOK } from "../bookLoader";
+import { CHAPTERS } from "../data/chapters";
 
-export default function LeftSidebar({ state, chapter, roster, activeId }) {
+export default function LeftSidebar({ state, chapter, roster, activeId, book = BOOK }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!state) return null;
 
   const cur = state.currentChapter;
+  const warningLines = book.ui.chapterListWarning.split("\n");
 
   return (
     <div className="left-sidebar">
@@ -21,11 +23,12 @@ export default function LeftSidebar({ state, chapter, roster, activeId }) {
 
         {!expanded ? (
           <div className="ch-warning">
-            此人生之書能預知命運。
-            <br />
-            然而事先得知章節數量，
-            <br />
-            可能會降低未知的樂趣。
+            {warningLines.map((line, i) => (
+              <Fragment key={i}>
+                {line}
+                {i < warningLines.length - 1 && <br />}
+              </Fragment>
+            ))}
           </div>
         ) : (
           <div className="ch-list">
@@ -39,7 +42,7 @@ export default function LeftSidebar({ state, chapter, roster, activeId }) {
               return (
                 <div key={c.num} className={`ch-item ${cls}`}>
                   <span className="ch-item-num">
-                    第 {CH_NUM_KANJI[c.num - 1]} 章
+                    第 {book.ui.numerals[c.num - 1]} 章
                   </span>
                   {showTitle ? c.title : "???"}
                   <br />

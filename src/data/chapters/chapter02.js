@@ -299,8 +299,15 @@ export const CHAPTER_02 = {
         {
           type: "narration",
           origin: "source",
-          jp: "殊に彼の悲喜劇の中に運命の冷笑を感じるのは次第に僕を無気味にし出した。僕は一時間とたたないうちにベッドの上から飛び起きるが早いか、窓かけの垂れた部屋の隅へ力一ぱい本を抛りつけた。",
-          cn: "尤其是，在他的悲喜劇裡感受到命運的冷笑——這件事漸漸地讓我感到毛骨悚然。不到一小時，我便從床上一躍而起，把書狠狠地扔進了掛著窗簾的房間角落。",
+          jp: "殊に彼の悲喜劇の中に運命の冷笑を感じるのは次第に僕を無気味にし出した。",
+          cn: "尤其是，在他的悲喜劇裡感受到命運的冷笑——這件事漸漸地讓我感到毛骨悚然。",
+        },
+        { type: "forced", origin: "added", steps: ["從床上跳起來。", "把書摔向房間的角落。"] },
+        {
+          type: "narration",
+          origin: "source",
+          jp: "僕は一時間とたたないうちにベッドの上から飛び起きるが早いか、窓かけの垂れた部屋の隅へ力一ぱい本を抛りつけた。",
+          cn: "不到一小時，我便從床上一躍而起，把書狠狠地扔進了掛著窗簾的房間角落。",
         },
         { type: "dialogue", origin: "source", speaker: "我", speakerId: "protagonist", jp: "「くたばってしまえ！」", cn: "「去死吧！」" },
       ],
@@ -352,6 +359,7 @@ export const CHAPTER_02 = {
     ch2_rat_search: {
       id: "ch2_rat_search",
       text: [
+        { type: "action", origin: "added", prompt: "追進浴室，開門搜索。" },
         {
           type: "narration",
           origin: "source",

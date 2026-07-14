@@ -1,5 +1,12 @@
 # 第四章「まだ？」 Chapter Spec
 
+> ⚠ 舊友場景為幻覺內容已作廢；場景切分以 docs/ch4-source-map.md 為準。
+> 本檔「與前章的銜接」「Ｃ2：舊友的兒子」及 text blocks 中「ch04_old_friend」段落捏造了
+> 「兒子自殺未遂」「暴君」等原文沒有的對話，且遺漏了朱舜水／不眠症語言崩解母題——
+> 已由 `docs/ch4-source-map.md`（Batch F8，2026-07-12 定案）取代，`src/data/chapters/chapter04.js`
+> 依該圖重切完工。本檔僅其餘段落（舊友場景以外）的 cn 譯文可作參考，場景切分與
+> 舊友場景全部內容一律不可採用。
+>
 > 基於青空文庫原文的場景分割。文本欄位為原文段落對照，待劇本編輯器精修格式。
 > Source: 芥川龍之介《歯車》四「まだ？」
 > 青空文庫 https://www.aozora.gr.jp/cards/000879/files/42377_34745.html

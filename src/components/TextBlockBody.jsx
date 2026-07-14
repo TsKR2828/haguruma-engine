@@ -11,6 +11,29 @@ import { isDualBlock } from "../utils/textBlock";
  * docs/origin-marking-spec.md §2.3 §2.4.
  */
 export default function TextBlockBody({ block, display }) {
+  // action / forced（Batch F6）：互動 block 的「完成態」渲染——一旦不再是
+  // 目前正在互動的 active block（已被推進過，或編輯模式下的預覽），一律
+  // 顯示 ✓ 已完成樣式。與 ActionBlock.jsx / ForcedSteps.jsx 內部「done」分支
+  // 使用完全相同的 class，見 docs/batch-f6-inline-actions.md §2.3。
+  if (block.type === "action") {
+    return (
+      <div className="action-block action-block--done">
+        <div className="action-prompt-done">✓ {block.prompt}</div>
+        {block.response && <div className="action-response">{block.response}</div>}
+      </div>
+    );
+  }
+  if (block.type === "forced") {
+    return (
+      <div className="forced-steps">
+        {(block.steps ?? []).map((step, i) => (
+          <div key={i} className="forced-step forced-step--done">
+            ✓ {step}
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (block.type === "dialogue" || isDualBlock(block)) {
     const lines = display.split("\n");
     const jp = lines[0] || "";

@@ -1,0 +1,154 @@
+====================================================================
+歯車引擎 (haguruma-engine) — F11 泛化重構前基準快照
+Pre-F11-Generalize Refactor Baseline Snapshot
+====================================================================
+生成時間: 2026-07-13 01:52 - 01:53 (本機時間)
+工作目錄: C:/Users/admin/Desktop/Claude/haguruma-engine
+Node: v24.13.1  npm: 11.8.0
+施工圖: docs/batch-f11-generalize.md
+用途: 重構前基準 — 每段完工後重跑四驗證，輸出必須與本檔一致
+      （測試數可增不可減，行為斷言不得放寬）
+
+====================================================================
+[1/4] npm test -- --run  (vitest run)
+====================================================================
+
+> haguruma-engine@0.1.0 test
+> vitest run --run
+
+ RUN  v4.1.5 C:/Users/admin/Desktop/Claude/haguruma-engine
+
+ Test Files  33 passed (33)
+      Tests  323 passed (323)
+   Start at  01:52:43
+   Duration  10.99s (transform 1.53s, setup 0ms, import 8.03s, tests 9.67s, environment 26.89s)
+
+RESULT SUMMARY: Test Files 33 passed (33) / Tests 323 passed (323)
+
+====================================================================
+[2/4] npm run build  (vite build)
+====================================================================
+
+> haguruma-engine@0.1.0 build
+> vite build
+
+vite v6.4.2 building for production...
+transforming...
+✓ 67 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:   0.43 kB
+dist/assets/index-CmMWWx2e.css   20.70 kB │ gzip:   4.26 kB
+dist/assets/index-C5R8k1E6.js   419.61 kB │ gzip: 136.91 kB
+✓ built in 913ms
+
+RESULT SUMMARY: build succeeded, 67 modules transformed, 0 errors
+  dist/index.html                 0.77 kB (gzip 0.43 kB)
+  dist/assets/index-*.css        20.70 kB (gzip 4.26 kB)
+  dist/assets/index-*.js        419.61 kB (gzip 136.91 kB)
+
+====================================================================
+[3/4] npm run validate:chapters  (node scripts/validate-chapters.js)
+====================================================================
+
+> haguruma-engine@0.1.0 validate:chapters
+> node scripts/validate-chapters.js
+
+Found 6 chapter file(s): chapter01.js, chapter02.js, chapter03.js, chapter04.js, chapter05.js, chapter06.js
+
+Validating: レエン・コオト
+  ✓ レエン・コオト（雨衣）— chapter01.js
+    場景: 34  選擇點: 11  ending: 1
+    Warnings (1):
+      - Chapter 1: 43 keys without chapter prefix (grandfathered)
+    Playthroughs: 22/22 reached ending
+
+Validating: 復讐
+  ✓ 復讐（復仇）— chapter02.js
+    場景: 34  選擇點: 8  ending: 1
+    Playthroughs: 22/22 reached ending
+
+Validating: 夜
+  ✓ 夜（夜）— chapter03.js
+    場景: 38  選擇點: 7  ending: 1
+    Playthroughs: 22/22 reached ending
+
+Validating: まだ？
+  ✓ まだ？（還沒？）— chapter04.js
+    場景: 28  選擇點: 6  ending: 1
+    Playthroughs: 22/22 reached ending
+
+Validating: 赤光
+  ✓ 赤光（赤光）— chapter05.js
+    場景: 39  選擇點: 7  ending: 1
+    Playthroughs: 22/22 reached ending
+
+Validating: 飛行機
+  ✓ 飛行機（飛機）— chapter06.js
+    場景: 29  選擇點: 4  ending: 1
+    Playthroughs: 22/22 reached ending
+
+
+Report written to C:\Users\admin\Desktop\Claude\haguruma-engine\reports\validation-report.md
+
+RESULT SUMMARY (場景/選擇點/ending/playthrough by chapter):
+  CH1 レエン・コオト（雨衣）: 場景=34 選擇點=11 ending=1  Playthroughs 22/22  Warnings=1 (43 keys without chapter prefix, grandfathered)
+  CH2 復讐（復仇）        : 場景=34 選擇點=8  ending=1  Playthroughs 22/22
+  CH3 夜（夜）            : 場景=38 選擇點=7  ending=1  Playthroughs 22/22
+  CH4 まだ？（還沒？）     : 場景=28 選擇點=6  ending=1  Playthroughs 22/22
+  CH5 赤光（赤光）        : 場景=39 選擇點=7  ending=1  Playthroughs 22/22
+  CH6 飛行機（飛機）      : 場景=29 選擇點=4  ending=1  Playthroughs 22/22
+  TOTAL: 6 chapters, 場景 total=202, 選擇點 total=43, ending total=6, all 22/22 playthroughs reached ending
+
+====================================================================
+[4/4] npm run validate:fidelity  (node scripts/validate-fidelity.js)
+====================================================================
+
+> haguruma-engine@0.1.0 validate:fidelity
+> node scripts/validate-fidelity.js
+
+Fidelity check against: C:\Users\admin\Desktop\Claude\haguruma-engine\reference\aozora\haguruma_original.txt
+Found 6 chapter file(s)
+
+  ✓ CH1 レエン・コオト（雨衣）— chapter01.js
+    CH1 coverage: 99.8% (4916/4924 chars)
+
+  ✓ CH2 復讐（復仇）— chapter02.js
+    CH2 coverage: 99.9% (4483/4486 chars)
+
+  ✓ CH3 夜（夜）— chapter03.js
+    CH3 coverage: 100.0% (4117/4119 chars)
+
+  ✓ CH4 まだ？（還沒？）— chapter04.js
+    CH4 coverage: 99.9% (2843/2847 chars)
+
+  ✓ CH5 赤光（赤光）— chapter05.js
+    CH5 coverage: 99.9% (5010/5013 chars)
+
+  ✓ CH6 飛行機（飛機）— chapter06.js
+    CH6 coverage: 99.9% (3575/3579 chars)
+
+── Fidelity summary: 0 error(s), 0 warning(s) ──
+
+RESULT SUMMARY (coverage by chapter):
+  CH1 レエン・コオト（雨衣）: 99.8% (4916/4924 chars)
+  CH2 復讐（復仇）        : 99.9% (4483/4486 chars)
+  CH3 夜（夜）            : 100.0% (4117/4119 chars)
+  CH4 まだ？（還沒？）     : 99.9% (2843/2847 chars)
+  CH5 赤光（赤光）        : 99.9% (5010/5013 chars)
+  CH6 飛行機（飛機）      : 99.9% (3575/3579 chars)
+  TOTAL errors=0 warnings=0
+
+====================================================================
+BASELINE OVERALL SUMMARY
+====================================================================
+1. test              : PASS  — 33 test files / 323 tests, all passed
+2. build             : PASS  — 67 modules transformed, 0 errors
+3. validate:chapters : PASS  — 6/6 chapters valid, 202 場景 / 43 選擇點 / 6 ending, all 132 (22x6) playthroughs reached ending, 1 grandfathered warning (CH1)
+4. validate:fidelity : PASS  — 6/6 chapters valid, 0 errors / 0 warnings, coverage 99.8%–100.0% per chapter
+
+此檔為 F11 重構前基準，之後每段重構完工須重跑上述四驗證並與本檔比對：
+測試數不得低於 323，場景/選擇點/ending 數不得低於本檔數值，
+playthrough 覆蓋率不得低於 22/22，fidelity coverage 不得低於本檔各章百分比，
+且 fidelity/chapters 的 error/warning 數不得增加（CH1 grandfathered warning 除外，數量不變）。
+====================================================================

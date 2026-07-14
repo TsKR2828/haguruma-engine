@@ -12,7 +12,11 @@
 // （如 node 測試）不會拋錯，只是靜默無法持久化。
 // ═══════════════════════════════════════════════════════════
 
-const STORAGE_KEY = "haguruma_overlay_v1";
+import { BOOK } from "../bookLoader.js";
+
+// key 前綴由 book.id 派生（施工圖 §1 S1）。haguruma 的既有 key 名不變——
+// book.id === "haguruma" 使下面的常數與重構前逐字相同。
+const STORAGE_KEY = `${BOOK.id}_overlay_v1`;
 
 // ── 底層 store I/O ──────────────────────────────────────────
 

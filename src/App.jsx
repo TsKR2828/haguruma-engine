@@ -1,11 +1,39 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import GameLayout from "./components/GameLayout";
+import { BOOK } from "./bookLoader";
 import { getChapter } from "./data/chapterRegistry";
 import { createChapterState } from "./engine/state";
 import { loadSave, restoreState, clearSave, hasSave, saveGame } from "./engine/save";
 import "./styles/game.css";
 
+// PALETTE → --washi-* CSS 變數名對照（施工圖 §2 S2-7）。global.css 的
+// :root 已經定義同名變數為預設值；這裡在啟動時用 book.palette 覆寫一次，
+// 換書時只要 palette 內容不同，畫面就會跟著換，不需要改 CSS。
+// haguruma 的 PALETTE 值與 global.css 現行預設值逐字相同，注入後零視覺變化。
+const PALETTE_VAR_MAP = {
+  bg: { outer: "--washi-bg-outer", sidebar: "--washi-bg-sidebar", main: "--washi-bg-main", card: "--washi-bg-card" },
+  ink: { deep: "--washi-ink-deep", body: "--washi-ink-body", muted: "--washi-ink-muted", ghost: "--washi-ink-ghost" },
+  border: { normal: "--washi-border", light: "--washi-border-light", divider: "--washi-divider" },
+  accent: { red: "--washi-accent-red", gold: "--washi-accent-gold", green: "--washi-accent-green", blue: "--washi-accent-blue" },
+  ui: { hoverBg: "--washi-hover-bg", activeBg: "--washi-active-bg", selection: "--washi-selection" },
+};
+
+function injectPalette(palette) {
+  if (typeof document === "undefined" || !palette) return;
+  const root = document.documentElement;
+  for (const [groupKey, varsForGroup] of Object.entries(PALETTE_VAR_MAP)) {
+    const group = palette[groupKey];
+    if (!group) continue;
+    for (const [key, cssVar] of Object.entries(varsForGroup)) {
+      if (group[key] != null) root.style.setProperty(cssVar, group[key]);
+    }
+  }
+}
+
 export default function App() {
+  useEffect(() => {
+    injectPalette(BOOK.palette);
+  }, []);
   const [playing, setPlaying] = useState(false);
   const [chapterNum, setChapterNum] = useState(() => {
     const saved = loadSave();
@@ -70,28 +98,28 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="shell-header">
-        <h1 className="shell-title">歯車</h1>
+        <h1 className="shell-title">{BOOK.meta.title}</h1>
         <p className="shell-subtitle">haguruma-engine</p>
       </header>
 
       <main className="shell-main">
         <div className="shell-card">
-          <p className="shell-status">芥川龍之介《歯車》（1927）</p>
+          <p className="shell-status">{BOOK.meta.author}《{BOOK.meta.title}》（{BOOK.meta.year}）</p>
           <p className="shell-desc">
-            ——「半透明の歯車。それが不意に彼の視野を遮り始めた。」
+            {BOOK.meta.quote}
           </p>
           <button
             className="title-start-btn"
             onClick={() => setPlaying(true)}
           >
-            {hasExistingSave ? "繼續遊玩" : "開始遊玩"}
+            {hasExistingSave ? BOOK.ui.resumeLabel : BOOK.ui.startLabel}
           </button>
           {hasExistingSave && (
             <button
               className="title-newgame-btn"
               onClick={handleNewGame}
             >
-              新的開始
+              {BOOK.ui.newGameLabel}
             </button>
           )}
         </div>

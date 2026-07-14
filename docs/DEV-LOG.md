@@ -768,6 +768,258 @@ Batch 7（2026-05-16）已發現原著實為 6 章（非 CLAUDE.md 舊載的「1
 
 ---
 
+#### Batch F6 — 文中互動啟用（action / forced blocks）
+
+狀態：完成
+
+規格來源：`docs/batch-f6-inline-actions.md`（定案，2026-07-12）。月月目標 3 的核心互動：「你必須站起來」式指令，增強閱讀記憶。ActionBlock.jsx / ForcedSteps.jsx / GearOverlay.jsx 原是完成品孤兒元件（連 legacy prototype 都只有機械沒資料），本批定 schema＋接線＋首批內容。
+
+完成內容：
+
+- Schema（`docs/chapter-data-schema.md` 增補）：`{ type:"action", origin:"added", prompt, response?, flag?, effects? }`（讀者必須點擊才繼續，天生添補內容 origin 必為 `"added"`）、`{ type:"forced", origin:"added", steps: String[] }`（連續強制步驟，逐一點擊，nerve 低時按鈕侵蝕＋齒輪覆蓋沿用 ForcedSteps 既有視覺）
+- 引擎接線：`SceneText.jsx` 打字流程遇 action/forced block 暫停推進、渲染互動元件並等待完成才繼續；點擊套用 `effects`（走既有 `applyEffects` + ImpactToast 堆疊）與設 flag；`TextBlockBody`/`HistoryBlock` 完成態渲染 `✓ prompt`（＋response 縮排一行，`.action-block--done` / `.forced-step--done`）；`game.css` 補齊 `.forced-btn`/`.forced-wrapper`/侵蝕 `clip-path` 全套樣式（比對 prototype.html 移植）；潤飾模式（editMode）下點 action/forced＝編輯文字不觸發互動；回溯相容（flag/effects 已含在 state 快照內，無需額外處理）
+- Validator／fidelity 增補：`validate-chapters.js` 檢查 action 需非空 `prompt`、forced 需非空 `steps[]`、兩者 `origin` 必為 `"added"`；playthrough 模擬器將 action/forced 視為直通（套 `action.effects`）；`validate-fidelity.js` 新 type 不參與 jp 比對（無 jp 欄位）
+- 首批內容（三處，全部 `added`、命令形無主詞、「先做、後讀芥川的句子」）：
+  1. CH1 `auto_phone`：`僕はもとのように受話器をかけ…意識していた。` 之後、`給仕は容易に…鈕を押した。` 之前插入 `forced`（`["按下門鈴的按鈕。","再按。","再按一次。"]`，具現化「何度もベルの鈕を押した」）
+  2. CH2 `ch2_polikouchka`：跳床摔書段插入 `forced`（`["從床上跳起來。","把書摔向房間的角落。"]`）
+  3. CH2 `ch2_rat_search`：場景最前插入 `action`（`prompt:"追進浴室，開門搜索。"`，無 response，後續 source 敘述接手）
+- 新測試：`tests/components/ForcedSteps.test.jsx`、`tests/components/HagurumaEngine.actionForced.test.jsx`、`tests/scripts/action-forced.test.js`
+
+驗收結果：
+
+- `npm run build` 通過
+- `npm test` 通過
+- `npm run validate:chapters` 通過（action/forced 三處內容位置與施工圖一致，22/22 playthroughs 仍全通，互動不阻斷模擬器）
+- `npm run validate:fidelity` 通過（新 block 不影響 coverage）
+- 打字流程：互動 block 前文字打完→暫停→點擊→繼續，「點擊繼續」不能繞過互動；editMode／回溯不受破壞
+- 不 commit／不 push（全部留 unstaged）；本批未動 DEV-LOG（依施工圖 §5 指示留給 CH3 批統一記錄，即本條目）
+
+---
+
+#### Batch F7 — CH3「夜」重切（§1 骨架＋前 22 場景 F7-1、後 16 場景＋connections F7-2）
+
+狀態：完成
+
+規格來源：`docs/ch3-source-map.md`（唯一施工圖來源；全域政策沿用 `docs/ch1-source-map.md` §0，cn 為第一人稱「我」，見該圖 D12 定案敘述）。動機：舊 `docs/chapter03-spec.md` 引文抽查全真（audit 判定「小修可用」），但場景切分改以本圖為準，重新整檔實作。
+
+完成內容：
+
+**F7-1（§1 骨架＋前 22 場景）**：
+
+- `chapter03.js` 全新建立：§1 骨架（5 個 location：丸善／日本橋通り／カッフェ／ホテル／部屋）、`ch3_prologue` ～ `ch3_sculptor_talk` 22 場景逐字回填 `jp`（取自底本 B:L225–L259）＋新譯 `cn`（第一人稱「我」）
+- 後 16 場景（`ch3_room_women` ～ `ch3_end_wait`）先建立正確的 `choices`/`next`/`flags`/`notebook`/`links` 拓樸骨架，`text` 標 TODO 佔位；`§3 connections` 留空陣列
+- 發現施工圖 §1 標頭 `sceneCount: 36` 與 §2 實際枚舉（逐一計數含全部分支/夢境/choice 場景）38 場景不一致，本檔以 §2 實際枚舉為準記 `sceneCount: 38`，已在檔頭註記此偏離
+
+**F7-2（本批，§2 後 16 場景＋§3 connections＋symbols.js＋文件）**：
+
+- `ch3_room_women` ～ `ch3_end_wait` 16 個 stub 場景逐字回填 `jp`（B:L261–L295）＋新譯 `cn`，包含：
+  - 分支選擇（清教徒譏諷 女人話題 vs 忍住不開口）、鏡中膏藥監視意象（`ch03.mirror_watch`）
+  - 齒輪再現分支（數齒輪 vs 立即服藥），nerve −1
+  - **夢境段全 auto（`ch3_dream_pool` → `ch3_dream_platform` → `ch3_dream_train`，無選擇是刻意設計）**：泳池／妻「おとうさん、タオルは？」對話、鄉下月台／Ｈ與老婦對話、寢台上木乃伊裸女——**L287 復讐の神句**逐字回填（`それは又僕の復讐の神、――或狂人の娘に違いなかった。……`），nerve −1
+  - 醒轉後翼聲／鼠聲、給仕「三時半ぐらいでございます」、大廳讀書的美國女人（綠洋裝）
+  - **L295 結尾**逐字回填（`長年の病苦に悩み抜いた揚句、静かに死を待っている老人のように。……`），insight +1，`showEnd`
+- `§3 connections` 6 條全部補上（`ch03.yellow_circuit` / `ch03.gear_multiply` / `ch03.hanfeizi` / `ch03.nemesis_shape` / `ch03.wing_again` / `ch03.green_omen`），其中 `gear_multiply`／`wing_again` 依賴 CH1 grandfathered key（`gear_first`／`wing_corridor`，無 `chNN.` 前綴）
+- `symbols.js` CH3 區（`SYMBOL_GLYPHS`）於前批（F7-1／或更早）已補齊全部 12 個 notebook key 的 glyph，本批核對確認無缺漏，未再變動
+- `tests/scripts/cross-ref.test.js` 新增 3 個測試：① `CHAPTER_03` 搭配從 `CHAPTER_01`+`CHAPTER_02` 動態收集的 `priorNotebookKeys` 跑 `validateChapter` 應零 error；② `ch03.gear_multiply` 用真實 `resolveConnections` 驗證：notebook 同時含 CH1 grandfathered `gear_first` 與 CH3 `ch03.gear_faces` 時可觸發，缺 CH1 key 時不觸發（比照 `ch02.raincoat_returns` 模式）；③ `ch03.wing_again` 同模式驗證 `wing_corridor` + `ch03.wing_rat`
+- 文件同步：`chapter03.js` 檔頭註解更新（F7-1/F7-2 完工狀態）、README（開發現況、開發狀態 checklist、專案結構樹補 `ch3-source-map.md`／`batch-f6-inline-actions.md`／`chapters/chapter02.js`／`chapters/chapter03.js`、測試數同步）、本條目
+- 不 commit／不 push（全部留 unstaged）；未動 `chapter01.js`／`chapter02.js`
+
+驗收結果：
+
+- `npm run validate:fidelity`：**0 error**；**CH3 coverage 100.0%（4117/4119 字元）**（CH1 99.8%、CH2 99.9% 同批未變動）
+- `npm run validate:chapters`：CH3 場景數 38、選擇點 7、ending 1，**22/22 playthroughs 抵達結局**，0 error
+- `npm test`：**309/309 通過**（33 test files，含新增 3 個 CH3 跨章 connection / real-data 測試）
+- `npm run build`：通過
+
+備註：
+
+- CH3 coverage 剩餘 0.05%（2 字元）未覆蓋，經核對定位為底本章節切分標記行本身（章號標題殘字），非敘事正文，同 CH1/CH2 模式，已由 `ch3_prologue` 的兩個 `system` block（「第三章　夜」／「——夜——」）對應呈現，CH3 全部敘事正文（地の文＋台詞）已 100% 回填
+- 施工圖 §1 標頭 `sceneCount: 36` 與 §2 實際枚舉 38 場景的不一致，維持 F7-1 已記錄的偏離說明，待月月確認是否需回頭修正施工圖標頭（不影響本批驗收，已以實際枚舉為準）
+
+---
+
+## 2026-07-13
+
+### 已完成
+
+#### Batch F8 — Chapter 4「まだ？」重切完工
+
+狀態：完成（unstaged）
+
+完成內容：
+
+- 依 `docs/ch4-source-map.md`（Batch F8，2026-07-12 定案）重寫 `src/data/chapters/chapter04.js`：§1 骨架（`chapter:4`／`title:"まだ？"`／`titleCn:"還沒？"`／`startScene:"ch4_prologue"`／`startLocation:"ch04.hotel_room"`／`sceneCount:28`）＋ 4 個 locations（`ch04.hotel_room` rect／`ch04.ginza` circle／`ch04.cafe2` circle／`ch04.mirror` diamond）
+- §2 全 28 場景逐字回填 `jp`（一律 Read 底本 `reference/aozora/haguruma_original.txt` B:L304–L360 複製，未手打）+ 新譯 `cn`（一人稱「我」），含 6 選擇點（`ch4_roses`／`ch4_cafe_pair`／`ch4_eye_memory`／`ch4_street_faces`／`ch4_woman`／`ch4_mirror_choice`）、12 個 notebook keys
+- **舊友場景（`ch4_friend`～`ch4_madman_son`）完全依施工圖重寫**：`docs/chapter04-spec.md` 該段原捏造「兒子自殺未遂」「暴君」對話，且遺漏了原文真正的朱舜水建碑式敘舊、結膜炎規律、『点鬼簿』自伝問答、不眠症互答、「気違いの息子には当り前だ」內心獨白母題——本批已改為以 B:L312–L344 逐字回填的正確版本，`docs/chapter04-spec.md` 檔頭已加註作廢警語
+- `「気違いの息子には当り前だ」` 標記為 `type:"inner"`（非 dialogue，非替角色新編台詞），origin:"source"，含括號逐字收錄（B:L344）
+- **nerve −1 事件**：施工圖 §2 明列 3 處（`ch4_shushun` 朱舜水發音失敗／`ch4_madman_son` 気違いの息子／`ch4_lamort` la mort）；另依上游任務特別指示「朱舜水／不眠症兩處發音失敗各 −1 nerve」，於 `ch4_insomnia`（B:L342 後段「不眠症」的「症」発音失敗）追加第 4 個 −1 nerve 事件（reason:「症」也發不出音）——與施工圖 nerve 預算敘述（−1×3）不完全一致，因 engine `applyEffects` 對 nerve 有 0–10 clamp（`src/engine/effects.js`），章末仍收斂在 0 附近，不影響「章末回到 ≈0」的設計目標，已在批次回報中向月月說明此處理，若判定應以施工圖 3 處為準可回頭移除 `ch4_insomnia` 的 effects
+- §3 connections 6 條全部補上（`ch04.affinity_eye`／`ch04.roses_faces`／`ch04.word_betrayal`／`ch04.death_approach`／`ch04.second_me`／`ch04.sitz_bath`），其中 `death_approach` 依賴 CH1 grandfathered key `raincoat_death`、`second_me` 依賴 CH3 key `ch03.mirror_watch`（跨章依賴）
+- `symbols.js` `SYMBOL_GLYPHS` 新增 CH4 區 12 個 notebook key 的 glyph
+- `chapterRegistry.js` 註冊 `CHAPTER_04`
+- 一次性腳本（未留存於 repo）以真實 `resolveConnections`／`applyEffects` 模擬「carryOver 含 CH1 `raincoat_death` + CH3 `ch03.mirror_watch`」＋「全程選 A」的完整 playthrough：27/28 場景可達（僅 `ch4_mirror_choice` 分支 B 的 `ch4_mirror_hesitate` 因選 A 未經過，屬預期），CH4 全部 6 條 connections（含 2 條跨章）均正確觸發
+- **幻覺清零 grep**：`自殺未遂`／`暴君` 在 `chapter04.js` 場景資料中零命中（僅出現在檔頭註解描述已作廢內容）。`息子` 一詞則有 3 處合法命中——均為底本原文逐字收錄（B:L308 咖啡館母子段 ×2、B:L344「気違いの息子には当り前だ」×1），非舊 spec 捏造內容；施工圖 §4 grep 清單本身與其 §2 明列的逐字回填指示互相矛盾（`息子` 本就是原文用字），已在批次回報中向月月說明此矛盾點，未依字面誤刪合法原文
+- 文件同步：`chapter04.js` 檔頭註解、`docs/chapter04-spec.md` 檔頭作廢警語、README（開發現況、開發狀態 checklist、專案結構樹、npm run dev 說明段）、本條目
+- 不 commit／不 push（全部留 unstaged）；未動 `chapter01.js`／`chapter02.js`／`chapter03.js`
+
+驗收結果：
+
+- `npm run validate:chapters`：CH4 場景數 28、選擇點 6、ending 1，**22/22 playthroughs 抵達結局**，0 error
+- `npm run validate:fidelity`：**0 error**；**CH4 coverage 99.9%（2843/2847 字元）**（CH1 99.8%、CH2 99.9%、CH3 100.0% 同批未變動）
+- `npm test`：**312/312 通過**（33 test files；`tests/data/chapters.test.js` 動態掃描新章節，未需新增專屬測試檔）
+- `npm run build`：通過
+
+備註：
+
+- CH4 coverage 剩餘 0.1%（4 字元）未覆蓋，經核對為底本章節切分標記行本身（章號標題殘字），非敘事正文，同 CH1–CH3 模式，已由 `ch4_prologue` 的兩個 `system` block（「第四章　まだ？」／「——還沒？——」）對應呈現
+- `ch4_insomnia` 的追加 nerve −1 事件與施工圖 nerve 預算敘述「−1×3」的落差，待月月確認是否維持（4 處）或改回施工圖原案（3 處，移除 `ch4_insomnia.effects`）
+
+---
+
+---
+
+## 2026-07-13（續）
+
+### 已完成
+
+#### Batch F9 — Chapter 5「赤光」重切完工
+
+狀態：完成（unstaged）
+
+規格來源：`docs/ch5-source-map.md`（唯一施工圖來源；全域政策沿用 `docs/ch1-source-map.md` §0，cn 為第一人稱「我」）。動機：舊 `docs/chapter05-spec.md` 第二段「主題」概述中「松林中的赤光（紅色池塘）」「老婦人」一節，以及對應場景切分，整段是幻覺內容（audit §1c-5）——原文（B:L435）該段實際是「運河・達磨船」，並無池塘、並無老婦人、並無死鼴鼠；該檔概述亦漏掉了章題眼《赤光》歌集信（B:L441）。
+
+完成內容：
+
+- 全新建立 `src/data/chapters/chapter05.js`：§1 骨架（`chapter:5`／`title:"赤光"`／`titleCn:"赤光"`／`startScene:"ch5_prologue"`／`startLocation:"ch05.hotel_room"`）＋ 5 個 locations（`ch05.hotel_room` rect／`ch05.attic` mountain／`ch05.bar_street` circle／`ch05.basement` rect／`ch05.canal` circle）
+- §2 全 39 場景逐字回填 `jp`（一律 Read 底本 `reference/aozora/haguruma_original.txt` B:L369–L461 複製，未手打）+ 新譯 `cn`（一人稱「我」），含 7 選擇點（`ch5_taine`／`ch5_unicorn`／`ch5_red_lantern`／`ch5_journalists`／`ch5_icarus`／`ch5_karamazov`／`ch5_dawn_window`）、16 個 notebook keys
+- **舊 spec「赤光池塘／穿寢衣老婦／死鼴鼠」幻覺段完全不存在於本檔**：`ch5_canal` 場景依 B:L435 逐字回填為「運河・達磨船」（郊外養父母家的回憶＋運河上達磨船底透出的薄光，那裡也有一家人生活著，為了相愛而互相憎恨），無池塘、無老婦、無死鼴鼠
+- **章題眼《赤光》歌集信**（B:L441「歌集『赤光』の再版を送りますから……」）於 `ch5_shakko` 場景逐字含括號收錄為 narration block，觸發 nerve −1（reason: 赤光——連信裡都是）與 `notebook: { key:"ch05.shakko_letter", symbol:"fire", ... }`
+- **法語記者對白三句**（B:L425／L427／L429）於 `ch5_french` 逐字收錄，含法語排版慣例的半形空格（`pourquoi ?`／`mort !`），cn 附直譯（好……很糟……為什麼？／為什麼？……惡魔已經死了！……／對，對……地獄的……）
+- nerve 事件依施工圖列 3 處 −1（`ch5_red_lantern` 赤い光／`ch5_shakko` 赤光歌集信／`ch5_karamazov` 訂錯頁的書），加上開場 `ch5_prologue` +2，未額外增補
+- §3 connections 6 條全部補上（`ch05.mole_self`／`ch05.kirin_child`／`ch05.black_white`／`ch05.artificial_wings`／`ch05.red_light`／`ch05.diable`），其中 `mole_self` 依賴 CH4 key `ch04.la_mort`、`kirin_child` 依賴 CH1 grandfathered key `book_worm`（跨章依賴）
+- `symbols.js` `SYMBOL_GLYPHS` 新增 CH5 區 16 個 notebook key 的 glyph（沿用既有 5 個符號類別 raincoat/gear/wing/book/fire，未新增類別）
+- `chapterRegistry.js` 註冊 `CHAPTER_05`
+- `tests/scripts/cross-ref.test.js` 新增 3 個測試：① `CHAPTER_05` 搭配從 `CHAPTER_01`+`CHAPTER_02`+`CHAPTER_03`+`CHAPTER_04` 動態收集的 `priorNotebookKeys` 跑 `validateChapter` 應零 error；② `ch05.mole_self` 用真實 `resolveConnections` 驗證：notebook 同時含 CH4 `ch04.la_mort` 與 CH5 `ch05.mole_curtain` 時可觸發，缺 CH4 key 時不觸發；③ `ch05.kirin_child` 同模式驗證 CH1 grandfathered `book_worm` + CH5 `ch05.unicorn`
+- 文件同步：`chapter05.js` 檔頭註解、`docs/chapter05-spec.md` 檔頭作廢警語（第二段幻覺內容＋漏掉的章題眼）、README（開發現況、開發狀態 checklist、專案結構樹、npm run dev 說明段）、本條目
+- 不 commit／不 push（全部留 unstaged）；未動 `chapter01.js`／`chapter02.js`／`chapter03.js`／`chapter04.js`
+
+驗收結果：
+
+- `npm run validate:chapters`：CH5 場景數 39、選擇點 7、ending 1，**22/22 playthroughs 抵達結局**，0 error
+- `npm run validate:fidelity`：**0 error**；**CH5 coverage 99.9%（5010/5013 字元）**（CH1 99.8%、CH2 99.9%、CH3 100.0%、CH4 99.9% 同批未變動）
+- `npm test`：**315/315 通過**（33 test files；`tests/scripts/cross-ref.test.js` 新增 3 個 CH5 專屬測試）
+- `npm run build`：通過
+- **幻覺清零 grep**：`池塘`／`寢衣`／`老婦`在 `chapter05.js` 場景資料中零命中（僅出現在檔頭註解描述已作廢內容，共 3 處，均在 `//` 註解行內）。`歌集` 一詞命中 3 處合法場景資料（`ch5_shakko` 的 narration jp/cn＋notebook desc），確認章題眼在場
+
+備註：
+
+- CH5 coverage 剩餘 0.1%（3 字元）未覆蓋，經核對為底本章節切分標記行本身（章號標題殘字「五　赤光」），非敘事正文，同 CH1–CH4 模式，已由 `ch5_prologue` 的兩個 `system` block（「第五章　赤光」／「——赤光——」）對應呈現
+- 施工圖 `ch5-source-map.md` §1 骨架標頭 `sceneCount: 38` 與 §2 實際逐一枚舉的 39 個場景 id 不一致（`grep -c '^### ch5_'` 實測 39），本檔以 §2 實際枚舉為準記 `sceneCount: 39`，已在檔頭與本條目註記此偏離（同 CH3／`ch3-source-map.md` F7-1 先例：遇到骨架標頭與實際枚舉不一致時，以實際枚舉為準）
+
+---
+
+#### Batch F10 — Chapter 6「飛行機」重切完工（《歯車》全卷完工）
+
+狀態：完成（unstaged）
+
+規格來源：`docs/ch6-source-map.md`（唯一施工圖來源；全域政策沿用 `docs/ch1-source-map.md` §0，cn 為第一人稱「我」）。動機：舊 `docs/chapter06-spec.md`「主題」段概述的「叔父的稻荷狐狸信仰」「義妹的丈夫逼她喝草酸」整段內容是幻覺（audit §1c-7）——原文（B:L488）該段實際是「避暑地也是世の中」（妻の実家的世間話：毒殺病人的醫生、放火的老太婆、奪妹妹財產的律師），無稻荷、無狐狸、無草酸、無義妹；且「飛行機病」對白（B:L522／L526）的說話者被舊 spec 誤標為妻の母，正確說話者是妻の弟。
+
+完成內容：
+
+- 全新建立 `src/data/chapters/chapter06.js`：§1 骨架（`chapter:6`／`title:"飛行機"`／`titleCn:"飛機"`／`startScene:"ch6_prologue"`／`startLocation:"ch06.road_home"`）＋ 4 個 locations（`ch06.road_home` circle／`ch06.home` rect／`ch06.inlaws` rect／`ch06.dunes` mountain）
+- §2 全 29 場景逐字回填 `jp`（一律 Read 底本 `reference/aozora/haguruma_original.txt` B:L470–L548 複製，未手打）+ 新譯 `cn`（一人稱「我」），含 4 選擇點（`ch6_funeral`／`ch6_black_dog`／`ch6_glass_bowl`／`ch6_why_me`，全在前半），`ch6_final_walk` 起零選擇——命運收攏，讀者只剩「不得不做」的 forced steps，共 15 個 notebook keys
+- **舊 spec「叔父稻荷狐狸信仰／義妹蓚酸毒殺」幻覺段完全不存在於本檔**：`ch6_hell_houses` 依 B:L488 逐字回填為「避暑地也是世の中」（毒殺病人的醫生、放火養子夫婦家的老太婆、奪妹妹資產的律師——僕眼中人生中的地獄），無稻荷、無狐狸、無草酸、無義妹
+- **「飛行機病」對白說話者訂正**：`ch6_airplane_disease` 的 B:L522／B:L526 兩句飛行機病台詞，`speakerId` 訂正為 `"wifes_brother"`（妻の弟），非舊 spec 誤標的 `wifes_mother`
+- **雨衣首尾呼應**：`ch6_prologue`（B:L470，回避暑地的司機偏偏披著雨衣）與 CH1 grandfathered key `raincoat_death`（姊夫死時的雨衣）組成跨章 connection `ch06.raincoat_final`（「物語は雨衣に始まり雨衣に終る」）
+- **文中互動（Batch F6 forced steps）**：`ch6_final_walk` 依施工圖，把 `{ type:"forced", origin:"added", steps:["把脖子挺直。","繼續走。","不要停下。"] }` 插在 B:L534「僕は愈最後の時の近づいたことを恐れながら、頸すじをまっ直にして歩いて行った。」之後、「歯車は数の殖えるのにつれ……」之前——本章唯一使用點，對應終幕 nerve≈0 時的視覺崩壞
+- nerve 事件依施工圖列 4 處：`ch6_home` +3（妻子與催眠藥的二三日平和，原文明寫）、`ch6_strindberg` −1（與史特林堡擦身）、`ch6_gallows` −1（烏鴉叫了四聲）、`ch6_dead_mole` −1（腐爛的鼴鼠屍骸）、`ch6_final_walk` −2（最後の時）→ 終幕神經歸零，配合視覺崩壞全開；`ch6_ending` 無任何數值 effects（沉默的結尾，原著在此中斷）
+- §3 connections 6 條全部補上，**全部跨章**：`ch06.raincoat_final`（CH1 `raincoat_death`）、`ch06.bw_dog`（CH5 `ch05.bw_whiskey`）、`ch06.wings_everywhere`（CH5 `ch05.airship`）、`ch06.strindberg_twice`（CH5 `ch05.karamazov`）、`ch06.four_caws`（CH4 `ch04.la_mort`）、`ch06.mole_end`（CH5 `ch05.mole_curtain`）
+- `symbols.js` `SYMBOL_GLYPHS` 新增 CH6 區 15 個 notebook key 的 glyph（沿用既有 5 個符號類別 raincoat/gear/wing/book/fire，未新增類別）
+- `chapterRegistry.js` 註冊 `CHAPTER_06`
+- `tests/scripts/cross-ref.test.js` 新增 7 個測試：① `CHAPTER_06` 搭配從 `CHAPTER_01`～`CHAPTER_05` 動態收集的 `priorNotebookKeys` 跑 `validateChapter` 應零 error；②～⑦ 六條跨章 connections（`ch06.raincoat_final`／`ch06.bw_dog`／`ch06.wings_everywhere`／`ch06.strindberg_twice`／`ch06.four_caws`／`ch06.mole_end`）逐一用真實 `resolveConnections` 驗證：帶跨章 key 時可觸發，缺該 key 時不觸發
+- `tests/data/chapters.test.js` 更新：CH6 現已註冊，舊「CH6 顯示 ??? 佔位」測試改為「CH6 顯示真實標題」（比照 CH1 測試），另補一個對 CH7（原著範圍外，不存在）的機制檢查測試，保留「不佔位」機制本身的覆蓋
+- 文件同步：`chapter06.js` 檔頭註解、`docs/chapter06-spec.md` 檔頭作廢警語（稻荷／蓚酸幻覺段＋飛行機病說話者更正）、README（開發現況、開發狀態 checklist、專案結構樹、npm run dev 啟動說明段：「第一章可遊玩」→「全六章可遊玩」）、`CLAUDE.md`（專案概要段更新為全六章完成、npm test 數字同步）、本條目
+- 不 commit／不 push（全部留 unstaged）；未動 `chapter01.js`～`chapter05.js`
+
+驗收結果：
+
+- `npm run validate:chapters`：CH6 場景數 29、選擇點 4、ending 1，**22/22 playthroughs 抵達結局**，0 error，0 warning
+- `npm run validate:fidelity`：**0 error**；**CH6 coverage 99.9%（3575/3579 字元）**（CH1 99.8%、CH2 99.9%、CH3 100.0%、CH4 99.9%、CH5 99.9% 同批未變動）
+- `npm test`：**323/323 通過**（33 test files；`tests/scripts/cross-ref.test.js` 新增 7 個 CH6 專屬測試，`tests/data/chapters.test.js` 同步更新 1 個測試）
+- `npm run build`：通過
+- **幻覺清零 grep**：`稲荷`／`狐`／`蓚酸`在 `chapter06.js` 場景資料中零命中（僅出現在檔頭註解描述已作廢內容，共 3 處，均在 `//` 註解行內）
+- **飛行機病說話者檢查**：`grep -B3 "飛行機病"` 確認兩處對白 block 的 `speakerId` 皆為 `"wifes_brother"`
+- **forced steps 接線檢查**：`ch6_final_walk` 的 `{ type:"forced", ... }` block 確認位於「頸すじをまっ直にして歩いて行った。」與「歯車は数の殖えるのにつれ……」兩個 source block 之間，符合施工圖指定位置
+
+備註：
+
+- CH6 coverage 剩餘 0.1%（4 字元）未覆蓋，經核對為底本章節切分標記行本身（章號標題殘字「六　飛行機」），非敘事正文，同 CH1–CH5 模式，已由 `ch6_prologue` 的兩個 `system` block（「第六章　飛行機」／「——飛機——」）對應呈現
+- 施工圖 `ch6-source-map.md` §1 骨架標頭 `sceneCount: 28` 與 §2 實際逐一枚舉的 29 個場景 id 不一致（`grep -c '^### ch6_'` 實測 29），本檔以 §2 實際枚舉為準記 `sceneCount: 29`，已在檔頭與本條目註記此偏離（同 CH3／CH5 先例：F7-1／F9 遇到同類骨架標頭與實際枚舉不一致時，以實際枚舉為準）
+- **《歯車》全卷六章至此完工**：CH1～CH6 皆已依各章 `docs/chX-source-map.md` 施工圖重切完工，`origin:"source"` 標記涵蓋全部敘事正文，四項驗收（validate:fidelity／validate:chapters／test／build）全綠，README／CLAUDE.md 已同步更新為全六章完成狀態
+
+---
+
+## 2026-07-15
+
+### 已完成
+
+#### Batch F11 — 換書泛化（book bundle 化），D9 完成
+
+狀態：完成（unstaged）
+
+規格來源：`docs/batch-f11-generalize.md`（唯一施工圖來源）。前提：D9「先完成歯車，再抽通用引擎」的前提「全章文本穩定」已於 F10（CH6 完工，全卷六章）達成。目標：換一本書＝只加一個 `src/books/<id>/` 目錄，引擎與 UI 零修改。分 S1（引擎核心）→S2（元件層）→S3（工具層）→S4（換書證明）單線接力，本條目涵蓋全批（S1/S2 承接自前段工兵，S3/S4＋文件更新為本段完成）。
+
+**S1 — 引擎核心參數化**（`src/bookLoader.js`／`src/books/haguruma/index.js`／`src/engine/{state,effects,corrupt,save}.js`）：
+
+- 新增 `src/books/haguruma/index.js`（BOOK bundle 單一事實來源：`meta`／`stats`／`corruption`／`motif`／`ui`／`saveKey`／`chapters`／`symbols`／`palette`／`validator`／`fidelity`）與 `src/bookLoader.js`（換書點：一行 `export { BOOK } from "./books/haguruma/index.js"`）
+- `state.js`：`createInitialState(book)` 由 `book.stats` 生成 stat 欄位（取代寫死的 nerve/insight/writing），`initialState`/`createChapterState` 保留為 haguruma 綁定版
+- `effects.js`：`applyEffectsFor(book, state, effects)` 迭代 `book.stats` 依 min/max 夾制，`applyEffects` 為 haguruma 綁定版
+- `corrupt.js`：`corruptTextFor(text, level, thresholdLevel, statMax)` 泛化門檻/上限為顯式參數
+- `save.js`：`createSaveModule(book)` 讀 `book.saveKey` 生成 `SAVE_KEY`/`LEGACY_SAVE_KEY`；haguruma 綁定版逐字沿用舊 key 名（向後相容既有存檔）
+
+**S2 — 元件層**（`HagurumaEngine`／`NerveBar`／`StatRadar`／`EndScreen`／`SceneText`／`ForcedSteps`／`Particles`／`LeftSidebar`／`App` 等）：
+
+- 三軸顯示、`toastEffects`、`EndScreen`、`StatRadar`（軸數動態＝`stats.length`）、`NerveBar`（內部改讀 `book.stats.find(kind==="drain")`，檔名不改）全部收 `book` 參數，預設 `book = BOOK`（haguruma 綁定，向後相容既有呼叫端）
+- `SceneText`／`ForcedSteps`／`Particles` 崩壞門檻改讀 `book.corruption`
+- 新增 `src/components/motifs/index.js`（motif registry：`{ gears, none }`，`book.motif` 決定套用哪組 `{ Defs, Overlay }`）
+- `App.jsx` 標題頁 title/author/quote/license/按鈕文字讀 `BOOK.meta`/`BOOK.ui`；`LeftSidebar` 章節警語與漢數字讀 `book.ui`
+- `PALETTE` 於 App 啟動時注入 `:root`（`--washi-*` CSS 變數），haguruma 現值與 `global.css` 預設逐字相同，注入後零視覺變化
+
+**S3 — 工具層去書本化**（`scripts/validate-chapters.js`／`scripts/validate-fidelity.js`／新增 `scripts/resolve-book.js`，本段完成）：
+
+- `validate-chapters.js`：`EXEMPT_CHAPTERS`/`ORIGIN_EXEMPT_CHAPTERS` 兩個寫死模組常數移除，改讀 `book.validator.namespaceExemptChapters`/`originExemptChapters`；`SYMBOL_GLYPHS` 靜態 import 移除，cross-ref 檢查改用 `book.symbols`；`defaultTextState()`（供 origin 檢查探測 dynamic `text()`）與 `simulate()` 的初始 state 改由 `book.stats` 生成（取代寫死的 nerve/insight/writing 三欄位）；`simulate()` 的 clamp 邏輯不再自己維護一份 nerve∈[0,10] 判斷，改直接呼叫 `engine/effects.js` 的 `applyEffectsFor(book, ...)`，與真實引擎保證同一套數字。`validateNamespaces`/`validateOrigin`/`validateActionForced`/`validateChapter`/`simulate` 五個 export 都新增 `book = DEFAULT_BOOK`（haguruma 綁定）為最後一個可選參數，既有 3-arg/2-arg 呼叫端（`tests/scripts/*.test.js`）零修改仍全部通過
+- `validate-fidelity.js`：`SOURCE_PATH`/`CHAPTER_MARKER_RE` 兩個寫死模組常數移除，改讀 `book.fidelity.sourceText`/`chapterMarker`；新增 `buildChapterMarkerRegex(markerTemplate)` 把 `"【第N章】"` 這種以字面 `"N"` 當章號佔位符的樣板轉成 `(\d+)` 擷取群組的 regex；`splitChapters(rawText, markerTemplate)` 新增可選第二參數，不帶時走預設樣板，`tests/scripts/fidelity.test.js` 既有單參數呼叫零修改仍全部通過
+- 新增 `scripts/resolve-book.js`：兩支 CLI 共用的 `parseBookIdArg(defaultId)`/`resolveBook(bookId, defaultBook)`，支援 `--book=<id>` 旗標（動態 `import` `src/books/<id>/index.js`），不帶旗標時走預設 `haguruma`，輸出逐字不變
+- **行為不變驗證**：`npm run validate:chapters`/`npm run validate:fidelity` 重構前後輸出與 `reports/pre-f11-baseline.txt` 逐字 diff 一致（僅 npm 包裝層的前導空行差異，`diff -B` 後零差異）；`npm test` 323/323（S3 改動前後測試數不變，因為新增的 `book` 參數皆為向後相容的可選參數）
+
+**S4 — 換書證明（煙霧書）**（新增 `tests/fixtures/book-smoke/`／`tests/integration/book-smoke.test.jsx`，本段完成）：
+
+- `tests/fixtures/book-smoke/index.js`：迷你假書 `BOOK_SMOKE`——雙軸 stat `courage`（drain, initial 3, max 5）/`memory`（gain, no max，皆非 nerve/insight/writing）、`motif:"none"`、獨立 `saveKey:"book_smoke_save"`、獨立 UI 標籤（`勇氣`/`記憶`/`備忘錄`/`牽絆`……全部非原著字串）、`validator` 兩個豁免清單皆為空陣列（不像 haguruma CH1/CH2 有 grandfathered 豁免，兩章都要求全面合規）。2 章 × 3 場景：CH1 含 1 choice、1 connection、1 個 `origin:"added"` block；`chapters` 欄位形狀比照 `src/data/chapterRegistry.js`（`getChapter`/`getAllChapters`/`getChapterCount`）
+- `tests/integration/book-smoke.test.jsx`（14 tests，涵蓋施工圖 §4 列的五個面向）：
+  1. `createInitialState(BOOK_SMOKE)` 生成 `courage`/`memory` 欄位，且不含 `nerve`/`insight`/`writing`
+  2. `applyEffectsFor(BOOK_SMOKE, ...)` 驗證 courage 上下限夾制（[0,5]）與 memory（無上限）不受夾制
+  3. `corruptTextFor` 用煙霧書自己的門檻比例（3/5=0.6，異於 haguruma 的 5/10=0.5）：高於門檻不崩壞、等於門檻（intensity=0）不崩壞、低於門檻崩壞
+  4. `validateChapter`/`simulate`（從 `scripts/validate-chapters.js` 直接 import，帶入 `book=BOOK_SMOKE`）驗證煙霧書兩章零 error、22/22 playthrough 抵達 ending，且 `simulate()` 跑出的最終 state 數值符合煙霧書自己的 clamp（courage: 3−5→clamp 0）
+  5. 元件 smoke render：`NerveBar`（label＝`勇氣`、非`神經`；`3 / 5`、非以 10 為分母）、`StatRadar`（2 軸而非 haguruma 的 3 軸）、`LeftSidebar`（章節警語為煙霧書字串，非原著警語）——`src/engine`、`src/components` 全程零修改，只換了傳入的 `book` 參數
+- 這個測試就是「換書只需換 data」的可執行證明（施工圖 §4 明文要求）
+
+**D9 完成標記**：`docs/DECISIONS.md` D9 條目補上完成標記，逐項對照 D9 當年列出的五處「綁死歯車」如何被本批解決。
+
+殘留掃描（施工圖 §5-3）：
+
+- `grep -rn "神經\|洞察\|執筆" src/engine src/components`：1 命中，`ImpactToast.jsx` JSDoc 範例註解內的字面示範文字，非邏輯硬編碼
+- `grep -rn "haguruma_save" src/engine src/components`：2 命中，皆為 `save.js` 內解釋「派生結果與現行字面值逐字相同」的註解，非硬編碼邏輯
+- `grep -rn "#[0-9a-fA-F]\{6\}" src/components`：23 命中（`GearDefs.jsx`／`ImpactToast.jsx`／`NerveBar.jsx`／`RightSidebar.jsx`／`StatRadar.jsx`），屬於 §2 S2-7「inline hex 收斂」範圍——這批 S3/S4 沒有動這幾個檔案，殘留清零留待後續一批處理（不影響本批「行為不變」與「換書證明」兩項硬指標，因為顏色是渲染細節，不是書本資料）
+
+驗收結果：
+
+- `npm test`：**337/337 通過**（34 test files；較 F10 基準 323 增加 14 個，全部來自新增的 `tests/integration/book-smoke.test.jsx`，既有測試零修改零減少）
+- `npm run build`：通過（71 modules transformed，較基準 67 增加來自 S1/S2 新增的 `bookLoader.js`/`books/haguruma/index.js`/`motifs/index.js` 三個模組，非本批新增）
+- `npm run validate:chapters`：與 `reports/pre-f11-baseline.txt` 逐字一致——6 章、202 場景、43 選擇點、6 ending、132（22×6）playthroughs 全數抵達 ending、CH1 1 個 grandfathered warning（不變）
+- `npm run validate:fidelity`：與基準逐字一致——0 error／0 warning，coverage CH1 99.8%／CH2 99.9%／CH3 100.0%／CH4 99.9%／CH5 99.9%／CH6 99.9%
+- 不 commit／不 push（全部留 unstaged）；`src/data/chapters/*.js` 的 jp/cn 文本一字未動
+
+---
+
 ## Commit Log
 
 | Date | Batch | Commit | Status | Notes |
@@ -801,6 +1053,10 @@ Batch 7（2026-05-16）已發現原著實為 6 章（非 CLAUDE.md 舊載的「1
 | 2026-07-12 | F3 | feat: rewrite CH2 chapter02.js from ch2-source-map.md, retire hallucinated v1 | unstaged | 34 scenes, 8 choices, 12 notebook keys, 5 connections, coverage 99.9%, +2 cross-chapter connection tests |
 | 2026-07-12 | F4 Lane B | docs: clean up 11-chapter residue + sync README/migration-plan to F1/F2 state | unstaged | ENGINE_SPEC/CHAPTER_GUIDE/DECISIONS/chapter06-spec 11章殘留清理, README checklist+structure tree sync |
 | 2026-07-12 | F5 Lane R | feat: choice rewind (snapshot stack + seen marks) | unstaged | rewind.js snapshot stack, ⟲ 回溯 panel, ChoiceList ✓ marks, 30 new tests, coexists with Lane E editMode |
+| 2026-07-13 | F8 | feat: rewrite CH4 chapter04.js from ch4-source-map.md, retire hallucinated old-friend scene | unstaged | 28 scenes, 6 choices, 12 notebook keys, 6 connections (2 cross-chapter), coverage 99.9% |
+| 2026-07-13 | F9 | feat: build CH5 chapter05.js from ch5-source-map.md, retire hallucinated red-pond/old-woman scene | unstaged | 39 scenes, 7 choices, 16 notebook keys, 6 connections (2 cross-chapter), coverage 99.9%, restores 《赤光》歌集 letter |
+| 2026-07-13 | F10 | feat: build CH6 chapter06.js from ch6-source-map.md, retire hallucinated inari-fox/oxalic-acid scene — 《歯車》全卷完工 | unstaged | 29 scenes, 4 choices (zero-choice forced-steps finale), 15 notebook keys, 6 connections (all cross-chapter), coverage 99.9%, corrects 飛行機病 speaker to wifes_brother |
+| 2026-07-15 | F11 | refactor: book-bundle generalize (S1-S4) — D9 完成，換書只需換 `src/books/<id>/` | unstaged | BOOK bundle + bookLoader 換書點；engine/components/scripts 全面收 book 參數（haguruma 綁定版向後相容）；tests/fixtures/book-smoke + book-smoke.test.jsx 14 tests 為換書可行性證明；337/337 tests，四驗證與 pre-f11-baseline.txt 逐字一致 |
 
 ---
 

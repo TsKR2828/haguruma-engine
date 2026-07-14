@@ -1,12 +1,20 @@
+import { BOOK } from "../bookLoader";
+
 /**
- * Nerve decay progress bar — fills right-to-left as nerve drops.
+ * Drain-stat decay progress bar — fills right-to-left as the stat drops.
  * Color shifts from cold gray (safe) → danger red (critical).
+ * 施工圖 §2 S2-1：內部改讀 `book.stats.find(kind==="drain")`（檔名不改）。
  * Props:
- *   nerve: number (0–10)
- *   max?:  number (default 10)
+ *   value: number — 目前值（沿用舊 prop 名 `nerve` 以防呼叫端漏改）
+ *   book?: book bundle（預設 haguruma，向後相容）
  */
-export default function NerveBar({ nerve = 10, max = 10 }) {
-  const ratio = nerve / max;
+export default function NerveBar({ nerve, value, book = BOOK }) {
+  const stat = book.stats.find((s) => s.kind === "drain") ?? book.stats[0];
+  const max = stat?.max ?? 10;
+  const label = stat?.label ?? "";
+  const cur = value ?? nerve ?? max;
+
+  const ratio = cur / max;
   const pct = Math.max(0, Math.min(100, ratio * 100));
 
   const isDanger = ratio <= 0.4;
@@ -27,9 +35,9 @@ export default function NerveBar({ nerve = 10, max = 10 }) {
         display: "flex", justifyContent: "space-between",
         fontSize: 11, letterSpacing: "0.08em", marginBottom: 4,
       }}>
-        <span style={{ color: labelColor, fontFamily: "'Noto Serif TC', serif" }}>神經</span>
+        <span style={{ color: labelColor, fontFamily: "'Noto Serif TC', serif" }}>{label}</span>
         <span style={{ color: valueColor, fontFamily: "'Noto Serif TC', serif" }}>
-          {nerve} / {max}
+          {cur} / {max}
         </span>
       </div>
       <div style={{

@@ -830,6 +830,7 @@ export const CHAPTER_01 = {
         { type: "dialogue", origin: "source", speaker: "姪女", speakerId: "niece", jp: "「ええ、ですからすぐに来て下さい。すぐにですよ」", cn: "「是的，所以請馬上過來。馬上。」" },
         { type: "narration", origin: "source", jp: "電話はそれぎり切れてしまった。", cn: "電話就此斷了。" },
         { type: "narration", origin: "source", jp: "僕はもとのように受話器をかけ、反射的にベルの鈕を押した。しかし僕の手の震えていることは僕自身はっきり意識していた。", cn: "我掛上聽筒，反射性地按下了門鈴的按鈕。但我清楚地意識到自己的手在發抖。" },
+        { type: "forced", origin: "added", steps: ["按下門鈴的按鈕。", "再按。", "再按一次。"] },
         { type: "narration", origin: "source", jp: "給仕は容易にやって来なかった。僕は苛立たしさよりも苦しさを感じ、何度もベルの鈕を押した。", cn: "服務生遲遲不來。我感到的不是焦躁，而是痛苦。我反覆按著門鈴——" },
       ],
       choices: null,

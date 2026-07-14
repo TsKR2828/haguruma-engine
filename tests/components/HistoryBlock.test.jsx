@@ -68,4 +68,31 @@ describe("HistoryBlock", () => {
     const { container } = render(<HistoryBlock block={block} />);
     expect(container.querySelector(".scene-block-system").textContent).toBe("第一章　レエン・コオト");
   });
+
+  // Batch F6: 文中互動歷史區完成態。docs/batch-f6-inline-actions.md §2.3。
+  it("action block renders ✓ prompt with action-block--done styling", () => {
+    const block = { type: "action", origin: "added", prompt: "站起來。" };
+    const { container } = render(<HistoryBlock block={block} />);
+    expect(container.querySelector(".action-block--done")).toBeTruthy();
+    expect(container.querySelector(".action-prompt-done").textContent).toBe("✓ 站起來。");
+    expect(container.querySelector(".action-response")).toBeNull();
+    expect(container.querySelector(".scene-block-action").className).toContain("block-added");
+  });
+
+  it("action block with a response renders it indented below the prompt", () => {
+    const block = { type: "action", origin: "added", prompt: "追進浴室，開門搜索。", response: "什麼都沒有。" };
+    const { container } = render(<HistoryBlock block={block} />);
+    expect(container.querySelector(".action-prompt-done").textContent).toBe("✓ 追進浴室，開門搜索。");
+    expect(container.querySelector(".action-response").textContent).toBe("什麼都沒有。");
+  });
+
+  it("forced block renders every step as ✓ step with forced-step--done styling", () => {
+    const block = { type: "forced", origin: "added", steps: ["按下門鈴的按鈕。", "再按。", "再按一次。"] };
+    const { container } = render(<HistoryBlock block={block} />);
+    const steps = container.querySelectorAll(".forced-step--done");
+    expect(steps).toHaveLength(3);
+    expect(steps[0].textContent).toBe("✓ 按下門鈴的按鈕。");
+    expect(steps[2].textContent).toBe("✓ 再按一次。");
+    expect(container.querySelector(".scene-block-forced").className).toContain("block-added");
+  });
 });

@@ -1,9 +1,10 @@
 import { readdir, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { initialState } from "../src/engine/state.js";
-import { SYMBOL_GLYPHS } from "../src/data/symbols.js";
+import { BOOK as DEFAULT_BOOK } from "../src/bookLoader.js";
+import { applyEffectsFor } from "../src/engine/effects.js";
 import { collectFlagsAndNotebook, unionBlocks } from "./validate-fidelity.js";
+import { parseBookIdArg, resolveBook } from "./resolve-book.js";
 
 const CHAPTERS_DIR = resolve("src/data/chapters");
 const REPORTS_DIR = resolve("reports");
@@ -12,6 +13,10 @@ const RANDOM_RUNS = 20;
 // ── Entry ──────────────────────────────────────────────────
 
 async function main() {
+  // CLI --book=<id>（預設 haguruma，施工圖 §3 S3）——不帶旗標時輸出逐字不變。
+  const book = await resolveBook(parseBookIdArg(DEFAULT_BOOK.id), DEFAULT_BOOK);
+  if (book.id !== DEFAULT_BOOK.id) console.log(`Book: ${book.id}`);
+
   const files = (await readdir(CHAPTERS_DIR))
     .filter((f) => /^chapter\d+\.js$/.test(f))
     .sort();
@@ -35,7 +40,7 @@ async function main() {
       continue;
     }
     console.log(`Validating: ${chapter.title ?? file}`);
-    const report = validateChapter(chapter, file, priorNotebookKeys);
+    const report = validateChapter(chapter, file, priorNotebookKeys, book);
     reports.push(report);
     printSummary(report);
 
@@ -72,22 +77,24 @@ function extractChapter(mod, filename) {
 
 // ── Namespace validation ───────────────────────────────────
 
-const EXEMPT_CHAPTERS = [1];
-
 function namespacePrefix(chapterNum) {
   return `ch${String(chapterNum).padStart(2, "0")}.`;
 }
 
-function isValidNamespacedKey(key, chapterNum) {
-  if (EXEMPT_CHAPTERS.includes(chapterNum)) return true;
+function isValidNamespacedKey(key, chapterNum, exemptChapters) {
+  if (exemptChapters.includes(chapterNum)) return true;
   const prefix = namespacePrefix(chapterNum);
   return key.startsWith(prefix) || key.startsWith("global.");
 }
 
-export function validateNamespaces(chapter, errors, warnings) {
+// exemptChapters 讀 book.validator.namespaceExemptChapters（施工圖 §3 S3，
+// 取代寫死的 EXEMPT_CHAPTERS=[1]）。book 參數預設 haguruma，向後相容既有
+// 3-arg 呼叫端（測試檔不帶 book）。
+export function validateNamespaces(chapter, errors, warnings, book = DEFAULT_BOOK) {
   const num = chapter.chapter;
+  const exemptChapters = book.validator?.namespaceExemptChapters ?? [];
 
-  if (EXEMPT_CHAPTERS.includes(num)) {
+  if (exemptChapters.includes(num)) {
     let count = 0;
     for (const scene of Object.values(chapter.scenes)) {
       if (scene.notebook?.key) count++;
@@ -109,7 +116,7 @@ export function validateNamespaces(chapter, errors, warnings) {
 
   const prefix = namespacePrefix(num);
   const check = (key, context) => {
-    if (!isValidNamespacedKey(key, num)) {
+    if (!isValidNamespacedKey(key, num, exemptChapters)) {
       errors.push(`${context}: "${key}" must start with "${prefix}" or "global."`);
     }
   };
@@ -141,34 +148,32 @@ export function validateNamespaces(chapter, errors, warnings) {
 const ORIGIN_TYPES = new Set(["narration", "inner", "dialogue"]);
 const VALID_ORIGINS = new Set(["source", "added"]);
 
-// CH1 predates the origin field entirely (grandfathered, same as
-// EXEMPT_CHAPTERS for namespaces). CH2 was authored before this spec
-// landed too and also has zero origin coverage — until it's backfilled,
-// treating it as hard-error would break validate:chapters on unrelated
-// legacy content, so it is grandfathered here as well (warning only).
-// This list is intentionally separate from EXEMPT_CHAPTERS: that one
-// governs namespace prefixes and CH2 already complies there. CH3+ get
-// a hard error for missing origin.
-const ORIGIN_EXEMPT_CHAPTERS = [1, 2];
+// CH1 predates the origin field entirely (grandfathered, same as the
+// namespace exemption). CH2 was authored before this spec landed too and
+// also has zero origin coverage — until it's backfilled, treating it as
+// hard-error would break validate:chapters on unrelated legacy content, so
+// it is grandfathered here as well (warning only). This exemption list is
+// intentionally separate from the namespace one: that one governs namespace
+// prefixes and CH2 already complies there. CH3+ get a hard error for
+// missing origin. Both lists now live on book.validator（施工圖 §3 S3）
+// instead of being hardcoded module consts.
 
-function defaultTextState() {
-  return {
-    nerve: initialState.nerve,
-    insight: initialState.insight,
-    writing: initialState.writing,
-    notebook: [],
-    choicesMade: {},
-  };
+// stat 欄位由 book.stats 生成（取代寫死的 nerve/insight/writing），供
+// dynamic `text: (state) => [...]` 場景探測用的預設/空態。
+function defaultTextState(book) {
+  const stats = {};
+  for (const s of book.stats) stats[s.key] = s.initial;
+  return { ...stats, notebook: [], choicesMade: {} };
 }
 
 // Structural check only: dynamic `text: (state) => [...]` scenes are
 // resolved once against a default/empty state. Exhaustive branch
 // coverage (every choicesMade/notebook combination) is out of scope
 // here — that's what validate:fidelity (F1-c) does.
-function collectBlocks(scene) {
+function collectBlocks(scene, book) {
   if (typeof scene.text === "function") {
     try {
-      const result = scene.text(defaultTextState());
+      const result = scene.text(defaultTextState(book));
       return Array.isArray(result) ? result : [];
     } catch {
       return [];
@@ -177,13 +182,13 @@ function collectBlocks(scene) {
   return Array.isArray(scene.text) ? scene.text : [];
 }
 
-export function validateOrigin(chapter, errors, warnings) {
+export function validateOrigin(chapter, errors, warnings, book = DEFAULT_BOOK) {
   const num = chapter.chapter;
-  const exempt = ORIGIN_EXEMPT_CHAPTERS.includes(num);
+  const exempt = (book.validator?.originExemptChapters ?? []).includes(num);
   let missingCount = 0;
 
   for (const [sceneId, scene] of Object.entries(chapter.scenes)) {
-    for (const block of collectBlocks(scene)) {
+    for (const block of collectBlocks(scene, book)) {
       if (!ORIGIN_TYPES.has(block.type)) continue;
 
       if (block.origin === undefined) {
@@ -211,9 +216,43 @@ export function validateOrigin(chapter, errors, warnings) {
   }
 }
 
+// ── Action/Forced validation (Batch F6, docs/batch-f6-inline-actions.md §3) ──
+//
+// action 需非空 prompt、forced 需非空 steps[]，兩者 origin 必為 "added"——
+// 缺其一皆為 error（不像 narration/inner/dialogue 的 origin 檢查，這兩型
+// 沒有 CH1/CH2 grandfathered 豁免：它們是本批才新增的型別，沒有 legacy 資料）。
+
+function isNonEmptyString(v) {
+  return typeof v === "string" && v.trim() !== "";
+}
+
+export function validateActionForced(chapter, errors, book = DEFAULT_BOOK) {
+  for (const [sceneId, scene] of Object.entries(chapter.scenes)) {
+    for (const block of collectBlocks(scene, book)) {
+      if (block.type === "action") {
+        if (!isNonEmptyString(block.prompt)) {
+          errors.push(`Scene "${sceneId}": action block is missing non-empty "prompt"`);
+        }
+        if (block.origin !== "added") {
+          errors.push(`Scene "${sceneId}": action block must have origin:"added" (got "${block.origin}")`);
+        }
+      } else if (block.type === "forced") {
+        const stepsOk =
+          Array.isArray(block.steps) && block.steps.length > 0 && block.steps.every(isNonEmptyString);
+        if (!stepsOk) {
+          errors.push(`Scene "${sceneId}": forced block is missing non-empty "steps[]"`);
+        }
+        if (block.origin !== "added") {
+          errors.push(`Scene "${sceneId}": forced block must have origin:"added" (got "${block.origin}")`);
+        }
+      }
+    }
+  }
+}
+
 // ── Full validation pipeline ───────────────────────────────
 
-export function validateChapter(chapter, filename, priorNotebookKeys = new Set()) {
+export function validateChapter(chapter, filename, priorNotebookKeys = new Set(), book = DEFAULT_BOOK) {
   const { scenes, startScene, title, titleCn, sceneCount } = chapter;
   const sceneKeys = Object.keys(scenes);
   const errors = [];
@@ -284,16 +323,20 @@ export function validateChapter(chapter, filename, priorNotebookKeys = new Set()
 
   // ── 1b. Namespace checks ──
 
-  validateNamespaces(chapter, errors, warnings);
+  validateNamespaces(chapter, errors, warnings, book);
 
   // ── 1b2. Origin checks (TextBlock v2) ──
 
-  validateOrigin(chapter, errors, warnings);
+  validateOrigin(chapter, errors, warnings, book);
+
+  // ── 1b3. Action/Forced checks (Batch F6) ──
+
+  validateActionForced(chapter, errors, book);
 
   // ── 1c. Cross-reference checks ──
 
   const locationIds = new Set((chapter.locations ?? []).map((l) => l.id));
-  const validSymbolKeys = new Set(Object.keys(SYMBOL_GLYPHS));
+  const validSymbolKeys = new Set(Object.keys(book.symbols));
   const VALID_SHAPES = new Set(["circle", "diamond", "rect", "mountain"]);
 
   if (chapter.startLocation && !locationIds.has(chapter.startLocation)) {
@@ -429,19 +472,19 @@ export function validateChapter(chapter, filename, priorNotebookKeys = new Set()
 
   playthroughs.push({
     name: "always_first_choice",
-    ...simulate(chapter, "first"),
+    ...simulate(chapter, "first", undefined, book),
   });
 
   playthroughs.push({
     name: "always_second_choice",
-    ...simulate(chapter, "second"),
+    ...simulate(chapter, "second", undefined, book),
   });
 
   const rng = seedRng(42);
   for (let i = 0; i < RANDOM_RUNS; i++) {
     playthroughs.push({
       name: `random_run_${String(i + 1).padStart(2, "0")}`,
-      ...simulate(chapter, "random", rng),
+      ...simulate(chapter, "random", rng, book),
     });
   }
 
@@ -479,15 +522,15 @@ export function validateChapter(chapter, filename, priorNotebookKeys = new Set()
 
 // ── Playthrough simulation ─────────────────────────────────
 
-export function simulate(chapter, strategy, rng) {
+export function simulate(chapter, strategy, rng, book = DEFAULT_BOOK) {
   const { scenes, startScene } = chapter;
-  const state = {
-    nerve: initialState.nerve,
-    insight: initialState.insight,
-    writing: initialState.writing,
-    notebook: [],
-    choicesMade: {},
-  };
+  // stat 欄位由 book.stats 生成（取代寫死的 nerve/insight/writing 三個
+  // 欄位，施工圖 §3 S3）。`state` 改成 let：夾制邏輯改呼叫
+  // engine/effects.js 的 applyEffectsFor（非 mutating），與真實引擎的
+  // clamp 行為保證一致，不再各自維護一份 min/max 判斷。
+  const statDefaults = {};
+  for (const s of book.stats) statDefaults[s.key] = s.initial;
+  let state = { ...statDefaults, notebook: [], choicesMade: {} };
 
   // Bug 11(b): two-state probe for dynamic `text` functions, same approach
   // as validate-fidelity.js — call once against the "nothing achieved yet"
@@ -514,8 +557,9 @@ export function simulate(chapter, strategy, rng) {
 
     visited.push(current);
 
+    let sceneBlocks;
     try {
-      unionBlocks(scene.text, textProbeState1, textProbeState2);
+      sceneBlocks = unionBlocks(scene.text, textProbeState1, textProbeState2);
     } catch (e) {
       return {
         success: false,
@@ -526,9 +570,21 @@ export function simulate(chapter, strategy, rng) {
       };
     }
 
-    applyEffects(state, scene.effects);
+    // Batch F6: action/forced blocks are inline interactions embedded in
+    // scene.text — they never branch the scene graph (no "next"/choices of
+    // their own), so the simulator treats them as pure pass-through. The
+    // one thing that *does* affect simulated stats is action.effects (set
+    // on click, mirrors HagurumaEngine's onBlockEffects), so apply it here
+    // the same way scene.effects/effectFn are applied above.
+    for (const block of sceneBlocks) {
+      if (block?.type === "action" && block.effects) {
+        state = applyEffectsFor(book, state, block.effects);
+      }
+    }
+
+    state = applyEffectsFor(book, state, scene.effects);
     if (typeof scene.effectFn === "function") {
-      applyEffects(state, scene.effectFn(state));
+      state = applyEffectsFor(book, state, scene.effectFn(state));
     }
     if (scene.notebook) state.notebook.push(scene.notebook);
 
@@ -558,7 +614,7 @@ export function simulate(chapter, strategy, rng) {
       choices.push({ scene: current, picked: idx, text: choice.text });
 
       if (choice.flag) state.choicesMade[choice.flag] = true;
-      applyEffects(state, choice.effects);
+      state = applyEffectsFor(book, state, choice.effects);
       if (choice.notebook) state.notebook.push(choice.notebook);
       current = choice.next;
     } else if (scene.next) {
@@ -585,15 +641,10 @@ function pickChoice(choices, strategy, rng) {
   return Math.floor(rng() * choices.length);
 }
 
-function applyEffects(state, effects) {
-  if (!effects) return;
-  // Bug 11(c): match engine/effects.js applyEffects clamping exactly
-  // (nerve is bounded [0, 10]) so the simulator can't diverge from the
-  // real engine's numbers.
-  if (effects.nerve) state.nerve = Math.min(10, Math.max(0, state.nerve + effects.nerve.amount));
-  if (effects.insight) state.insight += effects.insight.amount;
-  if (effects.writing) state.writing += effects.writing.amount;
-}
+// Bug 11(c) note: clamping now reuses engine/effects.js's applyEffectsFor
+// directly (施工圖 §3 S3) instead of a locally duplicated nerve/insight/
+// writing clamp — the simulator is structurally guaranteed to match the
+// real engine's numbers for any book, not just haguruma.
 
 function seedRng(seed) {
   let s = seed;

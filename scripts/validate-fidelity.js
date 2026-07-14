@@ -10,13 +10,22 @@
 import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { BOOK as DEFAULT_BOOK } from "../src/bookLoader.js";
+import { parseBookIdArg, resolveBook } from "./resolve-book.js";
 
 const CHAPTERS_DIR = resolve("src/data/chapters");
-const SOURCE_PATH = resolve("reference/aozora/haguruma_original.txt");
 const METADATA_MARKER = "# ---- 轉換 metadata ----";
-const CHAPTER_MARKER_RE = /【第(\d)章】/g;
+const DEFAULT_CHAPTER_MARKER = "【第N章】";
 const ORIGIN_BLOCK_TYPES = new Set(["narration", "inner", "dialogue"]);
 const W1_MIN_LENGTH = 8;
+
+// 底本路徑／章 marker 讀 book.fidelity（施工圖 §3 S3，取代寫死的
+// SOURCE_PATH／CHAPTER_MARKER_RE）。marker 樣板用字面 "N" 當章號佔位符
+// （例如 "【第N章】"），轉成 regex 時把 "N" 換成 (\d+) 擷取群組。
+function buildChapterMarkerRegex(markerTemplate = DEFAULT_CHAPTER_MARKER) {
+  const escaped = markerTemplate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(escaped.replace(/N/g, "(\\d+)"), "g");
+}
 
 // ── 正規化 ──────────────────────────────────────────────────
 
@@ -37,13 +46,14 @@ export function stripMetadata(rawText) {
 }
 
 /**
- * 依 【第N章】 marker 切分底本，回傳 { [chapterNum]: normalizedChapterText }。
+ * 依章節 marker（預設 【第N章】，可由 book.fidelity.chapterMarker 覆寫）
+ * 切分底本，回傳 { [chapterNum]: normalizedChapterText }。
  * marker 本身不計入內容；區間為 [此 marker 結尾, 下一 marker 開頭) 或到文末。
  */
-export function splitChapters(rawText) {
+export function splitChapters(rawText, markerTemplate = DEFAULT_CHAPTER_MARKER) {
   const text = stripMetadata(rawText);
   const markers = [];
-  const re = new RegExp(CHAPTER_MARKER_RE);
+  const re = buildChapterMarkerRegex(markerTemplate);
   let m;
   while ((m = re.exec(text))) {
     markers.push({ num: Number(m[1]), contentStart: re.lastIndex, markerStart: m.index });
@@ -250,8 +260,11 @@ async function loadChapters() {
 // ── 主流程 ──────────────────────────────────────────────────
 
 async function main() {
-  const rawSource = await readFile(SOURCE_PATH, "utf-8");
-  const allChapterSources = splitChapters(rawSource);
+  // CLI --book=<id>（預設 haguruma，施工圖 §3 S3）——不帶旗標時輸出逐字不變。
+  const book = await resolveBook(parseBookIdArg(DEFAULT_BOOK.id), DEFAULT_BOOK);
+  const sourcePath = resolve(book.fidelity.sourceText);
+  const rawSource = await readFile(sourcePath, "utf-8");
+  const allChapterSources = splitChapters(rawSource, book.fidelity.chapterMarker);
 
   const loaded = await loadChapters();
   if (loaded.length === 0) {
@@ -259,7 +272,8 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Fidelity check against: ${SOURCE_PATH}`);
+  if (book.id !== DEFAULT_BOOK.id) console.log(`Book: ${book.id}`);
+  console.log(`Fidelity check against: ${sourcePath}`);
   console.log(`Found ${loaded.length} chapter file(s)\n`);
 
   const results = [];
